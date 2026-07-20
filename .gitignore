@@ -1,0 +1,29 @@
+# Derleme çıktıları — her build'de yeniden üretilir, repo'da yeri yok
+[Bb]in/
+[Oo]bj/
+
+# IDE / editör kişisel dosyaları
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+*.DotSettings.user
+
+# Claude Code yerel izin ayarları (makineye özel)
+.claude/settings.local.json
+
+# Test sonuçları
+TestResults/
+*.trx
+
+# NuGet
+*.nupkg
+
+# İşletim sistemi çöpleri
+Thumbs.db
+.DS_Store
+
+# Yerel yedekler ve loglar
+_yedek-presentation.zip
+*.log
