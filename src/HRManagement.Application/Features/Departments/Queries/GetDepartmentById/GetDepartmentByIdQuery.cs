@@ -3,12 +3,4 @@ using MediatR;
 
 namespace HRManagement.Application.Features.Departments.Queries.GetDepartmentById;
 
-public sealed class GetDepartmentByIdQuery : IRequest<DepartmentDto?>
-{
-    public GetDepartmentByIdQuery(int id)
-    {
-        Id = id;
-    }
-
-    public int Id { get; }
-}
+public sealed record GetDepartmentByIdQuery(int Id) : IRequest<DepartmentDto?>;

@@ -38,6 +38,10 @@ tests/
 
 ## CQRS / MediatR konvansiyonları
 - Saf MediatR: IRequest<T> / IRequestHandler<TReq, TRes>. Özel marker interface YOK.
+- Command/Query'ler **pozisyonel `sealed record`** (mesaj = değişmez; value equality testlerde,
+  otomatik ToString() pipeline loglamasında işe yarar). Handler'lar `sealed class`.
+- API/WebUI request-response modelleri ise `class` (`get; set;`) — onlar JSON'dan deserialize
+  edilen veri taşıyıcılarıdır, record'un sağladıklarına ihtiyaçları yok.
 - Klasörleme: Application/Features/{Modül}/{Commands|Queries}/{Operasyon}/
   → XxxCommand.cs + XxxCommandHandler.cs + XxxCommandValidator.cs yan yana durur.
 - Handler imzası: Handle(TReq, CancellationToken) — CancellationToken repository'lere

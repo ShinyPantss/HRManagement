@@ -3,4 +3,4 @@ using MediatR;
 
 namespace HRManagement.Application.Features.Interns.Queries.GetAllInterns;
 
-public sealed class GetAllInternsQuery : IRequest<IEnumerable<InternDto>> { }
+public sealed record GetAllInternsQuery : IRequest<IEnumerable<InternDto>>;
