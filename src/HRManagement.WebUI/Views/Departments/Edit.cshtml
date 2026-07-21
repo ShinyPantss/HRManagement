@@ -1,0 +1,39 @@
+@model HRManagement.WebUI.Models.Departments.DepartmentFormViewModel
+@{
+    ViewData["Title"] = "Departman Düzenle";
+}
+
+<div class="page-head">
+    <h1>Departman Düzenle</h1>
+    <p class="text-muted mb-0">#@Model.Id numaralı kayıt.</p>
+</div>
+
+<div class="panel mt-3" style="max-width: 640px;">
+    <div class="panel-body">
+        <form asp-action="Edit" method="post" novalidate>
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
+            <input type="hidden" asp-for="Id" />
+
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label"></label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Description" class="form-label"></label>
+                <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Description" class="text-danger small"></span>
+            </div>
+
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary">Güncelle</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Vazgeç</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

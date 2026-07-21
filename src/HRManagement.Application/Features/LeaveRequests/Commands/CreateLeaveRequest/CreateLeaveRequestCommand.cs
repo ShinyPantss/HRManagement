@@ -7,9 +7,25 @@ namespace HRManagement.Application.Features.LeaveRequests.Commands.CreateLeaveRe
 /// "Yeni izin talebi oluştur" isteği. IRequest&lt;int&gt;: bu mesaj işlendiğinde
 /// geriye yeni kaydın Id'si döner. Talep her zaman Pending durumunda başlar.
 /// </summary>
-public sealed record CreateLeaveRequestCommand(
-    int EmployeeId,
-    LeaveType Type,
-    DateTime StartDate,
-    DateTime EndDate,
-    string? Description) : IRequest<int>;
+public sealed class CreateLeaveRequestCommand : IRequest<int>
+{
+    public CreateLeaveRequestCommand(
+        int employeeId,
+        LeaveType type,
+        DateTime startDate,
+        DateTime endDate,
+        string? description)
+    {
+        EmployeeId = employeeId;
+        Type = type;
+        StartDate = startDate;
+        EndDate = endDate;
+        Description = description;
+    }
+
+    public int EmployeeId { get; }
+    public LeaveType Type { get; }
+    public DateTime StartDate { get; }
+    public DateTime EndDate { get; }
+    public string? Description { get; }
+}

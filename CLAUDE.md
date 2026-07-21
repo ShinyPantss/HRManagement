@@ -20,17 +20,18 @@ src/
 ├── HRManagement.Domain          — entity'ler, enum'lar, domain exception'ları
 ├── HRManagement.Application     — use-case'ler (MediatR), iş kuralları, repository kontratları
 ├── HRManagement.Infrastructure  — Dapper repo'ları, ConnectionFactory, JwtService (token ÜRETİMİ)
-├── HRManagement.Contracts       — API ↔ WebUI ortak request/response DTO'ları (saf, referanssız)
-├── HRManagement.API             — API controller'lar, JWT doğrulama, ProblemDetails
-└── HRManagement.WebUI           — MVC: Controllers, Views, ViewModels, Services (ApiService'ler)
+├── HRManagement.API             — API controller'lar, Models/ (request-response + BaseResponse), JWT doğrulama
+└── HRManagement.WebUI           — MVC: Controllers, Views, ViewModels, Models/Api, Services (ApiService'ler)
 tests/
 └── HRManagement.Application.Tests
 ```
 
 ## Referans kuralları (ihlal edilemez)
-- WebUI → SADECE Contracts. Application/Domain/Infrastructure'a ASLA referans verme.
-- Contracts → hiçbir projeye referans vermez.
-- API → Application + Infrastructure + Contracts. Composition root = API/Program.cs.
+- Paylaşılan Contracts projesi YOK (mentor kararı, 2026-07-20). Her host kendi modelini tutar:
+  API → API/Models, WebUI → WebUI/Models/Api. Gevşek bağlılık; bedeli, JSON şeklinin
+  iki tarafta elle senkron tutulması.
+- WebUI hiçbir iş katmanına referans VERMEZ. Application/Domain/Infrastructure'a ASLA.
+- API → Application + Infrastructure. Composition root = API/Program.cs.
 - Infrastructure → Application → Domain. Domain → hiçbir şey.
 - WebUI ile API arasında proje referansı YOK; iletişim yalnızca çalışma anında HTTP
   (typed HttpClient + WebUI/Services altındaki XxxApiService sınıfları).
@@ -50,14 +51,22 @@ tests/
 ## API kuralları
 - Global fallback authorization policy: TÜM endpoint'ler kilitli doğar; yalnızca login
   gibi bilinçli uçlar [AllowAnonymous] alır. Rol kontrolü: [Authorize(Roles = "...")].
-- Tüm hatalar ProblemDetails formatında: validation → 400 (alan hatalarıyla),
-  bulunamadı → 404, kimliksiz → 401, yetkisiz → 403.
-- Controller incedir: Contracts request'ini Command/Query'ye çevirir, ISender.Send eder,
-  sonucu Contracts response'una çevirip döner. İş mantığı controller'a yazılmaz.
-- Domain entity'si veya Application Command/Query tipi Contracts'a/response'a sızmaz.
+- Yanıtlar BaseResponse<T> zarfıyla döner (mentor kararı): { IsSuccess, Message, Data }.
+  Kullanım: BaseResponse<T>.Success(data) / BaseResponse<T>.Fail("mesaj").
+- Hata yanıtları da AYNI zarfı kullanır (ProblemDetails KULLANILMIYOR): ValidationException
+  → 400 + BaseResponse.Fail, beklenmeyen → 500 + BaseResponse.Fail, bulunamadı → 404 +
+  BaseResponse.Fail. Tek format sayesinde istemci (Refit) tek tip deserialize eder.
+- Controller incedir: API/Models altındaki request'i Command/Query'ye çevirir, ISender.Send
+  eder, sonucu API/Models response'una çevirip döner. İş mantığı controller'a yazılmaz.
+- Domain entity'si veya Application Command/Query tipi response'a sızmaz.
 
 ## WebUI kuralları
-- Controller'lar Application'ı DEĞİL, Services/ altındaki XxxApiService'leri çağırır.
+- API çağrıları **Refit** ile yapılır: Services/ altında yalnızca `IXxxApi` arayüzü tanımlanır
+  ([Get]/[Post]/[Put]/[Delete] attribute'larıyla), implementasyonu Refit üretir.
+  Elle HttpClient/JSON kodu YAZILMAZ. Kayıt: Program.cs'te AddRefitClient.
+- RefitSettings.ExceptionFactory kapalıdır (null döner); API hata gövdesi de BaseResponse
+  olduğu için exception yerine IsSuccess=false okunur.
+- Controller'lar Application'ı DEĞİL, Services/ altındaki Refit arayüzlerini çağırır.
 - BearerTokenHandler (DelegatingHandler), cookie ticket'ındaki JWT'yi her API isteğine ekler.
 - API cevapları: 400 → ModelState'e maplenir; 401 → login redirect; 403 → AccessDenied sayfası.
 - WebUI'daki her kontrol (validation, rol bazlı menü gizleme) UX içindir; otorite her

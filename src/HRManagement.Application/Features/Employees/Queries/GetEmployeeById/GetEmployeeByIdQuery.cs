@@ -3,4 +3,12 @@ using MediatR;
 
 namespace HRManagement.Application.Features.Employees.Queries.GetEmployeeById;
 
-public sealed record GetEmployeeByIdQuery(int Id) : IRequest<EmployeeDto?>;
+public sealed class GetEmployeeByIdQuery : IRequest<EmployeeDto?>
+{
+    public GetEmployeeByIdQuery(int id)
+    {
+        Id = id;
+    }
+
+    public int Id { get; }
+}

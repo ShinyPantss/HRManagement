@@ -3,4 +3,4 @@ using MediatR;
 
 namespace HRManagement.Application.Features.Departments.Queries.GetAllDepartments;
 
-public sealed record GetAllDepartmentsQuery : IRequest<IEnumerable<DepartmentDto>>;
+public sealed class GetAllDepartmentsQuery : IRequest<IEnumerable<DepartmentDto>> { }

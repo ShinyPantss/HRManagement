@@ -3,4 +3,12 @@ using MediatR;
 
 namespace HRManagement.Application.Features.LeaveRequests.Queries.GetLeaveRequestsByEmployee;
 
-public sealed record GetLeaveRequestsByEmployeeQuery(int EmployeeId) : IRequest<IEnumerable<LeaveRequestDto>>;
+public sealed class GetLeaveRequestsByEmployeeQuery : IRequest<IEnumerable<LeaveRequestDto>>
+{
+    public GetLeaveRequestsByEmployeeQuery(int employeeId)
+    {
+        EmployeeId = employeeId;
+    }
+
+    public int EmployeeId { get; }
+}

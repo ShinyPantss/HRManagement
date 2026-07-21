@@ -3,4 +3,4 @@ using MediatR;
 
 namespace HRManagement.Application.Features.Users.Queries.GetAllUsers;
 
-public sealed record GetAllUsersQuery : IRequest<IEnumerable<UserDto>>;
+public sealed class GetAllUsersQuery : IRequest<IEnumerable<UserDto>> { }

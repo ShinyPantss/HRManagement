@@ -14,7 +14,11 @@ public static class EmployeeMapping
         Id = employee.Id,
         FirstName = employee.FirstName,
         LastName = employee.LastName,
+        NationalId = employee.NationalId,
         Email = employee.Email,
+        Phone = employee.Phone,
+        BirthDate = employee.DateOfBirth,
+        HireDate = employee.HireDate,
         Position = employee.Position,
         DepartmentId = employee.DepartmentId,
         IsActive = employee.IsActive
