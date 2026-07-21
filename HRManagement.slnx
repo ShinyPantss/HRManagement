@@ -1,6 +1,14 @@
 <Solution>
-  <Project Path="HRManagement.Application/HRManagement.Application.csproj" />
-  <Project Path="HRManagement.Domain/HRManagement.Domain.csproj" />
-  <Project Path="HRManagement.Infrastructure/HRManagement.Infrastructure.csproj" />
-  <Project Path="HRManagement.Presentation/HRManagement.Presentation.csproj" />
+  <Folder Name="/src/">
+    <Project Path="src/HRManagement.Domain/HRManagement.Domain.csproj" />
+    <Project Path="src/HRManagement.Application/HRManagement.Application.csproj" />
+    <Project Path="src/HRManagement.Infrastructure/HRManagement.Infrastructure.csproj" />
+    <Project Path="src/HRManagement.Contracts/HRManagement.Contracts.csproj" />
+    <Project Path="src/HRManagement.API/HRManagement.API.csproj" />
+    <Project Path="src/HRManagement.WebUI/HRManagement.WebUI.csproj" />
+    <Project Path="src/HRManagement.Presentation/HRManagement.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/HRManagement.Application.Tests/HRManagement.Application.Tests.csproj" />
+  </Folder>
 </Solution>

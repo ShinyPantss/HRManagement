@@ -27,3 +27,10 @@ Thumbs.db
 # Yerel yedekler ve loglar
 _yedek-presentation.zip
 *.log
+
+# Ortam değişkeni dosyaları (yanlışlıkla sır koymayı önler)
+.env
+.env.*
+
+# Kişisel ayar override'ı (bu desen kullanılırsa)
+appsettings.*.Local.json
