@@ -1,0 +1,31 @@
+using FluentValidation;
+using HRManagement.Domain.Enums;
+
+namespace HRManagement.Application.Features.LeaveRequests.Commands.CreateLeaveRequest;
+
+/// <summary>
+/// Input validation. Handler'a hiç ulaşmadan ValidationBehavior tarafından çalıştırılır.
+/// Burada yalnızca "gelen veri kendi içinde geçerli mi" sorulur; veritabanına bakan
+/// iş kuralları (ör. "çalışanın izin hakkı yeterli mi", "tarihler başka bir izinle
+/// çakışıyor mu") handler'da kalır.
+/// </summary>
+public sealed class CreateLeaveRequestCommandValidator : AbstractValidator<CreateLeaveRequestCommand>
+{
+    public CreateLeaveRequestCommandValidator()
+    {
+        RuleFor(command => command.EmployeeId)
+            .GreaterThan(0).WithMessage("Çalışan seçilmelidir.");
+
+        RuleFor(command => command.Type)
+            .IsInEnum().WithMessage("Geçerli bir izin türü seçilmelidir.");
+
+        // Tarih sırası kontrolü: iki alan da istekte geldiği için DB'ye bakmaya
+        // gerek yok — bu bir input validation'dır, iş kuralı değil.
+        RuleFor(command => command.EndDate)
+            .GreaterThanOrEqualTo(command => command.StartDate)
+            .WithMessage("Başlangıç tarihi bitiş tarihinden sonra olamaz.");
+
+        RuleFor(command => command.Description)
+            .MaximumLength(500).WithMessage("Açıklama en fazla 500 karakter olabilir.");
+    }
+}

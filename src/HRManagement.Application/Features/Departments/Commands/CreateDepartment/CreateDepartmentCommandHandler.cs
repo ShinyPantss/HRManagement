@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using HRManagement.Application.Interfaces;
 using HRManagement.Domain.Entities;
 using MediatR;
@@ -14,11 +13,9 @@ public sealed class CreateDepartmentCommandHandler : IRequestHandler<CreateDepar
         _departmentRepository = departmentRepository;
     }
 
+    // Input validation CreateDepartmentCommandValidator'da; buraya gelen mesaj geçerlidir.
     public async Task<int> Handle(CreateDepartmentCommand request, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.Name))
-            throw new ValidationException("Departman adı zorunludur.");
-
         var department = new Department
         {
             Name = request.Name.Trim(),

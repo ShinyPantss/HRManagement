@@ -22,16 +22,11 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResu
         _jwtTokenGenerator = jwtTokenGenerator;
     }
 
+    // Input validation (boş girdi) LoginCommandValidator'da — ve orada da mesaj
+    // bilinçli olarak buradakiyle AYNI: "Kullanıcı adı veya şifre hatalı."
+    // Burada yalnızca veritabanına bakan İŞ KURALI kalır.
     public async Task<AuthResultDto> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
-        // Boş girdi de diğer başarısız denemelerle AYNI mesajı almalı: farklı bir
-        // mesaj, cevabın hangi aşamada üretildiğini ele verir.
-        if (string.IsNullOrWhiteSpace(request.UsernameOrEmail)
-            || string.IsNullOrWhiteSpace(request.Password))
-        {
-            throw new ValidationException("Kullanıcı adı veya şifre hatalı.");
-        }
-
         // CreateUser kullanıcı adını ve e-postayı Trim() ederek kaydediyor;
         // arama da aynı şekilde normalize edilmezse baştaki/sondaki boşluk
         // yüzünden geçerli kullanıcı bulunamaz.

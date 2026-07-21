@@ -13,26 +13,10 @@ public sealed class UpdateInternCommandHandler : IRequestHandler<UpdateInternCom
         _internRepository = internRepository;
     }
 
+    // Input validation UpdateInternCommandValidator'da.
+    // Burada yalnızca veritabanına bakan İŞ KURALI kalır.
     public async Task<Unit> Handle(UpdateInternCommand request, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.FirstName))
-            throw new ValidationException("Ad zorunludur.");
-
-        if (string.IsNullOrWhiteSpace(request.LastName))
-            throw new ValidationException("Soyad zorunludur.");
-
-        if (string.IsNullOrWhiteSpace(request.Email))
-            throw new ValidationException("E-posta zorunludur.");
-
-        if (string.IsNullOrWhiteSpace(request.University))
-            throw new ValidationException("Üniversite zorunludur.");
-
-        if (request.StartDate > request.EndDate)
-            throw new ValidationException("Staj başlangıç tarihi bitiş tarihinden sonra olamaz.");
-
-        if (request.Grade < 1 || request.Grade > 8)
-            throw new ValidationException("Sınıf 1-8 arasında olmalıdır.");
-
         var intern = await _internRepository.GetByIdAsync(request.Id);
 
         if (intern is null)

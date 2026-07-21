@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using HRManagement.Application.Interfaces;
 using HRManagement.Domain.Entities;
 using HRManagement.Domain.Enums;
@@ -15,11 +14,9 @@ public sealed class CreateLeaveRequestCommandHandler : IRequestHandler<CreateLea
         _leaveRequestRepository = leaveRequestRepository;
     }
 
+    // Input validation CreateLeaveRequestCommandValidator'da (tarih sırası dahil).
     public async Task<int> Handle(CreateLeaveRequestCommand request, CancellationToken cancellationToken)
     {
-        if (request.StartDate > request.EndDate)
-            throw new ValidationException("Başlangıç tarihi bitiş tarihinden sonra olamaz.");
-
         var leaveRequest = new LeaveRequest
         {
             EmployeeId = request.EmployeeId,

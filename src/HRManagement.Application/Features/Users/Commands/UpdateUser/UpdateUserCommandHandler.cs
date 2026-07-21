@@ -13,11 +13,10 @@ public sealed class UpdateUserCommandHandler : IRequestHandler<UpdateUserCommand
         _userRepository = userRepository;
     }
 
+    // Input validation UpdateUserCommandValidator'da.
+    // Burada yalnızca veritabanına bakan İŞ KURALLARI kalır.
     public async Task<Unit> Handle(UpdateUserCommand request, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.Email))
-            throw new ValidationException("E-posta zorunludur.");
-
         var user = await _userRepository.GetByIdAsync(request.Id);
 
         if (user is null)

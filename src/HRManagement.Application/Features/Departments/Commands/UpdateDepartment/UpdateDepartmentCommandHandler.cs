@@ -13,11 +13,10 @@ public sealed class UpdateDepartmentCommandHandler : IRequestHandler<UpdateDepar
         _departmentRepository = departmentRepository;
     }
 
+    // Input validation UpdateDepartmentCommandValidator'da.
+    // Burada yalnızca veritabanına bakan İŞ KURALI kalır.
     public async Task<Unit> Handle(UpdateDepartmentCommand request, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.Name))
-            throw new ValidationException("Departman adı zorunludur.");
-
         var department = await _departmentRepository.GetByIdAsync(request.Id);
 
         if (department is null)

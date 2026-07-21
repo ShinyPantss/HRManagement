@@ -18,17 +18,10 @@ public sealed class CreateUserCommandHandler : IRequestHandler<CreateUserCommand
         _passwordHasher = passwordHasher;
     }
 
+    // Input validation CreateUserCommandValidator'da.
+    // Burada yalnızca veritabanına bakan İŞ KURALLARI (benzersizlik) kalır.
     public async Task<int> Handle(CreateUserCommand request, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.Username))
-            throw new ValidationException("Kullanıcı adı zorunludur.");
-
-        if (string.IsNullOrWhiteSpace(request.Email))
-            throw new ValidationException("E-posta zorunludur.");
-
-        if (string.IsNullOrWhiteSpace(request.Password))
-            throw new ValidationException("Şifre zorunludur.");
-
         var username = request.Username.Trim();
         var email = request.Email.Trim();
 

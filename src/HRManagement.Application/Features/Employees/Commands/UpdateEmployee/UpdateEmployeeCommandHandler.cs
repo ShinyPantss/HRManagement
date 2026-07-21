@@ -13,20 +13,10 @@ public sealed class UpdateEmployeeCommandHandler : IRequestHandler<UpdateEmploye
         _employeeRepository = employeeRepository;
     }
 
+    // Input validation UpdateEmployeeCommandValidator'da.
+    // Burada yalnızca veritabanına bakan İŞ KURALI kalır.
     public async Task<Unit> Handle(UpdateEmployeeCommand request, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.FirstName))
-            throw new ValidationException("Ad zorunludur.");
-
-        if (string.IsNullOrWhiteSpace(request.LastName))
-            throw new ValidationException("Soyad zorunludur.");
-
-        if (string.IsNullOrWhiteSpace(request.Email))
-            throw new ValidationException("E-posta zorunludur.");
-
-        if (request.HireDate.Date < request.BirthDate.Date)
-            throw new ValidationException("İşe giriş tarihi doğum tarihinden önce olamaz.");
-
         var employee = await _employeeRepository.GetByIdAsync(request.Id);
 
         if (employee is null)
