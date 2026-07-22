@@ -21,4 +21,6 @@ public interface IAccountRequestApi
 
     [Post("/api/accountrequests/{id}/reject")]
     Task<BaseResponse<int>> RejectAsync(int id, [Body] RejectAccountRequestRequest request);
+
+
 }

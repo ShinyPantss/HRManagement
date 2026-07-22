@@ -20,12 +20,12 @@ public class LeaveRequestFormViewModel
     public int Type { get; set; }
 
     [Required(ErrorMessage = "Başlangıç tarihi zorunludur.")]
-    [DataType(DataType.Date)]
+    [DisplayFormat(DataFormatString = "{0:dd.MM.yyyy}", ApplyFormatInEditMode = true)]
     [Display(Name = "Başlangıç Tarihi")]
     public DateTime? StartDate { get; set; }
 
     [Required(ErrorMessage = "Bitiş tarihi zorunludur.")]
-    [DataType(DataType.Date)]
+    [DisplayFormat(DataFormatString = "{0:dd.MM.yyyy}", ApplyFormatInEditMode = true)]
     [Display(Name = "Bitiş Tarihi")]
     public DateTime? EndDate { get; set; }
 
