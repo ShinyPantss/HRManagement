@@ -26,8 +26,14 @@ public class JwtTokenGenerator : IJwtTokenGenerator
             new(ClaimTypes.Role, user.Role.ToString())
         };
 
-        var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
+        // İmzalama anahtarı yoksa "!" ile susturup NullReferenceException almak yerine
+        // ne yapılması gerektiğini söyleyen bir hata ver (DbConnectionFactory ile aynı yaklaşım).
+        var secret = _configuration["Jwt:Key"]
+                     ?? throw new InvalidOperationException(
+                         "'Jwt:Key' yapılandırması bulunamadı. user-secrets ile verin: " +
+                         "dotnet user-secrets set \"Jwt:Key\" \"<anahtar>\" --project src/HRManagement.API");
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
 
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
