@@ -6,7 +6,10 @@ namespace HRManagement.WebUI.Models.Api.LeaveRequests;
 public class LeaveRequestResponse
 {
     public int Id { get; set; }
-    public int EmployeeId { get; set; }
+
+    // Talebi açan ya çalışan ya stajyerdir; tam olarak biri dolu gelir.
+    public int? EmployeeId { get; set; }
+    public int? InternId { get; set; }
 
     // API türü ve durumu okunabilir metin olarak döner ("Annual", "Pending" gibi).
     public string Type { get; set; } = string.Empty;
@@ -16,6 +19,7 @@ public class LeaveRequestResponse
     public string Status { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string? RejectionReason { get; set; }
+    public DateTime CreatedAt { get; set; }
 }
 
 // Oluştururken tür sayısal gönderilir: 1=Yıllık, 2=Ücretsiz, 3=Hastalık.

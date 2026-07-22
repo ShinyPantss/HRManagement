@@ -27,8 +27,8 @@ public class LeaveRequestsController : ControllerBase
     {
         var requests = await _mediator.Send(new GetLeaveRequestsByEmployeeQuery(employeeId));
         var data = requests.Select(r => new LeaveRequestResponse(
-            r.Id, r.EmployeeId, r.Type.ToString(), r.StartDate, r.EndDate,
-            r.TotalDays, r.Status.ToString(), r.Description, r.RejectionReason)).ToList();
+            r.Id, r.EmployeeId, r.InternId, r.Type.ToString(), r.StartDate, r.EndDate,
+            r.TotalDays, r.Status.ToString(), r.Description, r.RejectionReason, r.CreatedAt)).ToList();
         return Ok(BaseResponse<List<LeaveRequestResponse>>.Success(data));
     }
 

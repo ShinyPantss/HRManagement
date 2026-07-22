@@ -40,17 +40,20 @@ public sealed class LeaveRequestResponse
 {
     public LeaveRequestResponse(
         int id,
-        int employeeId,
+        int? employeeId,
+        int? internId,
         string type,
         DateTime startDate,
         DateTime endDate,
         int totalDays,
         string status,
         string? description,
-        string? rejectionReason)
+        string? rejectionReason,
+        DateTime createdAt)
     {
         Id = id;
         EmployeeId = employeeId;
+        InternId = internId;
         Type = type;
         StartDate = startDate;
         EndDate = endDate;
@@ -58,10 +61,15 @@ public sealed class LeaveRequestResponse
         Status = status;
         Description = description;
         RejectionReason = rejectionReason;
+        CreatedAt = createdAt;
     }
 
     public int Id { get; }
-    public int EmployeeId { get; }
+
+    // Talebi açan ya çalışan ya stajyerdir; tam olarak biri dolu gelir.
+    public int? EmployeeId { get; }
+    public int? InternId { get; }
+
     public string Type { get; }
     public DateTime StartDate { get; }
     public DateTime EndDate { get; }
@@ -69,4 +77,5 @@ public sealed class LeaveRequestResponse
     public string Status { get; }
     public string? Description { get; }
     public string? RejectionReason { get; }
+    public DateTime CreatedAt { get; }
 }

@@ -18,5 +18,8 @@ public class Intern
     public int? MentorId { get; set; }                      
     public int DepartmentId { get; set; }
 
-    public int? UserId { get; set; }                        
+    public int? UserId { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
 }

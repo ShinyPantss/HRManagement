@@ -13,12 +13,20 @@ public static class LeaveRequestMapping
     {
         Id = leaveRequest.Id,
         EmployeeId = leaveRequest.EmployeeId,
+        InternId = leaveRequest.InternId,
         Type = leaveRequest.Type,
         StartDate = leaveRequest.StartDate,
         EndDate = leaveRequest.EndDate,
         TotalDays = (leaveRequest.EndDate.Date - leaveRequest.StartDate.Date).Days + 1,
         Status = leaveRequest.Status,
         Description = leaveRequest.Description,
-        RejectionReason = leaveRequest.RejectionReason
+        RejectionReason = leaveRequest.RejectionReason,
+        ManagerApprovedByUserId = leaveRequest.ManagerApprovedByUserId,
+        ManagerApprovedAt = leaveRequest.ManagerApprovedAt,
+        HrApprovedByUserId = leaveRequest.HrApprovedByUserId,
+        HrApprovedAt = leaveRequest.HrApprovedAt,
+        RejectedByUserId = leaveRequest.RejectedByUserId,
+        RejectedAt = leaveRequest.RejectedAt,
+        CreatedAt = leaveRequest.CreatedAt
     };
 }

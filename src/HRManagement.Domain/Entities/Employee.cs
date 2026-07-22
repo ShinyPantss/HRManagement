@@ -13,5 +13,22 @@ public class Employee
     public string Position { get; set; } = string.Empty;
     public int DepartmentId { get; set; }
     public int? UserId { get; set; }
+
+    /// <summary>
+    /// Bu çalışanın bağlı olduğu yönetici (yine bir Employee). Null = en tepedeki kişi.
+    /// "Yöneticinin kendi ekibi" kavramı (§5.5) bu alan üzerinden kurulur.
+    /// </summary>
+    public int? ManagerId { get; set; }
+
+    /// <summary>
+    /// Yıllık izin hakkının ELLE GEÇERSİZ KILINMASI. Normalde null bırakılır ve
+    /// hak kıdemden hesaplanır (İş Kanunu md. 53); şirket bu kişiye özel gün
+    /// tanımlamışsa buraya yazılır ve hesaplama ezilir.
+    /// </summary>
+    public int? AnnualLeaveDays { get; set; }
+
     public bool IsActive { get; set; } = true;
+
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
 }
