@@ -12,10 +12,14 @@ namespace HRManagement.WebUI.Controllers;
 /// Yetki hem burada (rol attribute'ları) hem API'de zorlanır — WebUI kontrolü
 /// UX içindir, otorite API'dir.
 ///
-///   Talep oluştur  → HR, Admin
-///   Bekleyen/Onayla/Reddet → yalnızca Admin
+///   Talep oluştur  → yalnızca HR (görev ayrımı: veri girişi HR'da)
+///   Bekleyen/Onayla/Reddet → yalnızca Admin (yetkilendirme Admin'de)
+///
+/// Sınıf düzeyinde yalnızca "giriş şart" konur; rol her action'da ayrı ayrı
+/// belirtilir. Sınıf+metot [Authorize]'ları AND'lendiği için sınıfa rol koymak
+/// Admin action'larını "HR ve Admin" gibi imkânsız bir şarta sokardı.
 /// </summary>
-[Authorize(Roles = "HR,Admin")]
+[Authorize]
 public class AccountRequestsController : Controller
 {
     private readonly IAccountRequestApi _accountRequestApi;
@@ -33,6 +37,7 @@ public class AccountRequestsController : Controller
     }
 
     // ── HR: talep oluştur ────────────────────────────────────────────────
+    [Authorize(Roles = "HR")]
     public async Task<IActionResult> Create()
     {
         var form = new CreateAccountRequestViewModel();
@@ -41,6 +46,7 @@ public class AccountRequestsController : Controller
     }
 
     [HttpPost]
+    [Authorize(Roles = "HR")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(CreateAccountRequestViewModel form)
     {

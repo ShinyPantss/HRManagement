@@ -36,8 +36,8 @@ public class AccountRequestsController : ControllerBase
         return Ok(BaseResponse<List<AccountRequestResponse>>.Success(data));
     }
 
-    /// <summary>Talep oluştur — HR (veya Admin).</summary>
-    [Authorize(Roles = "HR,Admin")]
+    /// <summary>Talep oluştur — yalnızca HR (görev ayrımı; Admin onaylar).</summary>
+    [Authorize(Roles = "HR")]
     [HttpPost]
     public async Task<IActionResult> Create(CreateAccountRequestRequest request)
     {
