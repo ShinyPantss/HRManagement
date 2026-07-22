@@ -30,4 +30,11 @@ public interface IEmployeeRepository
     /// İzin onayı yetkisi ve döngü önleme (çalışan kendi astına bağlanamaz) bunu kullanır.
     /// </summary>
     Task<bool> IsInManagerChainAsync(int managerEmployeeId, int subordinateEmployeeId);
+
+    /// <summary>
+    /// Bir yöneticinin EKİBİ: doğrudan astları ve onların astları (zincir aşağı).
+    /// Yöneticinin kendisi dahil DEĞİLDİR — çağıran gerekiyorsa ekler.
+    /// IsInManagerChainAsync'in ters yönü; "ekibimi listele" için tek sorguda.
+    /// </summary>
+    Task<IEnumerable<Employee>> GetTeamAsync(int managerEmployeeId);
 }

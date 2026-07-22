@@ -3,12 +3,22 @@
     ViewData["Title"] = "Çalışanlar";
 }
 
+@{
+    // Çalışan kaydı açma/değiştirme İK işidir. Yönetici yalnızca ekibini GÖRÜR.
+    var canManage = User.IsInRole("HR") || User.IsInRole("Admin");
+}
+
 <div class="page-head d-flex align-items-center">
     <div>
         <h1>Çalışanlar</h1>
-        <p class="text-muted mb-0">Şirketteki tüm çalışanlar.</p>
+        <p class="text-muted mb-0">
+            @(canManage ? "Şirketteki tüm çalışanlar." : "Size bağlı ekip üyeleri.")
+        </p>
     </div>
-    <a asp-action="Create" class="btn btn-primary ms-auto">Yeni Çalışan</a>
+    @if (canManage)
+    {
+        <a asp-action="Create" class="btn btn-primary ms-auto">Yeni Çalışan</a>
+    }
 </div>
 
 <div class="panel mt-3">
@@ -45,19 +55,24 @@
                             }
                         </td>
                         <td class="text-end">
-                            <a asp-action="Edit" asp-route-id="@employee.Id" class="btn btn-sm btn-outline-secondary">Düzenle</a>
-                            <form asp-action="Delete" asp-route-id="@employee.Id" method="post" class="d-inline"
-                                  onsubmit="return confirm('Bu çalışanı silmek istediğinize emin misiniz?');">
-                                @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-sm btn-outline-danger">Sil</button>
-                            </form>
+                            @if (canManage)
+                            {
+                                <a asp-action="Edit" asp-route-id="@employee.Id" class="btn btn-sm btn-outline-secondary">Düzenle</a>
+                                <form asp-action="Delete" asp-route-id="@employee.Id" method="post" class="d-inline"
+                                      onsubmit="return confirm('Bu çalışanı silmek istediğinize emin misiniz?');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Sil</button>
+                                </form>
+                            }
                         </td>
                     </tr>
                 }
                 @if (!Model.Any())
                 {
                     <tr>
-                        <td colspan="7" class="text-center text-muted py-4">Henüz çalışan kaydı yok.</td>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            @(canManage ? "Henüz çalışan kaydı yok." : "Size bağlı bir ekip üyesi bulunmuyor.")
+                        </td>
                     </tr>
                 }
             </tbody>

@@ -28,6 +28,9 @@ public static class DependencyInjection
         // handler'ları paylaşır ("onaylayabilen reddedebilir" simetrisi tek yerde).
         services.AddScoped<LeaveApprovalGuard>();
 
+        // "Kim hangi çalışanı görebilir" kuralı — liste ve detay sorguları paylaşır.
+        services.AddScoped<Features.Employees.Shared.EmployeeVisibility>();
+
         return services;
     }
 }

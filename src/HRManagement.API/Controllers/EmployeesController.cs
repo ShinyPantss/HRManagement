@@ -5,7 +5,9 @@ using HRManagement.Application.Features.Employees.Commands.DeleteEmployee;
 using HRManagement.Application.Features.Employees.Commands.UpdateEmployee;
 using HRManagement.Application.Features.Employees.Queries.GetAllEmployees;
 using HRManagement.Application.Features.Employees.Queries.GetEmployeeById;
+using System.Security.Claims;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HRManagement.API.Controllers;
@@ -21,10 +23,12 @@ public class EmployeesController : ControllerBase
         _mediator = mediator;
     }
 
+    // Liste herkese açıktır ama İÇERİĞİ role göre daralır:
+    // Admin/HR hepsini, Manager yalnızca ekibini, Employee yalnızca kendini görür.
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var employees = await _mediator.Send(new GetAllEmployeesQuery());
+        var employees = await _mediator.Send(new GetAllEmployeesQuery(CurrentUserId()));
         var data = employees.Select(ToResponse).ToList();
         return Ok(BaseResponse<List<EmployeeResponse>>.Success(data));
     }
@@ -32,7 +36,7 @@ public class EmployeesController : ControllerBase
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {
-        var e = await _mediator.Send(new GetEmployeeByIdQuery(id));
+        var e = await _mediator.Send(new GetEmployeeByIdQuery(id, CurrentUserId()));
 
         if (e is null)
             return NotFound(BaseResponse<EmployeeResponse>.Fail("Çalışan bulunamadı."));
@@ -40,6 +44,8 @@ public class EmployeesController : ControllerBase
         return Ok(BaseResponse<EmployeeResponse>.Success(ToResponse(e)));
     }
 
+    // Çalışan kaydı açmak/değiştirmek/silmek İK işidir; Manager yapamaz.
+    [Authorize(Roles = "HR,Admin")]
     [HttpPost]
     public async Task<IActionResult> Create(CreateEmployeeRequest request)
     {
@@ -51,6 +57,7 @@ public class EmployeesController : ControllerBase
             BaseResponse<int>.Success(id, "Çalışan oluşturuldu."));
     }
 
+    [Authorize(Roles = "HR,Admin")]
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, UpdateEmployeeRequest request)
     {
@@ -62,12 +69,17 @@ public class EmployeesController : ControllerBase
         return Ok(BaseResponse<int>.Success(id, "Çalışan güncellendi."));
     }
 
+    [Authorize(Roles = "HR,Admin")]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {
         await _mediator.Send(new DeleteEmployeeCommand(id));
         return Ok(BaseResponse<int>.Success(id, "Çalışan silindi."));
     }
+
+    /// <summary>Kimlik daima imzalı token'dan okunur, istek gövdesinden asla.</summary>
+    private int CurrentUserId() =>
+        int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     private static EmployeeResponse ToResponse(HRManagement.Application.DTOs.EmployeeDto e) => new(
         e.Id, e.FirstName, e.LastName, e.NationalId, e.Email, e.Phone,

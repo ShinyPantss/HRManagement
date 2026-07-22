@@ -1,6 +1,7 @@
 using HRManagement.WebUI.Models.Api.Employees;
 using HRManagement.WebUI.Models.Employees;
 using HRManagement.WebUI.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
@@ -35,6 +36,8 @@ public class EmployeesController : Controller
         return View(response.Data ?? new List<EmployeeResponse>());
     }
 
+    // Çalışan kaydı açmak/değiştirmek/silmek İK işidir; Yönetici yalnızca görür.
+    [Authorize(Roles = "HR,Admin")]
     public async Task<IActionResult> Create()
     {
         var form = new EmployeeFormViewModel { IsActive = true };
@@ -43,6 +46,7 @@ public class EmployeesController : Controller
     }
 
     [HttpPost]
+    [Authorize(Roles = "HR,Admin")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(EmployeeFormViewModel form)
     {
@@ -83,6 +87,7 @@ public class EmployeesController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    [Authorize(Roles = "HR,Admin")]
     public async Task<IActionResult> Edit(int id)
     {
         var response = await _employeeApi.GetByIdAsync(id);
@@ -116,6 +121,7 @@ public class EmployeesController : Controller
     }
 
     [HttpPost]
+    [Authorize(Roles = "HR,Admin")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(EmployeeFormViewModel form)
     {
@@ -154,6 +160,7 @@ public class EmployeesController : Controller
     }
 
     [HttpPost]
+    [Authorize(Roles = "HR,Admin")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {

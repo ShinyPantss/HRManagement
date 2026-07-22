@@ -134,6 +134,34 @@ public class EmployeeRepository : IEmployeeRepository
         return await connection.QueryFirstOrDefaultAsync<Employee>(sql, new { Email = email });
     }
 
+    public async Task<IEnumerable<Employee>> GetTeamAsync(int managerEmployeeId)
+    {
+        // Zinciri AŞAĞI yürüten özyinelemeli CTE: önce doğrudan astlar, sonra
+        // onların astları... Depth < 32 döngü/aşırı derinlik sigortasıdır
+        // (IsInManagerChainAsync ile aynı gerekçe, ters yön).
+        const string sql = @"
+            WITH Team AS
+            (
+                SELECT Id, 1 AS Depth
+                FROM Employees
+                WHERE ManagerId = @ManagerId
+
+                UNION ALL
+
+                SELECT e.Id, t.Depth + 1
+                FROM Employees e
+                JOIN Team t ON e.ManagerId = t.Id
+                WHERE t.Depth < 32
+            )
+            SELECT em.*
+            FROM Employees em
+            JOIN Team t ON t.Id = em.Id;";
+
+        using var connection = _connectionFactory.CreateConnection();
+
+        return await connection.QueryAsync<Employee>(sql, new { ManagerId = managerEmployeeId });
+    }
+
     public async Task<bool> IsInManagerChainAsync(int managerEmployeeId, int subordinateEmployeeId)
     {
         // Asttan başlayıp ManagerId'leri yukarı doğru izleyen özyinelemeli CTE.
