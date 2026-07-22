@@ -30,5 +30,18 @@ public sealed class UpdateEmployeeCommandValidator : AbstractValidator<UpdateEmp
         RuleFor(command => command.HireDate)
             .GreaterThanOrEqualTo(command => command.BirthDate)
             .WithMessage("İşe giriş tarihi doğum tarihinden önce olamaz.");
+
+        // Opsiyonel alanlar: boş bırakılabilir, ama DOLU geldiyse anlamlı olmalı.
+        RuleFor(command => command.UserId)
+            .GreaterThan(0).When(command => command.UserId.HasValue)
+            .WithMessage("Geçerli bir kullanıcı hesabı seçilmelidir.");
+
+        RuleFor(command => command.ManagerId)
+            .GreaterThan(0).When(command => command.ManagerId.HasValue)
+            .WithMessage("Geçerli bir yönetici seçilmelidir.");
+
+        RuleFor(command => command.AnnualLeaveDays)
+            .GreaterThanOrEqualTo(0).When(command => command.AnnualLeaveDays.HasValue)
+            .WithMessage("Yıllık izin günü negatif olamaz.");
     }
 }

@@ -57,7 +57,8 @@ public class UserRepository : IUserRepository
             UPDATE Users SET
                 Email = @Email,
                 Role = @Role,
-                IsActive = @IsActive
+                IsActive = @IsActive,
+                UpdatedAt = SYSUTCDATETIME()
             WHERE Id = @Id";
         using var connection = _connectionFactory.CreateConnection();
         await connection.ExecuteAsync(sql, user);

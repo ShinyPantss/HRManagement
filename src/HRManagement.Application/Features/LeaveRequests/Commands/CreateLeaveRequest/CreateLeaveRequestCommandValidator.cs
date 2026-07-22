@@ -13,8 +13,9 @@ public sealed class CreateLeaveRequestCommandValidator : AbstractValidator<Creat
 {
     public CreateLeaveRequestCommandValidator()
     {
-        RuleFor(command => command.EmployeeId)
-            .GreaterThan(0).WithMessage("Çalışan seçilmelidir.");
+        // Claim'den gelir; 0/negatifse token çözümünde bir şeyler ters gitmiştir.
+        RuleFor(command => command.RequesterUserId)
+            .GreaterThan(0).WithMessage("Talep sahibi belirlenemedi.");
 
         RuleFor(command => command.Type)
             .IsInEnum().WithMessage("Geçerli bir izin türü seçilmelidir.");

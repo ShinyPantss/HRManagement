@@ -14,4 +14,20 @@ public interface IEmployeeRepository
     // yerine "var mı?" sorusunu veritabanına sorarız: ilk eşleşmede durur.
     Task<bool> ExistsByDepartmentIdAsync(int departmentId);
     Task<bool> ExistsByUserIdAsync(int userId);
+    Task<bool> ExistsByManagerIdAsync(int managerId);
+
+    /// <summary>
+    /// User ↔ Employee köprüsü: giriş yapan hesabın çalışan kaydını bulur.
+    /// Yetki kararları bu metotla DB'den çözülür (JWT claim'i bayatlayabilir).
+    /// </summary>
+    Task<Employee?> GetByUserIdAsync(int userId);
+
+    /// <summary>E-posta benzersizliği iş kuralı için (DB'deki UNIQUE kısıtın ön kontrolü).</summary>
+    Task<Employee?> GetByEmailAsync(string email);
+
+    /// <summary>
+    /// "managerEmployeeId, subordinateEmployeeId'nin yönetici zincirinde YUKARIDA mı?"
+    /// İzin onayı yetkisi ve döngü önleme (çalışan kendi astına bağlanamaz) bunu kullanır.
+    /// </summary>
+    Task<bool> IsInManagerChainAsync(int managerEmployeeId, int subordinateEmployeeId);
 }

@@ -6,15 +6,14 @@ namespace HRManagement.WebUI.Models.LeaveRequests;
 /// <summary>
 /// İzin talebi oluşturma formunun ekran modeli. API modelinden ayrıdır:
 /// burada görüntü validasyonu, etiketler ve dropdown seçenekleri yaşar.
-/// Çalışan ve tarih alanları nullable — böylece "boş bırakıldı" ile
-/// "0 / 01.01.0001 girildi" birbirine karışmaz ve [Required] gerçekten çalışır.
+/// Tarih alanları nullable — böylece "boş bırakıldı" ile "01.01.0001 girildi"
+/// birbirine karışmaz ve [Required] gerçekten çalışır.
+///
+/// Çalışan SEÇİMİ YOK: talep her zaman giriş yapan kişinin kendisi içindir
+/// (§5.3.1); kimlik API tarafında JWT'den çözülür.
 /// </summary>
 public class LeaveRequestFormViewModel
 {
-    [Required(ErrorMessage = "Çalışan seçimi zorunludur.")]
-    [Display(Name = "Çalışan")]
-    public int? EmployeeId { get; set; }
-
     [Required(ErrorMessage = "İzin türü zorunludur.")]
     [Range(1, 3, ErrorMessage = "Geçerli bir izin türü seçiniz.")]
     [Display(Name = "İzin Türü")]
@@ -32,12 +31,6 @@ public class LeaveRequestFormViewModel
 
     [Display(Name = "Açıklama")]
     public string? Description { get; set; }
-
-    /// <summary>
-    /// Çalışan dropdown'ının seçenekleri. Form her View'a dönmeden önce
-    /// controller tarafından doldurulur; aksi halde liste boş görünür.
-    /// </summary>
-    public IEnumerable<SelectListItem> EmployeeOptions { get; set; } = [];
 
     /// <summary>İzin türü seçenekleri: 1=Yıllık İzin, 2=Ücretsiz İzin, 3=Hastalık İzni.</summary>
     public IEnumerable<SelectListItem> TypeOptions { get; set; } = [];

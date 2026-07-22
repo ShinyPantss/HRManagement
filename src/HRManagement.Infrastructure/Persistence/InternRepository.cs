@@ -51,7 +51,8 @@ public class InternRepository : IInternRepository
                 EndDate = @EndDate,
                 MentorId = @MentorId,
                 DepartmentId = @DepartmentId,
-                UserId = @UserId
+                UserId = @UserId,
+                UpdatedAt = SYSUTCDATETIME()
             WHERE Id = @Id";
         using var connection = _connectionFactory.CreateConnection();
         await connection.ExecuteAsync(sql, intern);
@@ -92,5 +93,12 @@ public class InternRepository : IInternRepository
             THEN 1 ELSE 0 END";
         using var connection = _connectionFactory.CreateConnection();
         return await connection.ExecuteScalarAsync<bool>(sql, new { UserId = userId });
+    }
+
+    public async Task<Intern?> GetByUserIdAsync(int userId)
+    {
+        const string sql = "SELECT * FROM Interns WHERE UserId = @UserId";
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.QueryFirstOrDefaultAsync<Intern>(sql, new { UserId = userId });
     }
 }

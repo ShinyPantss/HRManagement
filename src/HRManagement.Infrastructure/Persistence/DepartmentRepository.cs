@@ -42,7 +42,8 @@ public class DepartmentRepository : IDepartmentRepository
         const string sql = @"
             UPDATE Departments SET
                 Name = @Name,
-                Description = @Description
+                Description = @Description,
+                UpdatedAt = SYSUTCDATETIME()
             WHERE Id = @Id";
         using var connection = _connectionFactory.CreateConnection();
         await connection.ExecuteAsync(sql, department);

@@ -38,7 +38,7 @@ public class EmployeesController : Controller
     public async Task<IActionResult> Create()
     {
         var form = new EmployeeFormViewModel { IsActive = true };
-        await FillDepartmentOptionsAsync(form);
+        await FillOptionsAsync(form);
         return View(form);
     }
 
@@ -48,9 +48,9 @@ public class EmployeesController : Controller
     {
         if (!ModelState.IsValid)
         {
-            // Form geri gösterilecekse dropdown'ı yeniden doldurmalıyız;
+            // Form geri gösterilecekse dropdown'lar yeniden doldurulmalı;
             // seçenekler post gövdesiyle geri gelmez.
-            await FillDepartmentOptionsAsync(form);
+            await FillOptionsAsync(form);
             return View(form);
         }
 
@@ -65,14 +65,17 @@ public class EmployeesController : Controller
             BirthDate = form.BirthDate!.Value,
             HireDate = form.HireDate!.Value,
             Position = form.Position,
-            DepartmentId = form.DepartmentId!.Value
+            DepartmentId = form.DepartmentId!.Value,
+            UserId = form.UserId,
+            ManagerId = form.ManagerId,
+            AnnualLeaveDays = form.AnnualLeaveDays
         });
 
         if (!response.IsSuccess)
         {
             // API'nin iş kuralı reddetti — mesajı forma yansıt.
             ModelState.AddModelError(string.Empty, response.Message ?? "İşlem başarısız.");
-            await FillDepartmentOptionsAsync(form);
+            await FillOptionsAsync(form);
             return View(form);
         }
 
@@ -102,10 +105,13 @@ public class EmployeesController : Controller
             HireDate = response.Data.HireDate,
             Position = response.Data.Position,
             DepartmentId = response.Data.DepartmentId,
+            UserId = response.Data.UserId,
+            ManagerId = response.Data.ManagerId,
+            AnnualLeaveDays = response.Data.AnnualLeaveDays,
             IsActive = response.Data.IsActive
         };
 
-        await FillDepartmentOptionsAsync(form);
+        await FillOptionsAsync(form);
         return View(form);
     }
 
@@ -115,7 +121,7 @@ public class EmployeesController : Controller
     {
         if (!ModelState.IsValid)
         {
-            await FillDepartmentOptionsAsync(form);
+            await FillOptionsAsync(form);
             return View(form);
         }
 
@@ -130,13 +136,16 @@ public class EmployeesController : Controller
             HireDate = form.HireDate!.Value,
             Position = form.Position,
             DepartmentId = form.DepartmentId!.Value,
+            UserId = form.UserId,
+            ManagerId = form.ManagerId,
+            AnnualLeaveDays = form.AnnualLeaveDays,
             IsActive = form.IsActive
         });
 
         if (!response.IsSuccess)
         {
             ModelState.AddModelError(string.Empty, response.Message ?? "İşlem başarısız.");
-            await FillDepartmentOptionsAsync(form);
+            await FillOptionsAsync(form);
             return View(form);
         }
 
@@ -159,27 +168,37 @@ public class EmployeesController : Controller
     }
 
     /// <summary>
-    /// Departman dropdown'ının seçeneklerini API'den doldurur.
-    /// Form her View'a dönüşünde çağrılmalı — aksi halde liste boş kalır.
+    /// Departman ve yönetici dropdown seçeneklerini API'den doldurur.
+    /// Form her View'a dönüşünde çağrılmalı — aksi halde listeler boş kalır.
     /// </summary>
-    private async Task FillDepartmentOptionsAsync(EmployeeFormViewModel form)
+    private async Task FillOptionsAsync(EmployeeFormViewModel form)
     {
-        var response = await _departmentApi.GetAllAsync();
+        var departments = await _departmentApi.GetAllAsync();
 
-        if (!response.IsSuccess || response.Data is null)
+        if (!departments.IsSuccess || departments.Data is null)
         {
             // Dropdown doldurulamadı; sayfayı patlatmak yerine kullanıcıyı uyarıyoruz.
-            TempData["Error"] = response.Message ?? "Departman listesi alınamadı.";
+            TempData["Error"] = departments.Message ?? "Departman listesi alınamadı.";
             form.DepartmentOptions = [];
-            return;
+        }
+        else
+        {
+            form.DepartmentOptions = departments.Data
+                .Select(department => new SelectListItem
+                {
+                    Text = department.Name,
+                    Value = department.Id.ToString()
+                })
+                .ToList();
         }
 
-        form.DepartmentOptions = response.Data
-            .Select(department => new SelectListItem
-            {
-                Text = department.Name,
-                Value = department.Id.ToString()
-            })
+        // Yönetici adayları = mevcut çalışanlar; düzenlemede kişinin kendisi
+        // listelenmez (kendi yöneticisi olamaz — API de ayrıca reddeder).
+        var employees = await _employeeApi.GetAllAsync();
+
+        form.ManagerOptions = (employees.Data ?? [])
+            .Where(e => e.Id != form.Id)
+            .Select(e => new SelectListItem($"{e.FirstName} {e.LastName}", e.Id.ToString()))
             .ToList();
     }
 }

@@ -23,9 +23,10 @@ public class LeaveRequestResponse
 }
 
 // Oluştururken tür sayısal gönderilir: 1=Yıllık, 2=Ücretsiz, 3=Hastalık.
+// EmployeeId YOK: talep her zaman giriş yapan hesap için açılır; API kimliği
+// JWT'den çözer (gövdeden kimlik almak istemcinin yalan söyleyebilmesi demektir).
 public class CreateLeaveRequestRequest
 {
-    public int EmployeeId { get; set; }
     public int Type { get; set; }
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }

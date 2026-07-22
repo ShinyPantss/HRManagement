@@ -47,13 +47,11 @@ public class LeaveRequestsController : Controller
         return View(model);
     }
 
-    public async Task<IActionResult> Create()
+    public IActionResult Create()
     {
-        var form = new LeaveRequestFormViewModel
-        {
-            EmployeeOptions = await GetEmployeeOptionsAsync(),
-            TypeOptions = GetTypeOptions()
-        };
+        // Çalışan seçimi yok: talep, giriş yapan hesabın kendisi için açılır;
+        // kimliği API, JWT claim'inden çözer.
+        var form = new LeaveRequestFormViewModel { TypeOptions = GetTypeOptions() };
 
         return View(form);
     }
@@ -63,12 +61,11 @@ public class LeaveRequestsController : Controller
     public async Task<IActionResult> Create(LeaveRequestFormViewModel form)
     {
         if (!ModelState.IsValid)
-            return View(await FillOptionsAsync(form));
+            return View(FillOptions(form));
 
         var response = await _leaveRequestApi.CreateAsync(new CreateLeaveRequestRequest
         {
             // ModelState geçerliyse [Required] alanlar dolu; bu yüzden .Value güvenli.
-            EmployeeId = form.EmployeeId!.Value,
             Type = form.Type,
             StartDate = form.StartDate!.Value,
             EndDate = form.EndDate!.Value,
@@ -79,11 +76,11 @@ public class LeaveRequestsController : Controller
         {
             // API'nin iş kuralı reddetti (hak yetersiz, tarih çakışması vb.) — mesajı forma yansıt.
             ModelState.AddModelError(string.Empty, response.Message ?? "İşlem başarısız.");
-            return View(await FillOptionsAsync(form));
+            return View(FillOptions(form));
         }
 
         TempData["Success"] = response.Message ?? "İzin talebi oluşturuldu.";
-        return RedirectToAction(nameof(Index), new { employeeId = form.EmployeeId });
+        return RedirectToAction(nameof(Index));
     }
 
     [HttpPost]
@@ -132,12 +129,11 @@ public class LeaveRequestsController : Controller
     }
 
     /// <summary>
-    /// Form View'a geri dönerken dropdown'lar TEKRAR doldurulmalı:
+    /// Form View'a geri dönerken dropdown TEKRAR doldurulmalı:
     /// POST gövdesinde seçenek listeleri gelmez, sadece seçilen değerler gelir.
     /// </summary>
-    private async Task<LeaveRequestFormViewModel> FillOptionsAsync(LeaveRequestFormViewModel form)
+    private static LeaveRequestFormViewModel FillOptions(LeaveRequestFormViewModel form)
     {
-        form.EmployeeOptions = await GetEmployeeOptionsAsync();
         form.TypeOptions = GetTypeOptions();
         return form;
     }

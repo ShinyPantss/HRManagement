@@ -21,6 +21,9 @@ public static class EmployeeMapping
         HireDate = employee.HireDate,
         Position = employee.Position,
         DepartmentId = employee.DepartmentId,
+        UserId = employee.UserId,
+        ManagerId = employee.ManagerId,
+        AnnualLeaveDays = employee.AnnualLeaveDays,
         IsActive = employee.IsActive
     };
 }

@@ -12,5 +12,8 @@ public class EmployeeDto
     public DateTime HireDate { get; set; }
     public string Position { get; set; } = string.Empty;
     public int DepartmentId { get; set; }
+    public int? UserId { get; set; }
+    public int? ManagerId { get; set; }
+    public int? AnnualLeaveDays { get; set; }
     public bool IsActive { get; set; }
 }

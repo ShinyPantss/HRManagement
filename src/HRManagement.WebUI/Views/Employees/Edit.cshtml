@@ -79,7 +79,31 @@
                     <span asp-validation-for="DepartmentId" class="text-danger small"></span>
                 </div>
 
-                <div class="col-md-6 mb-3 d-flex align-items-end">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="ManagerId" class="form-label"></label>
+                    <select asp-for="ManagerId" asp-items="Model.ManagerOptions" class="form-select">
+                        <option value="">Yok (zincirin tepesi)</option>
+                    </select>
+                    <span asp-validation-for="ManagerId" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="UserId" class="form-label"></label>
+                    <input asp-for="UserId" type="number" class="form-control" />
+                    <span asp-validation-for="UserId" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label asp-for="AnnualLeaveDays" class="form-label"></label>
+                    <input asp-for="AnnualLeaveDays" type="number" class="form-control" />
+                    <span asp-validation-for="AnnualLeaveDays" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
                     <div class="form-check">
                         <input asp-for="IsActive" class="form-check-input" />
                         <label asp-for="IsActive" class="form-check-label"></label>

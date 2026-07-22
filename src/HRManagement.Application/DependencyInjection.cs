@@ -1,5 +1,6 @@
 using FluentValidation;
 using HRManagement.Application.Behaviors;
+using HRManagement.Application.Features.LeaveRequests.Shared;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace HRManagement.Application;
@@ -22,6 +23,10 @@ public static class DependencyInjection
 
         // AbstractValidator'dan türeyen tüm validator'lar otomatik kaydedilir.
         services.AddValidatorsFromAssembly(assembly);
+
+        // İki aşamalı izin onayının ortak yetki kuralları — Approve ve Reject
+        // handler'ları paylaşır ("onaylayabilen reddedebilir" simetrisi tek yerde).
+        services.AddScoped<LeaveApprovalGuard>();
 
         return services;
     }

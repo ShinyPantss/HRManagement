@@ -3,7 +3,8 @@ using MediatR;
 namespace HRManagement.Application.Features.LeaveRequests.Commands.RejectLeaveRequest;
 
 /// <summary>
-/// "İzin talebini reddet" isteği. Reason opsiyoneldir; verilirse kayda
-/// RejectionReason olarak yazılır. IRequest&lt;Unit&gt;: geriye değer dönmez.
+/// "İzin talebini reddet" isteği. Reddetme HER İKİ aşamada da mümkündür;
+/// yetki kuralı o aşamada onaylayabilecek kişiyle aynıdır (LeaveApprovalGuard).
+/// Reason opsiyoneldir; verilirse kayda RejectionReason olarak yazılır.
 /// </summary>
-public sealed record RejectLeaveRequestCommand(int Id, string? Reason) : IRequest<Unit>;
+public sealed record RejectLeaveRequestCommand(int Id, int ApproverUserId, string? Reason) : IRequest<Unit>;

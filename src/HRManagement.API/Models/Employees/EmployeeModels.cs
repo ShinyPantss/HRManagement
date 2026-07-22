@@ -1,5 +1,9 @@
 namespace HRManagement.API.Models.Employees;
 
+// UserId          → giriş hesabıyla ilişkilendirme (5.2; sonradan da bağlanabilir)
+// ManagerId       → bağlı olduğu yönetici; izin onay zinciri buradan kurulur
+// AnnualLeaveDays → izin hakkını elle ezme; normalde null (kıdemden hesaplanır)
+
 public sealed class CreateEmployeeRequest
 {
     public CreateEmployeeRequest(
@@ -11,7 +15,10 @@ public sealed class CreateEmployeeRequest
         DateTime birthDate,
         DateTime hireDate,
         string position,
-        int departmentId)
+        int departmentId,
+        int? userId,
+        int? managerId,
+        int? annualLeaveDays)
     {
         FirstName = firstName;
         LastName = lastName;
@@ -22,6 +29,9 @@ public sealed class CreateEmployeeRequest
         HireDate = hireDate;
         Position = position;
         DepartmentId = departmentId;
+        UserId = userId;
+        ManagerId = managerId;
+        AnnualLeaveDays = annualLeaveDays;
     }
 
     public string FirstName { get; }
@@ -33,6 +43,9 @@ public sealed class CreateEmployeeRequest
     public DateTime HireDate { get; }
     public string Position { get; }
     public int DepartmentId { get; }
+    public int? UserId { get; }
+    public int? ManagerId { get; }
+    public int? AnnualLeaveDays { get; }
 }
 
 public sealed class UpdateEmployeeRequest
@@ -47,6 +60,9 @@ public sealed class UpdateEmployeeRequest
         DateTime hireDate,
         string position,
         int departmentId,
+        int? userId,
+        int? managerId,
+        int? annualLeaveDays,
         bool isActive)
     {
         FirstName = firstName;
@@ -58,6 +74,9 @@ public sealed class UpdateEmployeeRequest
         HireDate = hireDate;
         Position = position;
         DepartmentId = departmentId;
+        UserId = userId;
+        ManagerId = managerId;
+        AnnualLeaveDays = annualLeaveDays;
         IsActive = isActive;
     }
 
@@ -70,6 +89,9 @@ public sealed class UpdateEmployeeRequest
     public DateTime HireDate { get; }
     public string Position { get; }
     public int DepartmentId { get; }
+    public int? UserId { get; }
+    public int? ManagerId { get; }
+    public int? AnnualLeaveDays { get; }
     public bool IsActive { get; }
 }
 
@@ -86,6 +108,9 @@ public sealed class EmployeeResponse
         DateTime hireDate,
         string position,
         int departmentId,
+        int? userId,
+        int? managerId,
+        int? annualLeaveDays,
         bool isActive)
     {
         Id = id;
@@ -98,6 +123,9 @@ public sealed class EmployeeResponse
         HireDate = hireDate;
         Position = position;
         DepartmentId = departmentId;
+        UserId = userId;
+        ManagerId = managerId;
+        AnnualLeaveDays = annualLeaveDays;
         IsActive = isActive;
     }
 
@@ -111,5 +139,8 @@ public sealed class EmployeeResponse
     public DateTime HireDate { get; }
     public string Position { get; }
     public int DepartmentId { get; }
+    public int? UserId { get; }
+    public int? ManagerId { get; }
+    public int? AnnualLeaveDays { get; }
     public bool IsActive { get; }
 }

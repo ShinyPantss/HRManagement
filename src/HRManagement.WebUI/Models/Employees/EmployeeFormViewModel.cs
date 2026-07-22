@@ -50,6 +50,16 @@ public class EmployeeFormViewModel
     [Display(Name = "Departman")]
     public int? DepartmentId { get; set; }
 
+    [Display(Name = "Yönetici (opsiyonel)")]
+    public int? ManagerId { get; set; }
+
+    [Display(Name = "Kullanıcı Hesabı Id (opsiyonel)")]
+    public int? UserId { get; set; }
+
+    [Range(0, 365, ErrorMessage = "Yıllık izin günü 0-365 arasında olmalıdır.")]
+    [Display(Name = "Yıllık İzin Günü (boşsa kıdemden hesaplanır)")]
+    public int? AnnualLeaveDays { get; set; }
+
     [Display(Name = "Aktif")]
     public bool IsActive { get; set; }
 
@@ -58,4 +68,7 @@ public class EmployeeFormViewModel
     /// controller tarafından doldurulur; aksi halde liste boş görünür.
     /// </summary>
     public IEnumerable<SelectListItem> DepartmentOptions { get; set; } = [];
+
+    /// <summary>Yönetici dropdown'ı: mevcut çalışanlar (düzenlemede kişinin kendisi hariç).</summary>
+    public IEnumerable<SelectListItem> ManagerOptions { get; set; } = [];
 }

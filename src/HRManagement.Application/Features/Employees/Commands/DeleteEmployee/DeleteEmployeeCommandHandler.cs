@@ -37,6 +37,11 @@ public sealed class DeleteEmployeeCommandHandler : IRequestHandler<DeleteEmploye
             throw new ValidationException(
                 "Bu çalışan bir veya daha fazla stajyerin mentoru. Önce stajyerlere yeni mentor atayın.");
 
+        // ManagerId self-FK'sı: astı olan çalışan silinirse FK ihlali → 500 olurdu.
+        if (await _employeeRepository.ExistsByManagerIdAsync(request.Id))
+            throw new ValidationException(
+                "Bu çalışana bağlı ekip üyeleri var. Önce onları başka bir yöneticiye bağlayın.");
+
         await _employeeRepository.DeleteAsync(request.Id);
 
         return Unit.Value;

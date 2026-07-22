@@ -45,7 +45,8 @@ public class EmployeesController : ControllerBase
     {
         var id = await _mediator.Send(new CreateEmployeeCommand(
             request.FirstName, request.LastName, request.NationalId, request.Email,
-            request.Phone, request.BirthDate, request.HireDate, request.Position, request.DepartmentId));
+            request.Phone, request.BirthDate, request.HireDate, request.Position,
+            request.DepartmentId, request.UserId, request.ManagerId, request.AnnualLeaveDays));
         return CreatedAtAction(nameof(GetById), new { id },
             BaseResponse<int>.Success(id, "Çalışan oluşturuldu."));
     }
@@ -56,7 +57,8 @@ public class EmployeesController : ControllerBase
         await _mediator.Send(new UpdateEmployeeCommand(
             id, request.FirstName, request.LastName, request.NationalId, request.Email,
             request.Phone, request.BirthDate, request.HireDate, request.Position,
-            request.DepartmentId, request.IsActive));
+            request.DepartmentId, request.UserId, request.ManagerId, request.AnnualLeaveDays,
+            request.IsActive));
         return Ok(BaseResponse<int>.Success(id, "Çalışan güncellendi."));
     }
 
@@ -69,5 +71,6 @@ public class EmployeesController : ControllerBase
 
     private static EmployeeResponse ToResponse(HRManagement.Application.DTOs.EmployeeDto e) => new(
         e.Id, e.FirstName, e.LastName, e.NationalId, e.Email, e.Phone,
-        e.BirthDate, e.HireDate, e.Position, e.DepartmentId, e.IsActive);
+        e.BirthDate, e.HireDate, e.Position, e.DepartmentId,
+        e.UserId, e.ManagerId, e.AnnualLeaveDays, e.IsActive);
 }

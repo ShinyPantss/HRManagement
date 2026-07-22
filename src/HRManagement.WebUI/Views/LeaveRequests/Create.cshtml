@@ -5,21 +5,13 @@
 
 <div class="page-head">
     <h1>Yeni İzin Talebi</h1>
-    <p class="text-muted mb-0">Çalışan, izin türü ve tarih aralığı zorunludur.</p>
+    <p class="text-muted mb-0">Talep, giriş yaptığınız hesap adına oluşturulur. İzin türü ve tarih aralığı zorunludur.</p>
 </div>
 
 <div class="panel mt-3" style="max-width: 640px;">
     <div class="panel-body">
         <form asp-action="Create" method="post" novalidate>
             <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
-
-            <div class="mb-3">
-                <label asp-for="EmployeeId" class="form-label"></label>
-                <select asp-for="EmployeeId" asp-items="Model.EmployeeOptions" class="form-select">
-                    <option value="">Çalışan seçiniz</option>
-                </select>
-                <span asp-validation-for="EmployeeId" class="text-danger small"></span>
-            </div>
 
             <div class="mb-3">
                 <label asp-for="Type" class="form-label"></label>

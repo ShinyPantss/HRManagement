@@ -13,6 +13,9 @@ public sealed class RejectLeaveRequestCommandValidator : AbstractValidator<Rejec
         RuleFor(command => command.Id)
             .GreaterThan(0).WithMessage("Geçerli bir izin talebi seçilmelidir.");
 
+        RuleFor(command => command.ApproverUserId)
+            .GreaterThan(0).WithMessage("Reddeden belirlenemedi.");
+
         // Reason opsiyoneldir (boş bırakılabilir); sadece uzunluğu sınırlanır.
         RuleFor(command => command.Reason)
             .MaximumLength(500).WithMessage("Red gerekçesi en fazla 500 karakter olabilir.");

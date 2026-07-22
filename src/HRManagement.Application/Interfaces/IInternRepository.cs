@@ -14,4 +14,7 @@ public interface IInternRepository
     Task<bool> ExistsByDepartmentIdAsync(int departmentId);
     Task<bool> ExistsByMentorIdAsync(int mentorId);
     Task<bool> ExistsByUserIdAsync(int userId);
+
+    /// <summary>User ↔ Intern köprüsü: giriş yapan hesabın stajyer kaydını bulur.</summary>
+    Task<Intern?> GetByUserIdAsync(int userId);
 }

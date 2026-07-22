@@ -1,23 +1,22 @@
 namespace HRManagement.API.Models.LeaveRequests;
 
 // Type: izin türü (1=Yıllık, 2=Ücretsiz, 3=Hastalık) — istemci int gönderir.
+// EmployeeId YOK: talep her zaman giriş yapan hesabın kendisi için açılır;
+// kimlik istek gövdesinden değil, imzalı JWT claim'inden okunur.
 public sealed class CreateLeaveRequestRequest
 {
     public CreateLeaveRequestRequest(
-        int employeeId,
         int type,
         DateTime startDate,
         DateTime endDate,
         string? description)
     {
-        EmployeeId = employeeId;
         Type = type;
         StartDate = startDate;
         EndDate = endDate;
         Description = description;
     }
 
-    public int EmployeeId { get; }
     public int Type { get; }
     public DateTime StartDate { get; }
     public DateTime EndDate { get; }

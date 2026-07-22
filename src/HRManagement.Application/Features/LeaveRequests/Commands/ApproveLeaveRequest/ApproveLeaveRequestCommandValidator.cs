@@ -13,5 +13,9 @@ public sealed class ApproveLeaveRequestCommandValidator : AbstractValidator<Appr
     {
         RuleFor(command => command.Id)
             .GreaterThan(0).WithMessage("Geçerli bir izin talebi seçilmelidir.");
+
+        // Claim'den gelir; 0/negatifse token çözümünde bir şeyler ters gitmiştir.
+        RuleFor(command => command.ApproverUserId)
+            .GreaterThan(0).WithMessage("Onaylayan belirlenemedi.");
     }
 }
