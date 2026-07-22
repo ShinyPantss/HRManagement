@@ -60,6 +60,14 @@ tests/
 - Hata yanıtları da AYNI zarfı kullanır (ProblemDetails KULLANILMIYOR): ValidationException
   → 400 + BaseResponse.Fail, beklenmeyen → 500 + BaseResponse.Fail, bulunamadı → 404 +
   BaseResponse.Fail. Tek format sayesinde istemci (Refit) tek tip deserialize eder.
+- Zarfın DELİKSİZ olması üç mekanizmayla sağlanır, üçü de sökülmemeli:
+  (1) GlobalExceptionHandler — exception'lar; (2) ApiBehaviorOptions.InvalidModelStateResponseFactory —
+  [ApiController]'ın model binding hataları (yoksa ProblemDetails döner, handler'a hiç uğramaz);
+  (3) UseBaseResponseStatusCodes — 401/403/404 gibi GÖVDESİZ yanıtlar (yoksa Refit boş gövde okur).
+  AddProblemDetails() bilinçli olarak YOK; UseExceptionHandler'ın başlangıç kontrolü
+  ExceptionHandlerOptions.ExceptionHandler ile karşılanır.
+- API servis kayıtları API/DependencyInjection.cs'te (AddApiServices, AddApiAuthentication);
+  Program.cs yalnızca NE kurulduğunu ve middleware sırasını gösterir.
 - Controller incedir: API/Models altındaki request'i Command/Query'ye çevirir, ISender.Send
   eder, sonucu API/Models response'una çevirip döner. İş mantığı controller'a yazılmaz.
 - Domain entity'si veya Application Command/Query tipi response'a sızmaz.
