@@ -89,7 +89,8 @@ public sealed class InternResponse
         DateTime startDate,
         DateTime endDate,
         int? mentorId,
-        int departmentId)
+        int departmentId,
+        int? userId)
     {
         Id = id;
         FirstName = firstName;
@@ -102,6 +103,7 @@ public sealed class InternResponse
         EndDate = endDate;
         MentorId = mentorId;
         DepartmentId = departmentId;
+        UserId = userId;
     }
 
     public int Id { get; }
@@ -115,4 +117,5 @@ public sealed class InternResponse
     public DateTime EndDate { get; }
     public int? MentorId { get; }
     public int DepartmentId { get; }
+    public int? UserId { get; }
 }

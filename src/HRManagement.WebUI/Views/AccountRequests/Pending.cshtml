@@ -1,0 +1,55 @@
+@model List<HRManagement.WebUI.Models.Api.AccountRequests.AccountRequestResponse>
+@{
+    ViewData["Title"] = "Bekleyen Hesap Talepleri";
+}
+
+<div class="page-head">
+    <h1>Bekleyen Hesap Talepleri</h1>
+    <p class="text-muted mb-0">HR tarafından açılan talepleri onaylayın veya reddedin.</p>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="panel mt-3"><div class="panel-body text-muted">Bekleyen talep yok.</div></div>
+}
+else
+{
+    <div class="panel mt-3">
+        <div class="panel-body p-0">
+            <table class="table mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th>Kişi</th>
+                        <th>Tür</th>
+                        <th>Önerilen Rol</th>
+                        <th>Talep Eden</th>
+                        <th>Not</th>
+                        <th class="text-end">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model)
+                    {
+                        <tr>
+                            <td>@r.SubjectName</td>
+                            <td>@r.SubjectType</td>
+                            <td>@r.SuggestedRole</td>
+                            <td>@r.RequestedByUsername</td>
+                            <td class="text-muted small">@r.Note</td>
+                            <td class="text-end">
+                                <div class="d-flex gap-2 justify-content-end">
+                                    <a asp-action="Approve" asp-route-id="@r.Id" class="btn btn-sm btn-primary">Onayla</a>
+                                    <form asp-action="Reject" asp-route-id="@r.Id" method="post" class="d-inline"
+                                          onsubmit="return confirm('Bu talep reddedilsin mi?');">
+                                        <input type="hidden" name="reason" value="" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Reddet</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

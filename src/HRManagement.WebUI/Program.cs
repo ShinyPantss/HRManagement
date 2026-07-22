@@ -67,6 +67,10 @@ builder.Services.AddRefitClient<ILeaveRequestApi>(refitSettings)
     .ConfigureHttpClient(client => client.BaseAddress = new Uri(apiBaseUrl))
     .AddHttpMessageHandler<BearerTokenHandler>();
 
+builder.Services.AddRefitClient<IAccountRequestApi>(refitSettings)
+    .ConfigureHttpClient(client => client.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<BearerTokenHandler>();
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())

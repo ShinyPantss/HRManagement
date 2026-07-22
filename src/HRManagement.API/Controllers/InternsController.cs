@@ -71,5 +71,5 @@ public class InternsController : ControllerBase
 
     private static InternResponse ToResponse(InternDto i) => new(
         i.Id, i.FirstName, i.LastName, i.Email, i.University, i.Major,
-        i.Grade, i.StartDate, i.EndDate, i.MentorId, i.DepartmentId);
+        i.Grade, i.StartDate, i.EndDate, i.MentorId, i.DepartmentId, i.UserId);
 }

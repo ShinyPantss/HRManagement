@@ -13,4 +13,5 @@ public class InternDto
     public DateTime EndDate { get; set; }
     public int? MentorId { get; set; }
     public int DepartmentId { get; set; }
+    public int? UserId { get; set; }   // giriş hesabı bağı; null = hesabı yok
 }

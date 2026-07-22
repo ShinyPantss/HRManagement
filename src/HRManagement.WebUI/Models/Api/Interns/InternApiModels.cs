@@ -18,6 +18,7 @@ public class InternResponse
     // Mentor atanmamış olabilir.
     public int? MentorId { get; set; }
     public int DepartmentId { get; set; }
+    public int? UserId { get; set; }   // giriş hesabı bağı; null = hesabı yok
 }
 
 // Create ve Update aynı alanları taşıdığı için tek istek tipi yeterli.

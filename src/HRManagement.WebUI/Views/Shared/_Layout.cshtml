@@ -43,11 +43,23 @@
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 9h1M9 13h1M14 9h1M14 13h1M11 21v-4h2v4"/></svg>
                     Departmanlar
                 </a>
-                <a class="nav-item disabled" href="#">
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 10.6-6"/><circle cx="18" cy="18" r="3"/><path d="M18 15v-1M18 22v-1M21 18h-1M16 18h-1"/></svg>
-                    Kullanıcılar
-                    <span class="nav-badge">yakında</span>
-                </a>
+                @* Rol bazlı: HR ve Admin hesap talebi açabilir. *@
+                @if (User.IsInRole("HR") || User.IsInRole("Admin"))
+                {
+                    <a class="nav-item @Active2("AccountRequests", "Create")" asp-controller="AccountRequests" asp-action="Create">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 10.6-6"/><path d="M19 8v6M22 11h-6"/></svg>
+                        Hesap Talebi
+                    </a>
+                }
+
+                @* Yalnızca Admin bekleyen talepleri işler. *@
+                @if (User.IsInRole("Admin"))
+                {
+                    <a class="nav-item @Active2("AccountRequests", "Pending")" asp-controller="AccountRequests" asp-action="Pending">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                        Bekleyen Talepler
+                    </a>
+                }
             </nav>
 
             <div class="sidebar-footer">HepiyiHR · staj projesi · v0.1</div>
@@ -110,5 +122,15 @@
     {
         var current = ViewContext.RouteData.Values["controller"] as string ?? "";
         return current.Equals(controller, StringComparison.OrdinalIgnoreCase) ? "active" : "";
+    }
+
+    // Aynı controller altında iki menü öğesi olduğunda (ör. AccountRequests →
+    // Create ve Pending) action'a göre ayırt eder.
+    string Active2(string controller, string action)
+    {
+        var c = ViewContext.RouteData.Values["controller"] as string ?? "";
+        var a = ViewContext.RouteData.Values["action"] as string ?? "";
+        return c.Equals(controller, StringComparison.OrdinalIgnoreCase)
+            && a.Equals(action, StringComparison.OrdinalIgnoreCase) ? "active" : "";
     }
 }
