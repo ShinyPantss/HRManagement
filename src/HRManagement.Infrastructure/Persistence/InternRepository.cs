@@ -63,4 +63,34 @@ public class InternRepository : IInternRepository
         using var connection = _connectionFactory.CreateConnection();
         await connection.ExecuteAsync(sql, new { Id = id });
     }
+
+    public async Task<bool> ExistsByDepartmentIdAsync(int departmentId)
+    {
+        const string sql = @"
+            SELECT CASE WHEN EXISTS
+                (SELECT 1 FROM Interns WHERE DepartmentId = @DepartmentId)
+            THEN 1 ELSE 0 END";
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.ExecuteScalarAsync<bool>(sql, new { DepartmentId = departmentId });
+    }
+
+    public async Task<bool> ExistsByMentorIdAsync(int mentorId)
+    {
+        const string sql = @"
+            SELECT CASE WHEN EXISTS
+                (SELECT 1 FROM Interns WHERE MentorId = @MentorId)
+            THEN 1 ELSE 0 END";
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.ExecuteScalarAsync<bool>(sql, new { MentorId = mentorId });
+    }
+
+    public async Task<bool> ExistsByUserIdAsync(int userId)
+    {
+        const string sql = @"
+            SELECT CASE WHEN EXISTS
+                (SELECT 1 FROM Interns WHERE UserId = @UserId)
+            THEN 1 ELSE 0 END";
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.ExecuteScalarAsync<bool>(sql, new { UserId = userId });
+    }
 }

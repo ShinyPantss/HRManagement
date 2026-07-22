@@ -10,4 +10,7 @@ public interface ILeaveRequestRepository
     Task<int> AddAsync(LeaveRequest leaveRequest);
     Task UpdateAsync(LeaveRequest leaveRequest);
     Task DeleteAsync(int id);
-}               
+
+    // Silme öncesi bağımlılık kontrolü.
+    Task<bool> ExistsByEmployeeIdAsync(int employeeId);
+}           

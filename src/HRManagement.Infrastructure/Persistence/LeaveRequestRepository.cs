@@ -66,4 +66,14 @@ public class LeaveRequestRepository : ILeaveRequestRepository
         using var connection = _connectionFactory.CreateConnection();
         await connection.ExecuteAsync(sql, new { Id = id });
     }
+
+    public async Task<bool> ExistsByEmployeeIdAsync(int employeeId)
+    {
+        const string sql = @"
+            SELECT CASE WHEN EXISTS
+                (SELECT 1 FROM LeaveRequests WHERE EmployeeId = @EmployeeId)
+            THEN 1 ELSE 0 END";
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.ExecuteScalarAsync<bool>(sql, new { EmployeeId = employeeId });
+    }
 }
