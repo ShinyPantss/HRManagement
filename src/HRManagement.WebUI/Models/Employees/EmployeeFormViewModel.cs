@@ -33,12 +33,12 @@ public class EmployeeFormViewModel
     public string? Phone { get; set; }
 
     [Required(ErrorMessage = "Doğum tarihi zorunludur.")]
-    [DataType(DataType.Date)]
+    [DisplayFormat(DataFormatString = "{0:dd.MM.yyyy}", ApplyFormatInEditMode = true)]
     [Display(Name = "Doğum Tarihi")]
     public DateTime? BirthDate { get; set; }
 
     [Required(ErrorMessage = "İşe giriş tarihi zorunludur.")]
-    [DataType(DataType.Date)]
+    [DisplayFormat(DataFormatString = "{0:dd.MM.yyyy}", ApplyFormatInEditMode = true)]
     [Display(Name = "İşe Giriş Tarihi")]
     public DateTime? HireDate { get; set; }
 

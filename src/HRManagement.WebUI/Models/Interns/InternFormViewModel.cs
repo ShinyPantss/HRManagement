@@ -38,12 +38,12 @@ public class InternFormViewModel
     public int Grade { get; set; }
 
     [Required(ErrorMessage = "Başlangıç tarihi zorunludur.")]
-    [DataType(DataType.Date)]
+    [DisplayFormat(DataFormatString = "{0:dd.MM.yyyy}", ApplyFormatInEditMode = true)]
     [Display(Name = "Staj Başlangıcı")]
     public DateTime? StartDate { get; set; }
 
     [Required(ErrorMessage = "Bitiş tarihi zorunludur.")]
-    [DataType(DataType.Date)]
+    [DisplayFormat(DataFormatString = "{0:dd.MM.yyyy}", ApplyFormatInEditMode = true)]
     [Display(Name = "Staj Bitişi")]
     public DateTime? EndDate { get; set; }
 

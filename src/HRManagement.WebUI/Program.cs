@@ -1,5 +1,7 @@
+using System.Globalization;
 using HRManagement.WebUI.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Refit;
 
@@ -72,6 +74,16 @@ builder.Services.AddRefitClient<IAccountRequestApi>(refitSettings)
     .AddHttpMessageHandler<BearerTokenHandler>();
 
 var app = builder.Build();
+
+// Türkçe kültür: tarihler gün/ay/yıl (dd.MM.yyyy) gösterilir VE form gönderiminde
+// "25.12.1990" bu formatla ayrıştırılır. Model binding CurrentCulture kullanır.
+var turkishCulture = new CultureInfo("tr-TR");
+app.UseRequestLocalization(new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture(turkishCulture),
+    SupportedCultures = [turkishCulture],
+    SupportedUICultures = [turkishCulture]
+});
 
 if (!app.Environment.IsDevelopment())
 {
