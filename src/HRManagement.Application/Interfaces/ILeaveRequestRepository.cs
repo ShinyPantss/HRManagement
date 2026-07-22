@@ -14,6 +14,7 @@ public interface ILeaveRequestRepository
 
     // Silme öncesi bağımlılık kontrolü.
     Task<bool> ExistsByEmployeeIdAsync(int employeeId);
+    Task<bool> ExistsByInternIdAsync(int internId);
 
     /// <summary>
     /// Tarih çakışması iş kuralı: aynı kişinin (çalışan VEYA stajyer) aktif

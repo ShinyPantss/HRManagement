@@ -93,6 +93,16 @@ public class LeaveRequestRepository : ILeaveRequestRepository
         return await connection.ExecuteScalarAsync<bool>(sql, new { EmployeeId = employeeId });
     }
 
+    public async Task<bool> ExistsByInternIdAsync(int internId)
+    {
+        const string sql = @"
+            SELECT CASE WHEN EXISTS
+                (SELECT 1 FROM LeaveRequests WHERE InternId = @InternId)
+            THEN 1 ELSE 0 END";
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.ExecuteScalarAsync<bool>(sql, new { InternId = internId });
+    }
+
     public async Task<bool> HasOverlapAsync(int? employeeId, int? internId, DateTime startDate, DateTime endDate)
     {
         // Klasik aralık kesişimi: A.Start <= B.End VE A.End >= B.Start.

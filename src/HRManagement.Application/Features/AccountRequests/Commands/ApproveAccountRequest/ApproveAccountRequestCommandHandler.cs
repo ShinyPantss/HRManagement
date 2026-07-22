@@ -1,40 +1,49 @@
 using System.ComponentModel.DataAnnotations;
 using HRManagement.Application.Interfaces;
 using HRManagement.Domain.Entities;
+using HRManagement.Domain.Enums;
 using MediatR;
 
-namespace HRManagement.Application.Features.Users.Commands.CreateUserForPerson;
+namespace HRManagement.Application.Features.AccountRequests.Commands.ApproveAccountRequest;
 
-public sealed class CreateUserForPersonCommandHandler : IRequestHandler<CreateUserForPersonCommand, int>
+public sealed class ApproveAccountRequestCommandHandler : IRequestHandler<ApproveAccountRequestCommand, int>
 {
+    private readonly IAccountRequestRepository _accountRequestRepository;
     private readonly IUserRepository _userRepository;
     private readonly IEmployeeRepository _employeeRepository;
     private readonly IInternRepository _internRepository;
     private readonly IPasswordHasher _passwordHasher;
 
-    public CreateUserForPersonCommandHandler(
+    public ApproveAccountRequestCommandHandler(
+        IAccountRequestRepository accountRequestRepository,
         IUserRepository userRepository,
         IEmployeeRepository employeeRepository,
         IInternRepository internRepository,
         IPasswordHasher passwordHasher)
     {
+        _accountRequestRepository = accountRequestRepository;
         _userRepository = userRepository;
         _employeeRepository = employeeRepository;
         _internRepository = internRepository;
         _passwordHasher = passwordHasher;
     }
 
-    // Input validation CreateUserForPersonCommandValidator'da.
-    // Buradaki kurallar DB'ye bakar: kişi var mı, zaten hesabı var mı, isim/e-posta benzersiz mi.
-    public async Task<int> Handle(CreateUserForPersonCommand request, CancellationToken cancellationToken)
+    public async Task<int> Handle(ApproveAccountRequestCommand request, CancellationToken cancellationToken)
     {
+        var accountRequest = await _accountRequestRepository.GetByIdAsync(request.Id);
+
+        if (accountRequest is null)
+            throw new ValidationException("Hesap talebi bulunamadı.");
+
+        if (accountRequest.Status != AccountRequestStatus.Pending)
+            throw new ValidationException("Sadece bekleyen talepler onaylanabilir.");
+
+        // Talep açıldığından beri kişiye doğrudan hesap açılmış olabilir (yarış).
+        await EnsureSubjectStillNeedsAccountAsync(accountRequest);
+
         var username = request.Username.Trim();
         var email = request.Email.Trim();
 
-        // 1) Hesap açılacak kişi gerçekten var mı ve zaten hesabı YOK mu?
-        await EnsurePersonNeedsAccountAsync(request.EmployeeId, request.InternId);
-
-        // 2) Hesap benzersizliği (Users tablosundaki UNIQUE kısıtların ön kontrolü).
         if (await _userRepository.GetByUsernameAsync(username) is not null)
             throw new ValidationException("Bu kullanıcı adı zaten kullanılıyor.");
 
@@ -46,33 +55,34 @@ public sealed class CreateUserForPersonCommandHandler : IRequestHandler<CreateUs
             Username = username,
             Email = email,
             PasswordHash = _passwordHasher.Hash(request.Password),
-            Role = request.Role,
+            // Admin rolü değiştirmezse HR'ın önerisi geçerli.
+            Role = request.Role ?? accountRequest.SuggestedRole,
             IsActive = true
         };
 
-        // Hesabı oluştur VE kişiye bağla — tek transaction (repo içinde).
-        // Bu doğrudan yol talep akışının dışındadır (accountRequestId = null).
+        // Hesap oluştur + kişiye bağla + talebi Onaylandı yap — TEK transaction.
         return await _userRepository.CreateForPersonAsync(
-            user, request.EmployeeId, request.InternId, accountRequestId: null, reviewerUserId: null);
+            user, accountRequest.EmployeeId, accountRequest.InternId,
+            accountRequestId: accountRequest.Id, reviewerUserId: request.ApproverUserId);
     }
 
-    private async Task EnsurePersonNeedsAccountAsync(int? employeeId, int? internId)
+    private async Task EnsureSubjectStillNeedsAccountAsync(AccountRequest accountRequest)
     {
-        if (employeeId is int eid)
+        if (accountRequest.EmployeeId is int eid)
         {
             var employee = await _employeeRepository.GetByIdAsync(eid);
             if (employee is null)
                 throw new ValidationException("Çalışan bulunamadı.");
             if (employee.UserId is not null)
-                throw new ValidationException("Bu çalışanın zaten bir giriş hesabı var.");
+                throw new ValidationException("Bu çalışana bu arada bir hesap açılmış.");
         }
-        else if (internId is int iid)
+        else if (accountRequest.InternId is int iid)
         {
             var intern = await _internRepository.GetByIdAsync(iid);
             if (intern is null)
                 throw new ValidationException("Stajyer bulunamadı.");
             if (intern.UserId is not null)
-                throw new ValidationException("Bu stajyerin zaten bir giriş hesabı var.");
+                throw new ValidationException("Bu stajyere bu arada bir hesap açılmış.");
         }
     }
 }

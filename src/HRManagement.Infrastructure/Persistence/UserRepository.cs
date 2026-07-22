@@ -71,7 +71,8 @@ public class UserRepository : IUserRepository
         await connection.ExecuteAsync(sql, new { Id = id });
     }
 
-    public async Task<int> CreateForPersonAsync(User user, int? employeeId, int? internId)
+    public async Task<int> CreateForPersonAsync(
+        User user, int? employeeId, int? internId, int? accountRequestId, int? reviewerUserId)
     {
         const string insertUser = @"
             INSERT INTO Users (Username, Email, PasswordHash, Role, IsActive)
@@ -82,13 +83,18 @@ public class UserRepository : IUserRepository
             "UPDATE Employees SET UserId = @UserId, UpdatedAt = SYSUTCDATETIME() WHERE Id = @Id";
         const string linkIntern =
             "UPDATE Interns SET UserId = @UserId, UpdatedAt = SYSUTCDATETIME() WHERE Id = @Id";
+        const string closeRequest = @"
+            UPDATE AccountRequests SET
+                Status = @Approved, ReviewedByUserId = @ReviewerId,
+                ReviewedAt = SYSUTCDATETIME(), UpdatedAt = SYSUTCDATETIME()
+            WHERE Id = @RequestId";
 
         using var connection = _connectionFactory.CreateConnection();
         connection.Open();
 
-        // Projedeki İLK açık transaction. İki tabloya yazdığımız için (Users +
-        // Employees/Interns) ve aralarında atomiklik gerektiği için burada zorunlu.
-        // Handler'lar bağlantı/transaction görmez — bu ayrıntı Infrastructure'da kalır.
+        // Açık transaction: birden çok tabloya (Users + Employees/Interns [+ AccountRequests])
+        // yazıp aralarında atomiklik gerektiğimiz için zorunlu. Handler'lar bağlantı/
+        // transaction görmez — bu ayrıntı Infrastructure'da kalır.
         using var transaction = connection.BeginTransaction();
         try
         {
@@ -98,6 +104,14 @@ public class UserRepository : IUserRepository
                 await connection.ExecuteAsync(linkEmployee, new { UserId = newUserId, Id = eid }, transaction);
             else if (internId is int iid)
                 await connection.ExecuteAsync(linkIntern, new { UserId = newUserId, Id = iid }, transaction);
+
+            if (accountRequestId is int reqId)
+                await connection.ExecuteAsync(closeRequest, new
+                {
+                    Approved = (int)Domain.Enums.AccountRequestStatus.Approved,
+                    ReviewerId = reviewerUserId,
+                    RequestId = reqId
+                }, transaction);
 
             transaction.Commit();
             return newUserId;

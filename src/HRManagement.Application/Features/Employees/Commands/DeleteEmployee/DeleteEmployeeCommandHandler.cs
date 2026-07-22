@@ -9,15 +9,18 @@ public sealed class DeleteEmployeeCommandHandler : IRequestHandler<DeleteEmploye
     private readonly IEmployeeRepository _employeeRepository;
     private readonly ILeaveRequestRepository _leaveRequestRepository;
     private readonly IInternRepository _internRepository;
+    private readonly IAccountRequestRepository _accountRequestRepository;
 
     public DeleteEmployeeCommandHandler(
         IEmployeeRepository employeeRepository,
         ILeaveRequestRepository leaveRequestRepository,
-        IInternRepository internRepository)
+        IInternRepository internRepository,
+        IAccountRequestRepository accountRequestRepository)
     {
         _employeeRepository = employeeRepository;
         _leaveRequestRepository = leaveRequestRepository;
         _internRepository = internRepository;
+        _accountRequestRepository = accountRequestRepository;
     }
 
     public async Task<Unit> Handle(DeleteEmployeeCommand request, CancellationToken cancellationToken)
@@ -41,6 +44,12 @@ public sealed class DeleteEmployeeCommandHandler : IRequestHandler<DeleteEmploye
         if (await _employeeRepository.ExistsByManagerIdAsync(request.Id))
             throw new ValidationException(
                 "Bu çalışana bağlı ekip üyeleri var. Önce onları başka bir yöneticiye bağlayın.");
+
+        // Hesap talepleri denetim izidir (kim talep etti/işledi); silmek FK'ye
+        // takılır ve izi yok eder. Kaydı silmek yerine pasife almak doğru yoldur.
+        if (await _accountRequestRepository.ExistsForEmployeeAsync(request.Id))
+            throw new ValidationException(
+                "Bu çalışana ait hesap talepleri var. Kaydı silmek yerine pasife alın.");
 
         await _employeeRepository.DeleteAsync(request.Id);
 
