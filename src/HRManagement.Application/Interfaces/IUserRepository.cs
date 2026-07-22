@@ -8,4 +8,11 @@ public interface IUserRepository
     Task<int> AddAsync(User user);
     Task UpdateAsync(User user);
     Task DeleteAsync(int id);
+
+    /// <summary>
+    /// Hesabı oluşturur ve verilen kişiye (çalışan VEYA stajyer) TEK TRANSACTION'da
+    /// bağlar. İki yazma birlikte başarılı olur ya da hiç olmaz — yarısı patlarsa
+    /// sahipsiz hesap kalmaz. Yeni User'ın Id'sini döndürür.
+    /// </summary>
+    Task<int> CreateForPersonAsync(User user, int? employeeId, int? internId);
 }

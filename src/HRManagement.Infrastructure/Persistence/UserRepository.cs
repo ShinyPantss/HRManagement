@@ -70,4 +70,42 @@ public class UserRepository : IUserRepository
         using var connection = _connectionFactory.CreateConnection();
         await connection.ExecuteAsync(sql, new { Id = id });
     }
+
+    public async Task<int> CreateForPersonAsync(User user, int? employeeId, int? internId)
+    {
+        const string insertUser = @"
+            INSERT INTO Users (Username, Email, PasswordHash, Role, IsActive)
+            VALUES (@Username, @Email, @PasswordHash, @Role, @IsActive);
+            SELECT CAST(SCOPE_IDENTITY() AS INT);";
+
+        const string linkEmployee =
+            "UPDATE Employees SET UserId = @UserId, UpdatedAt = SYSUTCDATETIME() WHERE Id = @Id";
+        const string linkIntern =
+            "UPDATE Interns SET UserId = @UserId, UpdatedAt = SYSUTCDATETIME() WHERE Id = @Id";
+
+        using var connection = _connectionFactory.CreateConnection();
+        connection.Open();
+
+        // Projedeki İLK açık transaction. İki tabloya yazdığımız için (Users +
+        // Employees/Interns) ve aralarında atomiklik gerektiği için burada zorunlu.
+        // Handler'lar bağlantı/transaction görmez — bu ayrıntı Infrastructure'da kalır.
+        using var transaction = connection.BeginTransaction();
+        try
+        {
+            var newUserId = await connection.QuerySingleAsync<int>(insertUser, user, transaction);
+
+            if (employeeId is int eid)
+                await connection.ExecuteAsync(linkEmployee, new { UserId = newUserId, Id = eid }, transaction);
+            else if (internId is int iid)
+                await connection.ExecuteAsync(linkIntern, new { UserId = newUserId, Id = iid }, transaction);
+
+            transaction.Commit();
+            return newUserId;
+        }
+        catch
+        {
+            transaction.Rollback();
+            throw;
+        }
+    }
 }
