@@ -1,0 +1,18 @@
+@{
+    ViewData["Title"] = "Yetkisiz Erişim";
+}
+
+<div class="page-head">
+    <h1>Yetkiniz yok</h1>
+    <p class="text-muted mb-0">Bu sayfayı görüntülemek için gerekli role sahip değilsiniz.</p>
+</div>
+
+<div class="panel mt-3" style="max-width: 560px;">
+    <div class="panel-body">
+        <p class="mb-3">
+            Giriş yapmış durumdasınız, ancak hesabınızın rolü bu bölüme erişim için yeterli değil.
+            Yetki gerektiğini düşünüyorsanız İK ile iletişime geçin.
+        </p>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-primary">Ana sayfaya dön</a>
+    </div>
+</div>

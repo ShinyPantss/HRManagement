@@ -58,11 +58,28 @@
                 <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Menü">☰</button>
                 <div class="topbar-title">@ViewData["Title"]</div>
 
-                @* Auth bağlandığında: kullanıcı adı + rolü buraya gelecek (User.Identity.Name / rol claim'i) *@
-                <div class="user-chip">
-                    <span class="user-avatar">?</span>
-                    <span>Giriş yapılmadı</span>
-                </div>
+                @* Bilgiler cookie ticket'ındaki claim'lerden gelir (AccountController.SignInWithTokenAsync). *@
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    var userName = User.Identity.Name ?? "";
+                    var userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+
+                    <div class="user-chip">
+                        <span class="user-avatar">@(userName.Length > 0 ? char.ToUpperInvariant(userName[0]).ToString() : "?")</span>
+                        <span>@userName <span class="text-muted">· @userRole</span></span>
+                        @* Çıkış POST'tur: GET ile olsaydı bir <img src="/Account/Logout"> herkesi atardı (CSRF). *@
+                        <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline ms-2">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary py-0 px-2">Çıkış</button>
+                        </form>
+                    </div>
+                }
+                else
+                {
+                    <div class="user-chip">
+                        <span class="user-avatar">?</span>
+                        <a asp-controller="Account" asp-action="Login">Giriş yap</a>
+                    </div>
+                }
             </header>
 
             <main class="content">

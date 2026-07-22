@@ -1,0 +1,106 @@
+@model HRManagement.WebUI.Models.Account.LoginViewModel
+@{
+    ViewData["Title"] = "Giriş Yap";
+    // Login sayfası kenar çubuğunu göstermez: henüz kimlik yokken menü anlamsız.
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Giriş Yap — HepiyiHR</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <style>
+        body {
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+            padding: 24px;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            background: #fff;
+            border-radius: 14px;
+            padding: 36px 32px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, .35);
+        }
+
+        .login-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 28px;
+        }
+
+        .brand-mark {
+            width: 38px;
+            height: 38px;
+            border-radius: 9px;
+            background: #3b82f6;
+            color: #fff;
+            font-weight: 700;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .brand-text { font-weight: 650; font-size: 17px; color: #0f172a; }
+
+        .login-card h1 { font-size: 20px; font-weight: 650; color: #0f172a; margin-bottom: 4px; }
+        .login-sub { font-size: 13.5px; color: #94a3b8; margin-bottom: 22px; }
+        .form-label { font-size: 13.5px; font-weight: 550; color: #334155; }
+        .form-control { padding: 10px 12px; border-color: #e2e8f0; }
+        .form-control:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, .15); }
+        .btn-login { background: #3b82f6; border: none; padding: 11px; font-weight: 550; width: 100%; }
+        .btn-login:hover { background: #2563eb; }
+        .login-foot { margin-top: 22px; font-size: 12.5px; color: #94a3b8; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="login-brand">
+            <span class="brand-mark">HR</span>
+            <span class="brand-text">HepiyiHR</span>
+        </div>
+
+        <h1>Giriş Yap</h1>
+        <p class="login-sub">Devam etmek için hesabınızla oturum açın.</p>
+
+        <form asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post" novalidate>
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
+
+            <div class="mb-3">
+                <label asp-for="UsernameOrEmail" class="form-label"></label>
+                <input asp-for="UsernameOrEmail" class="form-control" autocomplete="username" autofocus />
+                <span asp-validation-for="UsernameOrEmail" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Password" class="form-label"></label>
+                <input asp-for="Password" class="form-control" autocomplete="current-password" />
+                <span asp-validation-for="Password" class="text-danger small"></span>
+            </div>
+
+            <div class="form-check mb-4">
+                <input asp-for="RememberMe" class="form-check-input" />
+                <label asp-for="RememberMe" class="form-check-label small"></label>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-login">Giriş Yap</button>
+        </form>
+
+        <div class="login-foot">Hesabınız yoksa İK ile iletişime geçin.</div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <partial name="_ValidationScriptsPartial" />
+</body>
+</html>
