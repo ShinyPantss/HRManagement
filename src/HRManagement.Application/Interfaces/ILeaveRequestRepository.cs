@@ -23,9 +23,10 @@ public interface ILeaveRequestRepository
     Task<bool> HasOverlapAsync(int? employeeId, int? internId, DateTime startDate, DateTime endDate);
 
     /// <summary>
-    /// Hak dönemi içinde kullanılan + REZERVE (bekleyen) yıllık izin günleri.
-    /// Bekleyenler dahildir: dört ayrı bekleyen talep, ayrı ayrı kontrolü geçip
-    /// toplamda hakkı katlayamasın diye her talep yerini baştan "rezerve eder".
+    /// Bu çalışanın ŞİMDİYE KADAR kullandığı + REZERVE ettiği (bekleyen) tüm
+    /// yıllık izin günleri. Kümülatif bakiye modeli: dönem penceresi yok, tüm
+    /// Annual talepler (Pending/PendingHr/Approved) toplanır. Bekleyenler dahildir
+    /// ki dört ayrı bekleyen talep, ayrı ayrı kontrolü geçip hakkı katlamasın.
     /// </summary>
-    Task<int> GetUsedAnnualDaysAsync(int employeeId, DateTime periodStart, DateTime periodEndExclusive);
+    Task<int> GetTotalUsedAnnualDaysAsync(int employeeId);
 }           

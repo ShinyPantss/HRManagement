@@ -5,7 +5,7 @@ namespace HRManagement.Application.Tests.Services;
 /// <summary>
 /// İzin hakkı hesabının birim testleri. LeaveEntitlement SAF fonksiyonlardan
 /// oluştuğu için ne veritabanı ne mock gerekir — girdiler verilir, çıktı doğrulanır.
-/// Kaynak kurallar: İş Kanunu md. 53 + avans izin kararı (2026-07-22).
+/// Model: kümülatif bakiye (İş Kanunu md. 53 kademeleri + avans borcu devreder).
 /// </summary>
 public class LeaveEntitlementTests
 {
@@ -32,90 +32,124 @@ public class LeaveEntitlementTests
     [Fact]
     public void FullYearsOfService_ileri_tarihli_ise_giris_sifira_kirpilir()
     {
-        // Bozuk veri (gelecekte işe giriş) hesabı eksiye düşürmemeli.
         var hireDate = new DateTime(2027, 1, 1);
         var asOf = new DateTime(2026, 7, 22);
 
         Assert.Equal(0, LeaveEntitlement.FullYearsOfService(hireDate, asOf));
     }
 
-    // ── Kanuni kademeler (md. 53) ────────────────────────────────────────────
+    // ── Kademeler (md. 53): n'inci yılın grant'ı ─────────────────────────────
 
     [Theory]
-    [InlineData(0, 0)]    // 1 yıldan az → hak yok
-    [InlineData(1, 14)]   // 1-5 yıl
-    [InlineData(5, 14)]   // 5 DAHİL 14 (sık yapılan hata: 5'i üst kademeye koymak)
-    [InlineData(6, 20)]   // 5'ten fazla 15'ten az
+    [InlineData(0, 0)]
+    [InlineData(1, 14)]
+    [InlineData(5, 14)]   // 5. yıl DAHİL 14 (sık yapılan hata: 5'i üst kademeye koymak)
+    [InlineData(6, 20)]
     [InlineData(14, 20)]
-    [InlineData(15, 26)]  // 15 DAHİL 26
+    [InlineData(15, 26)]  // 15. yıl DAHİL 26
     [InlineData(30, 26)]
-    public void EntitledDaysForYears_kanuni_kademeleri_uygular(int years, int expectedDays)
+    public void GrantForYear_kanuni_kademeleri_uygular(int year, int expected)
     {
-        Assert.Equal(expectedDays, LeaveEntitlement.EntitledDaysForYears(years));
+        Assert.Equal(expected, LeaveEntitlement.GrantForYear(year));
     }
 
-    // ── Elle geçersiz kılma (Employees.AnnualLeaveDays) ─────────────────────
+    // ── Hak edilen toplam: tamamlanan yılların grant toplamı ─────────────────
 
     [Fact]
-    public void EntitledDays_elle_deger_verilmisse_hesabi_ezer()
+    public void AccruedEntitlement_yil_dolmadan_sifirdir()
     {
-        var hireDate = new DateTime(2020, 1, 1); // kıdem ~6 yıl → normalde 20
-        var asOf = new DateTime(2026, 7, 22);
+        var hireDate = new DateTime(2026, 1, 22);
+        var asOf = new DateTime(2026, 7, 22); // ~6 ay
 
-        Assert.Equal(30, LeaveEntitlement.EntitledDays(hireDate, asOf, manualOverride: 30));
-        Assert.Equal(20, LeaveEntitlement.EntitledDays(hireDate, asOf, manualOverride: null));
+        Assert.Equal(0, LeaveEntitlement.AccruedEntitlement(hireDate, asOf, null));
     }
 
-    // ── Avans sınırı: bir sonraki yıldönümünde kazanılacak hak ──────────────
+    [Fact]
+    public void AccruedEntitlement_uc_yil_sonunda_uc_kademe_toplanir()
+    {
+        var hireDate = new DateTime(2023, 7, 22);
+        var asOf = new DateTime(2026, 7, 22); // 3 tam yıl
+
+        // 14 + 14 + 14 = 42
+        Assert.Equal(42, LeaveEntitlement.AccruedEntitlement(hireDate, asOf, null));
+    }
 
     [Fact]
-    public void AdvanceLimit_alti_aylik_calisan_icin_14_gundur()
+    public void AccruedEntitlement_kademe_gecisini_dogru_toplar()
     {
-        // Kullanıcının sorduğu senaryo: 1 yılı dolmadan izin.
-        // Kazanılmış hak 0, ama gelecek yıldönümünde 14 kazanacak → 14 güne
-        // kadar borçlanabilir; 15. gün reddedilir.
+        var hireDate = new DateTime(2020, 7, 22);
+        var asOf = new DateTime(2026, 7, 22); // 6 tam yıl
+
+        // İlk 5 yıl 14'er (70), 6. yıl 20 → 90
+        Assert.Equal(90, LeaveEntitlement.AccruedEntitlement(hireDate, asOf, null));
+    }
+
+    [Fact]
+    public void AccruedEntitlement_elle_deger_verilmisse_yillik_kademeyi_ezer()
+    {
+        var hireDate = new DateTime(2023, 7, 22);
+        var asOf = new DateTime(2026, 7, 22); // 3 tam yıl
+
+        // Elle 20 → yılda 20'den 3 yıl = 60
+        Assert.Equal(60, LeaveEntitlement.AccruedEntitlement(hireDate, asOf, annualOverride: 20));
+    }
+
+    // ── Avans sınırı: bir sonraki yılın hakkı ────────────────────────────────
+
+    [Fact]
+    public void NextGrant_alti_aylik_calisan_icin_14tur()
+    {
         var hireDate = new DateTime(2026, 1, 22);
         var asOf = new DateTime(2026, 7, 22);
 
-        Assert.Equal(0, LeaveEntitlement.EntitledDays(hireDate, asOf, null));
-        Assert.Equal(14, LeaveEntitlement.AdvanceLimit(hireDate, asOf));
+        Assert.Equal(14, LeaveEntitlement.NextGrant(hireDate, asOf, null));
     }
 
     [Fact]
-    public void AdvanceLimit_besinci_yilini_dolduran_icin_20_gundur()
+    public void NextGrant_besinci_yilini_dolduran_icin_20dir()
     {
-        // 5 yıl kıdem → hak 14; bir sonraki yıl (6.) → 20.
         var hireDate = new DateTime(2021, 7, 22);
-        var asOf = new DateTime(2026, 7, 22);
+        var asOf = new DateTime(2026, 7, 22); // 5 tam yıl
 
-        Assert.Equal(14, LeaveEntitlement.EntitledDays(hireDate, asOf, null));
-        Assert.Equal(20, LeaveEntitlement.AdvanceLimit(hireDate, asOf));
+        Assert.Equal(20, LeaveEntitlement.NextGrant(hireDate, asOf, null));
     }
 
-    // ── Hak dönemi: [son yıldönümü, sonraki yıldönümü) ──────────────────────
+    // ── Kullanıcının senaryosu: avans borcu yeni yıla DEVREDER ───────────────
 
     [Fact]
-    public void CurrentPeriod_ise_giris_yildonumune_gore_hesaplanir()
+    public void avans_borcu_yeni_hak_yilina_devreder()
     {
-        var hireDate = new DateTime(2024, 3, 15);
-        var asOf = new DateTime(2026, 7, 22); // 2 tam yıl dolmuş
+        // 6 aylık çalışan 10 gün yıllık izin kullanır.
+        var hireDate = new DateTime(2026, 1, 22);
+        const int used = 10;
 
-        var (start, endExclusive) = LeaveEntitlement.CurrentPeriod(hireDate, asOf);
+        // İlk yıl dolmadan: hak 0, bakiye -10 (avans 14 sınırında geçerli).
+        var beforeAsOf = new DateTime(2026, 7, 22);
+        var accruedBefore = LeaveEntitlement.AccruedEntitlement(hireDate, beforeAsOf, null);
+        var nextGrant = LeaveEntitlement.NextGrant(hireDate, beforeAsOf, null);
+        Assert.Equal(0, accruedBefore);
+        Assert.Equal(-10, accruedBefore - used);        // bakiye -10
+        Assert.True(used <= accruedBefore + nextGrant);  // 10 ≤ 0 + 14 → talep geçer
 
-        Assert.Equal(new DateTime(2026, 3, 15), start);
-        Assert.Equal(new DateTime(2027, 3, 15), endExclusive);
+        // 1 yıl dolunca: +14 eklenir, borç devreder, bakiye 4.
+        var afterAsOf = new DateTime(2027, 1, 22);
+        var accruedAfter = LeaveEntitlement.AccruedEntitlement(hireDate, afterAsOf, null);
+        Assert.Equal(14, accruedAfter);
+        Assert.Equal(4, accruedAfter - used);            // bakiye 14 - 10 = 4
     }
 
     [Fact]
-    public void CurrentPeriod_ilk_yilinda_ise_giristen_baslar()
+    public void avans_siniri_asilirsa_talep_gecmez()
     {
-        var hireDate = new DateTime(2026, 2, 1);
+        // 6 aylık çalışan 15 gün ister: 15 > 0 + 14 → reddedilmeli.
+        var hireDate = new DateTime(2026, 1, 22);
         var asOf = new DateTime(2026, 7, 22);
+        const int requested = 15;
 
-        var (start, endExclusive) = LeaveEntitlement.CurrentPeriod(hireDate, asOf);
+        var accrued = LeaveEntitlement.AccruedEntitlement(hireDate, asOf, null);
+        var nextGrant = LeaveEntitlement.NextGrant(hireDate, asOf, null);
 
-        Assert.Equal(hireDate, start);
-        Assert.Equal(new DateTime(2027, 2, 1), endExclusive);
+        Assert.False(0 + requested <= accrued + nextGrant); // 15 ≤ 14 değil
     }
 
     // ── Gün sayımı: başlangıç ve bitiş DAHİL ────────────────────────────────

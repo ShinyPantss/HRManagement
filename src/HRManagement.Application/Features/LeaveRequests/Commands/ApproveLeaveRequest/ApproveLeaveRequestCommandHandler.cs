@@ -76,15 +76,14 @@ public sealed class ApproveLeaveRequestCommandHandler : IRequestHandler<ApproveL
             throw new ValidationException("Talep sahibi çalışan kaydı bulunamadı.");
 
         var today = DateTime.UtcNow.Date;
-        var entitled = LeaveEntitlement.EntitledDays(employee.HireDate, today, employee.AnnualLeaveDays);
-        var advance = LeaveEntitlement.AdvanceLimit(employee.HireDate, today);
-        var (periodStart, periodEnd) = LeaveEntitlement.CurrentPeriod(employee.HireDate, today);
+        var accrued = LeaveEntitlement.AccruedEntitlement(employee.HireDate, today, employee.AnnualLeaveDays);
+        var nextGrant = LeaveEntitlement.NextGrant(employee.HireDate, today, employee.AnnualLeaveDays);
 
-        var used = await _leaveRequestRepository.GetUsedAnnualDaysAsync(employee.Id, periodStart, periodEnd);
+        var used = await _leaveRequestRepository.GetTotalUsedAnnualDaysAsync(employee.Id);
 
-        if (used > entitled + advance)
+        if (used > accrued + nextGrant)
             throw new ValidationException(
-                $"Talep açıldığından bu yana bakiye değişti: bu dönemde kullanılan+bekleyen {used} gün, " +
-                $"izin verilen üst sınır {entitled + advance} gün. Talep onaylanamaz.");
+                $"Talep açıldığından bu yana bakiye değişti: kullanılan+bekleyen {used} gün, " +
+                $"izin verilen üst sınır {accrued + nextGrant} gün. Talep onaylanamaz.");
     }
 }

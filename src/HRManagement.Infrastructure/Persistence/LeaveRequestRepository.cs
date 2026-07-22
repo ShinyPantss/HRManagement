@@ -125,27 +125,23 @@ public class LeaveRequestRepository : ILeaveRequestRepository
         });
     }
 
-    public async Task<int> GetUsedAnnualDaysAsync(int employeeId, DateTime periodStart, DateTime periodEndExclusive)
+    public async Task<int> GetTotalUsedAnnualDaysAsync(int employeeId)
     {
         // Gün sayısı = DATEDIFF + 1 (başlangıç ve bitiş günü dahil).
-        // Talep, başlangıç tarihinin düştüğü hak dönemine BÜTÜNÜYLE sayılır
-        // (dönem sınırını aşan talepler gün gün bölüştürülmez — bilinçli sadelik).
+        // Kümülatif model: dönem filtresi YOK — çalışanın tüm aktif yıllık
+        // izinleri toplanır. Reddedilenler sayılmaz (Status listesi dışında).
         const string sql = @"
             SELECT COALESCE(SUM(DATEDIFF(DAY, StartDate, EndDate) + 1), 0)
             FROM LeaveRequests
             WHERE EmployeeId = @EmployeeId
               AND Type = @AnnualType
-              AND Status IN @ActiveStatuses
-              AND StartDate >= @PeriodStart
-              AND StartDate <  @PeriodEnd";
+              AND Status IN @ActiveStatuses";
 
         using var connection = _connectionFactory.CreateConnection();
         return await connection.ExecuteScalarAsync<int>(sql, new
         {
             EmployeeId = employeeId,
             AnnualType = (int)LeaveType.Annual,
-            PeriodStart = periodStart.Date,
-            PeriodEnd = periodEndExclusive.Date,
             ActiveStatuses = new[]
             {
                 (int)LeaveStatus.Pending,

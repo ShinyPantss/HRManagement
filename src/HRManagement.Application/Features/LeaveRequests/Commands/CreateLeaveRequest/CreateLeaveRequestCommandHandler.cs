@@ -41,6 +41,11 @@ public sealed class CreateLeaveRequestCommandHandler : IRequestHandler<CreateLea
         if (employee is not null && !employee.IsActive)
             throw new ValidationException("Pasif çalışan kaydı için izin talebi oluşturulamaz.");
 
+        // Stajyerde IsActive sütunu yok; aktiflik staj süresinden okunur.
+        // Süresi dolmuş staj için talep açılmamalı.
+        if (intern is not null && intern.EndDate.Date < DateTime.UtcNow.Date)
+            throw new ValidationException("Staj süresi sona ermiş; izin talebi oluşturulamaz.");
+
         // 2) Tarih çakışması: aynı kişinin aktif (bekleyen/onaylı) talebiyle kesişme.
         if (await _leaveRequestRepository.HasOverlapAsync(
                 employee?.Id, intern?.Id, request.StartDate, request.EndDate))
@@ -72,23 +77,25 @@ public sealed class CreateLeaveRequestCommandHandler : IRequestHandler<CreateLea
         return await _leaveRequestRepository.AddAsync(leaveRequest);
     }
 
-    // Kural (kullanıcı kararı): kullanılan + talep ≤ kazanılmış hak + avans limiti.
-    // "Kullanılan"a BEKLEYEN talepler de dahildir — her talep yerini baştan rezerve
-    // eder; yoksa dört bekleyen talep ayrı ayrı kontrolü geçip hakkı katlardı.
+    // Kümülatif bakiye kuralı (kullanıcı kararı): kullanılan + talep ≤ hak edilen +
+    // bir sonraki yılın hakkı (avans sınırı). "Kullanılan"a BEKLEYEN talepler de
+    // dahildir — her talep yerini baştan rezerve eder; yoksa dört bekleyen talep
+    // ayrı ayrı kontrolü geçip hakkı katlardı. Borç, kümülatif olduğu için yeni
+    // yıla kendiliğinden devreder.
     private async Task EnsureAnnualBalanceAsync(Employee employee, DateTime startDate, DateTime endDate)
     {
         var today = DateTime.UtcNow.Date;
 
-        var entitled = LeaveEntitlement.EntitledDays(employee.HireDate, today, employee.AnnualLeaveDays);
-        var advance = LeaveEntitlement.AdvanceLimit(employee.HireDate, today);
-        var (periodStart, periodEnd) = LeaveEntitlement.CurrentPeriod(employee.HireDate, today);
+        var accrued = LeaveEntitlement.AccruedEntitlement(employee.HireDate, today, employee.AnnualLeaveDays);
+        var nextGrant = LeaveEntitlement.NextGrant(employee.HireDate, today, employee.AnnualLeaveDays);
 
-        var used = await _leaveRequestRepository.GetUsedAnnualDaysAsync(employee.Id, periodStart, periodEnd);
+        var used = await _leaveRequestRepository.GetTotalUsedAnnualDaysAsync(employee.Id);
         var requested = LeaveEntitlement.TotalDays(startDate, endDate);
 
-        if (used + requested > entitled + advance)
+        if (used + requested > accrued + nextGrant)
             throw new ValidationException(
-                $"Yıllık izin hakkı aşılıyor: bu dönemde kullanılan+bekleyen {used} gün, " +
-                $"talep {requested} gün; hak {entitled} gün + avans sınırı {advance} gün.");
+                $"Yıllık izin hakkı aşılıyor. Bakiye {accrued - used} gün " +
+                $"(hak edilen {accrued}, kullanılan+bekleyen {used}); talep {requested} gün, " +
+                $"avans sınırı {nextGrant} gün.");
     }
 }
