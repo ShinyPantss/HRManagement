@@ -70,9 +70,16 @@ public class EmployeeFormViewModel
     /// </summary>
     public IEnumerable<SelectListItem> DepartmentOptions { get; set; } = [];
 
-    /// <summary>Yönetici dropdown'ı: mevcut çalışanlar (düzenlemede kişinin kendisi hariç).</summary>
-    public IEnumerable<SelectListItem> ManagerOptions { get; set; } = [];
+    /// <summary>
+    /// Yönetici adayları (düzenlemede kişinin kendisi hariç). Her adayın kıdemi
+    /// de taşınır ki form, çalışanın seçtiği kıdeme göre listeyi süzebilsin:
+    /// yönetici çalışandan kıdemce yüksek olmalı (Uzman, Müdür'e yönetici olamaz).
+    /// </summary>
+    public IEnumerable<ManagerCandidate> ManagerCandidates { get; set; } = [];
 
     /// <summary>Kıdem dropdown'ı (GM … Uzman).</summary>
     public IEnumerable<SelectListItem> SeniorityOptions { get; set; } = SeniorityDisplay.Options();
 }
+
+/// <summary>Yönetici dropdown'ı için aday: kıdem, süzme (JS) için taşınır.</summary>
+public record ManagerCandidate(int Id, string Name, int? Seniority);

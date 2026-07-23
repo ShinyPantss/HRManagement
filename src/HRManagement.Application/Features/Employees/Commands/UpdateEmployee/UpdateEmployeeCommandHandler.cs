@@ -43,7 +43,7 @@ public sealed class UpdateEmployeeCommandHandler : IRequestHandler<UpdateEmploye
             throw new ValidationException("Bu e-posta ile kayıtlı başka bir çalışan var.");
 
         if (request.ManagerId is int managerId)
-            await EnsureManagerAssignableAsync(employee.Id, managerId);
+            await EnsureManagerAssignableAsync(employee.Id, managerId, request.Seniority);
 
         // Hesap bağlantısı değişiyorsa yeni hesabın uygunluğunu denetle.
         if (request.UserId is int userId && userId != employee.UserId)
@@ -68,13 +68,18 @@ public sealed class UpdateEmployeeCommandHandler : IRequestHandler<UpdateEmploye
         return Unit.Value;
     }
 
-    private async Task EnsureManagerAssignableAsync(int employeeId, int managerId)
+    private async Task EnsureManagerAssignableAsync(
+        int employeeId, int managerId, HRManagement.Domain.Enums.SeniorityLevel? employeeSeniority)
     {
         if (managerId == employeeId)
             throw new ValidationException("Bir çalışan kendi yöneticisi olamaz.");
 
-        if (await _employeeRepository.GetByIdAsync(managerId) is null)
+        var manager = await _employeeRepository.GetByIdAsync(managerId);
+        if (manager is null)
             throw new ValidationException("Seçilen yönetici bulunamadı.");
+
+        // Yönetici, çalışandan kıdemce yüksek olmalı (Uzman, Müdür'e yönetici olamaz).
+        Shared.ManagerAssignment.EnsureManagerOutranks(manager.Seniority, employeeSeniority);
 
         // Döngü önleme: yeni yönetici bu çalışanın ALTINDA ise (çalışan, adayın
         // zincirinde yukarıdaysa) bağ kurulunca A→B→A döngüsü oluşur ve onay

@@ -207,11 +207,12 @@ public class EmployeesController : Controller
 
         // Yönetici adayları = mevcut çalışanlar; düzenlemede kişinin kendisi
         // listelenmez (kendi yöneticisi olamaz — API de ayrıca reddeder).
+        // Kıdem de taşınır: form, seçilen kıdeme göre listeyi süzer.
         var employees = await _employeeApi.GetAllAsync();
 
-        form.ManagerOptions = (employees.Data ?? [])
+        form.ManagerCandidates = (employees.Data ?? [])
             .Where(e => e.Id != form.Id)
-            .Select(e => new SelectListItem($"{e.FirstName} {e.LastName}", e.Id.ToString()))
+            .Select(e => new ManagerCandidate(e.Id, $"{e.FirstName} {e.LastName}", e.Seniority))
             .ToList();
     }
 }

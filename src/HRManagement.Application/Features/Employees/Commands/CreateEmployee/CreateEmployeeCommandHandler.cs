@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using HRManagement.Application.Features.Employees.Shared;
 using HRManagement.Application.Interfaces;
 using HRManagement.Domain.Entities;
 using MediatR;
@@ -38,9 +39,15 @@ public sealed class CreateEmployeeCommandHandler : IRequestHandler<CreateEmploye
         if (await _employeeRepository.GetByEmailAsync(email) is not null)
             throw new ValidationException("Bu e-posta ile kayıtlı bir çalışan zaten var.");
 
-        if (request.ManagerId is int managerId
-            && await _employeeRepository.GetByIdAsync(managerId) is null)
-            throw new ValidationException("Seçilen yönetici bulunamadı.");
+        if (request.ManagerId is int managerId)
+        {
+            var manager = await _employeeRepository.GetByIdAsync(managerId);
+            if (manager is null)
+                throw new ValidationException("Seçilen yönetici bulunamadı.");
+
+            // Yönetici, çalışandan kıdemce yüksek olmalı (Uzman, Müdür'e yönetici olamaz).
+            ManagerAssignment.EnsureManagerOutranks(manager.Seniority, request.Seniority);
+        }
 
         if (request.UserId is int userId)
             await EnsureUserLinkableAsync(userId);

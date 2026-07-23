@@ -82,10 +82,15 @@
 
                 <div class="col-md-6 mb-3">
                     <label asp-for="ManagerId" class="form-label"></label>
-                    <select asp-for="ManagerId" asp-items="Model.ManagerOptions" class="form-select">
+                    <select asp-for="ManagerId" class="form-select" data-manager-select>
                         <option value="">Yok (zincirin tepesi)</option>
+                        @foreach (var m in Model.ManagerCandidates)
+                        {
+                            <option value="@m.Id" data-seniority="@m.Seniority">@m.Name</option>
+                        }
                     </select>
                     <span asp-validation-for="ManagerId" class="text-danger small"></span>
+                    <div class="form-text">Yönetici, çalışandan kıdemce yüksek olmalıdır.</div>
                 </div>
             </div>
 
@@ -113,4 +118,5 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <partial name="_ManagerSeniorityFilter" />
 }

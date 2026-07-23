@@ -1,0 +1,29 @@
+@*
+    Yönetici dropdown'ını, çalışanın seçtiği kıdeme göre süzer:
+    yönetici çalışandan KIDEMCE YÜKSEK olmalı (data-seniority < seçilen kıdem;
+    sayı küçüldükçe kıdem artar). Kıdemi bilinmeyen aday (boş) süzülmez.
+    Otorite backend'dedir; bu yalnızca UX kolaylığı.
+*@
+<script>
+    (function () {
+        var seniority = document.getElementById('Seniority');
+        var manager = document.querySelector('[data-manager-select]');
+        if (!seniority || !manager) return;
+
+        function apply() {
+            var picked = parseInt(seniority.value, 10);
+            for (var i = 0; i < manager.options.length; i++) {
+                var opt = manager.options[i];
+                if (opt.value === '') { opt.hidden = false; continue; } // "Yok" hep dursun
+                var s = parseInt(opt.getAttribute('data-seniority'), 10);
+                // Aday, çalışandan kıdemce yüksek DEĞİLSE gizle (eşit veya düşük).
+                var hide = !isNaN(picked) && !isNaN(s) && s >= picked;
+                opt.hidden = hide;
+                if (hide && opt.selected) { manager.value = ''; } // geçersiz kalan seçimi düşür
+            }
+        }
+
+        seniority.addEventListener('change', apply);
+        apply();
+    })();
+</script>
