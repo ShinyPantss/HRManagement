@@ -65,6 +65,41 @@ public class InternRepository : IInternRepository
         await connection.ExecuteAsync(sql, new { Id = id });
     }
 
+    public async Task DeleteWithAccountAsync(int internId, int? userId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        connection.Open();
+
+        using var transaction = connection.BeginTransaction();
+        try
+        {
+            // Stajyerin izin talepleri ve hesap talepleri. Çalışandan farklı olarak
+            // stajyerin "pasife alma" seçeneği yok (Intern'de IsActive yok), o yüzden
+            // izin talepleri de cascade edilir.
+            await connection.ExecuteAsync(
+                "DELETE FROM LeaveRequests WHERE InternId = @Id", new { Id = internId }, transaction);
+
+            await connection.ExecuteAsync(
+                "DELETE FROM AccountRequests WHERE InternId = @Id", new { Id = internId }, transaction);
+
+            // Login hesabı: SİLİNMEZ, pasife alınır (başka talepleri referanslıyor olabilir).
+            if (userId is int uid)
+                await connection.ExecuteAsync(
+                    "UPDATE Users SET IsActive = 0, UpdatedAt = SYSUTCDATETIME() WHERE Id = @Id",
+                    new { Id = uid }, transaction);
+
+            await connection.ExecuteAsync(
+                "DELETE FROM Interns WHERE Id = @Id", new { Id = internId }, transaction);
+
+            transaction.Commit();
+        }
+        catch
+        {
+            transaction.Rollback();
+            throw;
+        }
+    }
+
     public async Task<bool> ExistsByDepartmentIdAsync(int departmentId)
     {
         const string sql = @"

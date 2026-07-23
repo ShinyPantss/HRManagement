@@ -1,6 +1,7 @@
 using HRManagement.WebUI.Models.Api.Interns;
 using HRManagement.WebUI.Models.Interns;
 using HRManagement.WebUI.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
@@ -120,6 +121,7 @@ public class InternsController : Controller
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {

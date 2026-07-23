@@ -1,6 +1,7 @@
 @model IEnumerable<HRManagement.WebUI.Models.Api.Interns.InternResponse>
 @{
     ViewData["Title"] = "Stajyerler";
+    var canDelete = User.IsInRole("Admin");   // silme yalnızca Admin
 }
 
 <div class="page-head d-flex align-items-center">
@@ -39,11 +40,14 @@
                         <td>@intern.StartDate.ToString("dd.MM.yyyy") – @intern.EndDate.ToString("dd.MM.yyyy")</td>
                         <td class="text-end">
                             <a asp-action="Edit" asp-route-id="@intern.Id" class="btn btn-sm btn-outline-secondary">Düzenle</a>
-                            <form asp-action="Delete" asp-route-id="@intern.Id" method="post" class="d-inline"
-                                  onsubmit="return confirm('Bu stajyeri silmek istediğinize emin misiniz?');">
-                                @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-sm btn-outline-danger">Sil</button>
-                            </form>
+                            @if (canDelete)
+                            {
+                                <form asp-action="Delete" asp-route-id="@intern.Id" method="post" class="d-inline"
+                                      onsubmit="return confirm('Bu stajyeri silmek istediğinize emin misiniz? Hesabı pasife alınır, izin/hesap talepleri silinir.');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Sil</button>
+                                </form>
+                            }
                         </td>
                     </tr>
                 }

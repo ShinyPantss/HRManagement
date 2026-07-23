@@ -62,6 +62,8 @@ public class InternsController : ControllerBase
         return Ok(BaseResponse<int>.Success(id, "Stajyer güncellendi."));
     }
 
+    // Silme yalnızca Admin (çalışan silmeyle tutarlı).
+    [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {
