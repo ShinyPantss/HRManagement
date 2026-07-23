@@ -45,8 +45,8 @@ public sealed class CreateEmployeeCommandHandler : IRequestHandler<CreateEmploye
             if (manager is null)
                 throw new ValidationException("Seçilen yönetici bulunamadı.");
 
-            // Yönetici, çalışandan kıdemce yüksek olmalı (Uzman, Müdür'e yönetici olamaz).
-            ManagerAssignment.EnsureManagerOutranks(manager.Seniority, request.Seniority);
+            // Yönetici kademesi + kıdem kuralı (Uzman/Kıd.Uzman/Müdür Yrd. yönetici olamaz).
+            ManagerAssignment.EnsureManagerEligible(manager.Seniority, request.Seniority);
         }
 
         if (request.UserId is int userId)

@@ -35,4 +35,10 @@ public static class SeniorityDisplay
 
     public static IEnumerable<SelectListItem> Options() =>
         Levels.Select(l => new SelectListItem(l.Label, l.Value.ToString()));
+
+    /// <summary>
+    /// Yönetici kademesi mi? (GM=1, GMY=2, Müdür=3). Yalnızca bunlar birine
+    /// yönetici olabilir — API'deki SeniorityLevel.IsManagerial ile aynı kural.
+    /// </summary>
+    public static bool IsManagerial(int? seniority) => seniority is 1 or 2 or 3;
 }

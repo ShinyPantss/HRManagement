@@ -1,3 +1,4 @@
+using HRManagement.WebUI.Models;
 using HRManagement.WebUI.Models.Api.Employees;
 using HRManagement.WebUI.Models.Employees;
 using HRManagement.WebUI.Services;
@@ -205,13 +206,13 @@ public class EmployeesController : Controller
                 .ToList();
         }
 
-        // Yönetici adayları = mevcut çalışanlar; düzenlemede kişinin kendisi
-        // listelenmez (kendi yöneticisi olamaz — API de ayrıca reddeder).
-        // Kıdem de taşınır: form, seçilen kıdeme göre listeyi süzer.
+        // Yönetici adayları = YALNIZCA yönetici kademesindeki (GM/GMY/Müdür)
+        // çalışanlar; kişinin kendisi listelenmez. Kıdemce "çalışandan yüksek"
+        // süzmesini JS seçilen kıdeme göre yapar; API her hâlükârda son sözü söyler.
         var employees = await _employeeApi.GetAllAsync();
 
         form.ManagerCandidates = (employees.Data ?? [])
-            .Where(e => e.Id != form.Id)
+            .Where(e => e.Id != form.Id && SeniorityDisplay.IsManagerial(e.Seniority))
             .Select(e => new ManagerCandidate(e.Id, $"{e.FirstName} {e.LastName}", e.Seniority))
             .ToList();
     }

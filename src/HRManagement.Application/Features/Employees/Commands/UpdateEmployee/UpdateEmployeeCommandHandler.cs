@@ -78,8 +78,8 @@ public sealed class UpdateEmployeeCommandHandler : IRequestHandler<UpdateEmploye
         if (manager is null)
             throw new ValidationException("Seçilen yönetici bulunamadı.");
 
-        // Yönetici, çalışandan kıdemce yüksek olmalı (Uzman, Müdür'e yönetici olamaz).
-        Shared.ManagerAssignment.EnsureManagerOutranks(manager.Seniority, employeeSeniority);
+        // Yönetici kademesi + kıdem kuralı (Uzman/Kıd.Uzman/Müdür Yrd. yönetici olamaz).
+        Shared.ManagerAssignment.EnsureManagerEligible(manager.Seniority, employeeSeniority);
 
         // Döngü önleme: yeni yönetici bu çalışanın ALTINDA ise (çalışan, adayın
         // zincirinde yukarıdaysa) bağ kurulunca A→B→A döngüsü oluşur ve onay
