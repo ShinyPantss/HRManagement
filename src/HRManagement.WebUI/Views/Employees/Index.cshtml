@@ -10,6 +10,8 @@
 @{
     // Çalışan kaydı açma/değiştirme İK işidir. Yönetici yalnızca ekibini GÖRÜR.
     var canManage = User.IsInRole("HR") || User.IsInRole("Admin");
+    // Silme yalnızca Admin'de (HR silemez).
+    var canDelete = User.IsInRole("Admin");
 }
 
 <div class="page-head d-flex align-items-center">
@@ -62,8 +64,11 @@
                             @if (canManage)
                             {
                                 <a asp-action="Edit" asp-route-id="@employee.Id" class="btn btn-sm btn-outline-secondary">Düzenle</a>
+                            }
+                            @if (canDelete)
+                            {
                                 <form asp-action="Delete" asp-route-id="@employee.Id" method="post" class="d-inline"
-                                      onsubmit="return confirm('Bu çalışanı silmek istediğinize emin misiniz?');">
+                                      onsubmit="return confirm('Bu çalışanı silmek istediğinize emin misiniz? Hesabı pasife alınır, izin/hesap talepleri silinir.');">
                                     @Html.AntiForgeryToken()
                                     <button type="submit" class="btn btn-sm btn-outline-danger">Sil</button>
                                 </form>

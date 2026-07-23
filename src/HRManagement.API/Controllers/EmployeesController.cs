@@ -71,7 +71,8 @@ public class EmployeesController : ControllerBase
         return Ok(BaseResponse<int>.Success(id, "Çalışan güncellendi."));
     }
 
-    [Authorize(Roles = "HR,Admin")]
+    // Silme yalnızca Admin (HR ekler/düzenler ama silemez).
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {

@@ -167,7 +167,7 @@ public class EmployeesController : Controller
     }
 
     [HttpPost]
-    [Authorize(Roles = "HR,Admin")]
+    [Authorize(Roles = "Admin")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {

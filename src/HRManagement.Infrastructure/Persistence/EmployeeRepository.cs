@@ -78,6 +78,40 @@ public class EmployeeRepository : IEmployeeRepository
         await connection.ExecuteAsync(sql, new { Id = id });
     }
 
+    public async Task DeleteWithAccountAsync(int employeeId, int? userId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        connection.Open();
+
+        using var transaction = connection.BeginTransaction();
+        try
+        {
+            // Bu çalışana AİT hesap talepleri (o çalışan hakkında açılanlar) gider.
+            await connection.ExecuteAsync(
+                "DELETE FROM AccountRequests WHERE EmployeeId = @Id",
+                new { Id = employeeId }, transaction);
+
+            // Login hesabı: SİLİNMEZ, pasife alınır. O hesap başka talepleri
+            // (RequestedBy/ReviewedBy) referanslıyor olabilir; hard-delete FK'ye
+            // takılır ve denetim izini bozar. Pasif hesap giriş yapamaz.
+            if (userId is int uid)
+                await connection.ExecuteAsync(
+                    "UPDATE Users SET IsActive = 0, UpdatedAt = SYSUTCDATETIME() WHERE Id = @Id",
+                    new { Id = uid }, transaction);
+
+            await connection.ExecuteAsync(
+                "DELETE FROM Employees WHERE Id = @Id",
+                new { Id = employeeId }, transaction);
+
+            transaction.Commit();
+        }
+        catch
+        {
+            transaction.Rollback();
+            throw;
+        }
+    }
+
     public async Task<bool> ExistsByDepartmentIdAsync(int departmentId)
     {
         const string sql = @"

@@ -10,6 +10,14 @@ public interface IEmployeeRepository
     Task UpdateAsync(Employee employee);
     Task DeleteAsync(int id);
 
+    /// <summary>
+    /// Çalışanı, kendi hesap taleplerini TEK TRANSACTION'da siler ve varsa login
+    /// hesabını PASİFE alır (hard-delete değil: o hesap başka talepleri açmış/
+    /// onaylamış olabilir, silmek denetim izini bozardı). İzin geçmişi, mentorluk
+    /// ve ekip bağı burada ele alınmaz; onları handler önden engeller.
+    /// </summary>
+    Task DeleteWithAccountAsync(int employeeId, int? userId);
+
     // Silme öncesi bağımlılık kontrolleri. Tüm kayıtları çekip bellekte saymak
     // yerine "var mı?" sorusunu veritabanına sorarız: ilk eşleşmede durur.
     Task<bool> ExistsByDepartmentIdAsync(int departmentId);
