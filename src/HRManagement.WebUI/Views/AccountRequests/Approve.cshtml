@@ -31,9 +31,9 @@
 
             <div class="mb-3">
                 <label asp-for="Password" class="form-label"></label>
-                <input asp-for="Password" class="form-control" autocomplete="new-password" />
+                <input asp-for="Password" type="text" class="form-control" autocomplete="off" />
                 <span asp-validation-for="Password" class="text-danger small"></span>
-                <div class="form-text">Kullanıcı ilk girişte değiştirmeli (geçici şifre).</div>
+                <div class="form-text">Otomatik üretilir; kullanıcıya iletin, ilk girişte değiştirmeli.</div>
             </div>
 
             <div class="mb-3">

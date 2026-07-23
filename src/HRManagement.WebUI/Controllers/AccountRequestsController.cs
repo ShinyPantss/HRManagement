@@ -114,19 +114,40 @@ public class AccountRequestsController : Controller
             RoleOptions = RoleOptions()
         };
 
-        // Çalışan talebinde e-posta ve kullanıcı adını öneri olarak dolduralım.
-        if (request.EmployeeId is int eid)
+        // Şirket standardında otomatik doldur (Admin yine düzenleyebilir):
+        //   kullanıcı adı / e-posta : HPY + 1{id}  → id 15 ise HPY10015 / hpy10015@hepiyi.com
+        //   geçici şifre            : hpy{soyisim}{id} → hpyYılmaz15
+        // id, kişinin (çalışan/stajyer) KENDİ id'sidir — talebin değil (kalıcı kimlik).
+        var (subjectId, lastName) = await GetSubjectAsync(request);
+        if (subjectId > 0)
         {
-            var emp = await _employeeApi.GetByIdAsync(eid);
-            if (emp.IsSuccess && emp.Data is not null)
-            {
-                form.Email = emp.Data.Email;
-                form.Username = emp.Data.Email.Split('@')[0];
-            }
+            form.Username = $"HPY1{subjectId:D4}";
+            form.Email = $"hpy1{subjectId:D4}@hepiyi.com";
+            form.Password = $"hpy{StripSpaces(lastName)}{subjectId}";
         }
 
         return View(form);
     }
+
+    // Talebin sahibini (çalışan veya stajyer) çözer: kimlik üretimi için id + soyisim.
+    private async Task<(int Id, string LastName)> GetSubjectAsync(AccountRequestResponse request)
+    {
+        if (request.EmployeeId is int eid)
+        {
+            var emp = await _employeeApi.GetByIdAsync(eid);
+            if (emp.IsSuccess && emp.Data is not null)
+                return (emp.Data.Id, emp.Data.LastName);
+        }
+        else if (request.InternId is int iid)
+        {
+            var intern = await _internApi.GetByIdAsync(iid);
+            if (intern.IsSuccess && intern.Data is not null)
+                return (intern.Data.Id, intern.Data.LastName);
+        }
+        return (0, string.Empty);
+    }
+
+    private static string StripSpaces(string value) => value.Replace(" ", string.Empty);
 
     [HttpPost]
     [Authorize(Roles = "Admin")]

@@ -25,9 +25,10 @@ public class ApproveAccountRequestViewModel
     [Display(Name = "E-posta")]
     public string Email { get; set; } = string.Empty;
 
+    // Bilinçli olarak DataType.Password YOK: geçici şifre görünür olmalı ki Admin
+    // okuyup kullanıcıya iletebilsin (type=password alanı value render etmez).
     [Required(ErrorMessage = "Geçici şifre zorunludur.")]
     [MinLength(6, ErrorMessage = "Şifre en az 6 karakter olmalıdır.")]
-    [DataType(DataType.Password)]
     [Display(Name = "Geçici Şifre")]
     public string Password { get; set; } = string.Empty;
 
