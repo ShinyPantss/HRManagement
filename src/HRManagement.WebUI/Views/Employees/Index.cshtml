@@ -1,6 +1,10 @@
+@using HRManagement.WebUI.Models
 @model IEnumerable<HRManagement.WebUI.Models.Api.Employees.EmployeeResponse>
 @{
     ViewData["Title"] = "Çalışanlar";
+    var deptNames = ViewBag.DepartmentNames as Dictionary<int, string> ?? new();
+    string PositionOf(HRManagement.WebUI.Models.Api.Employees.EmployeeResponse e) =>
+        SeniorityDisplay.Position(deptNames.TryGetValue(e.DepartmentId, out var n) ? n : null, e.Seniority);
 }
 
 @{
@@ -43,7 +47,7 @@
                         <td>@employee.FirstName</td>
                         <td>@employee.LastName</td>
                         <td>@employee.Email</td>
-                        <td>@employee.Position</td>
+                        <td>@PositionOf(employee)</td>
                         <td>
                             @if (employee.IsActive)
                             {

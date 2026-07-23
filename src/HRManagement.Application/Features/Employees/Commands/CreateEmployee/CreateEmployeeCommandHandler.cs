@@ -54,10 +54,10 @@ public sealed class CreateEmployeeCommandHandler : IRequestHandler<CreateEmploye
             Phone = request.Phone,
             DateOfBirth = request.BirthDate,
             HireDate = request.HireDate,
-            Position = request.Position,
             DepartmentId = request.DepartmentId,
             UserId = request.UserId,
             ManagerId = request.ManagerId,
+            Seniority = request.Seniority,
             AnnualLeaveDays = request.AnnualLeaveDays
         };
 

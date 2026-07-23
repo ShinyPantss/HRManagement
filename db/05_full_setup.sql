@@ -106,7 +106,6 @@ CREATE TABLE dbo.Employees
     NationalId      nvarchar(11)  NULL,
     DateOfBirth     date          NOT NULL,
     DepartmentId    int           NOT NULL,
-    Position        nvarchar(100) NOT NULL,
     HireDate        date          NOT NULL,
     Email           nvarchar(100) NOT NULL,
     Phone           nvarchar(20)  NULL,
@@ -114,12 +113,14 @@ CREATE TABLE dbo.Employees
     UserId          int           NULL,
     ManagerId       int           NULL,
     AnnualLeaveDays int           NULL,
+    Seniority       int           NULL,   -- 1=GM 2=GMY 3=Müdür 4=MüdürYrd 5=Kıd.Uzman 6=Uzman
     CreatedAt       datetime2(0)  NOT NULL CONSTRAINT DF_Employees_CreatedAt DEFAULT SYSUTCDATETIME(),
     UpdatedAt       datetime2(0)  NULL,
 
     CONSTRAINT PK_Employees                  PRIMARY KEY (Id),
     CONSTRAINT UQ_Employees_Email            UNIQUE (Email),
     CONSTRAINT CK_Employees_AnnualLeaveDays  CHECK (AnnualLeaveDays IS NULL OR AnnualLeaveDays >= 0),
+    CONSTRAINT CK_Employees_Seniority        CHECK (Seniority IS NULL OR Seniority BETWEEN 1 AND 6),
     CONSTRAINT FK_Employees_Departments      FOREIGN KEY (DepartmentId) REFERENCES dbo.Departments (Id),
     CONSTRAINT FK_Employees_Users            FOREIGN KEY (UserId)       REFERENCES dbo.Users (Id),
     CONSTRAINT FK_Employees_Manager          FOREIGN KEY (ManagerId)    REFERENCES dbo.Employees (Id)
@@ -333,12 +334,20 @@ IF COL_LENGTH('dbo.LeaveRequests', 'CreatedAt') IS NULL
         UpdatedAt datetime2(0) NULL;
 GO
 
-/* --- Employees: ekip ve izin hakkı --- */
+/* --- Employees: ekip, izin hakkı ve kıdem --- */
 IF COL_LENGTH('dbo.Employees', 'ManagerId') IS NULL
     ALTER TABLE dbo.Employees ADD ManagerId int NULL;
 GO
 IF COL_LENGTH('dbo.Employees', 'AnnualLeaveDays') IS NULL
     ALTER TABLE dbo.Employees ADD AnnualLeaveDays int NULL;
+GO
+IF COL_LENGTH('dbo.Employees', 'Seniority') IS NULL
+    ALTER TABLE dbo.Employees ADD Seniority int NULL;
+GO
+
+/* --- Position artık türetiliyor (Departman + Kıdem); sütun kaldırılır --- */
+IF COL_LENGTH('dbo.Employees', 'Position') IS NOT NULL
+    ALTER TABLE dbo.Employees DROP COLUMN Position;
 GO
 
 /* --- LeaveRequests: stajyer talepleri --- */
@@ -408,6 +417,12 @@ GO
 IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_Employees_AnnualLeaveDays')
     ALTER TABLE dbo.Employees ADD CONSTRAINT CK_Employees_AnnualLeaveDays
         CHECK (AnnualLeaveDays IS NULL OR AnnualLeaveDays >= 0);
+GO
+
+/* --- Employees.Seniority 1..6 (enum aralığı) --- */
+IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_Employees_Seniority')
+    ALTER TABLE dbo.Employees ADD CONSTRAINT CK_Employees_Seniority
+        CHECK (Seniority IS NULL OR Seniority BETWEEN 1 AND 6);
 GO
 
 /* --- Employees.ManagerId FK (kendine referans) ---

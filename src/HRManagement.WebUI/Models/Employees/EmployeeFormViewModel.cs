@@ -42,13 +42,14 @@ public class EmployeeFormViewModel
     [Display(Name = "İşe Giriş Tarihi")]
     public DateTime? HireDate { get; set; }
 
-    [Required(ErrorMessage = "Pozisyon zorunludur.")]
-    [Display(Name = "Pozisyon")]
-    public string Position { get; set; } = string.Empty;
-
     [Required(ErrorMessage = "Departman seçimi zorunludur.")]
     [Display(Name = "Departman")]
     public int? DepartmentId { get; set; }
+
+    // Pozisyon ARTIK GİRİLMİYOR: Departman + Kıdem'den türetilir ("IT Uzmanı").
+    [Required(ErrorMessage = "Kıdem seçimi zorunludur.")]
+    [Display(Name = "Kıdem / Ünvan")]
+    public int? Seniority { get; set; }
 
     [Display(Name = "Yönetici (opsiyonel)")]
     public int? ManagerId { get; set; }
@@ -71,4 +72,7 @@ public class EmployeeFormViewModel
 
     /// <summary>Yönetici dropdown'ı: mevcut çalışanlar (düzenlemede kişinin kendisi hariç).</summary>
     public IEnumerable<SelectListItem> ManagerOptions { get; set; } = [];
+
+    /// <summary>Kıdem dropdown'ı (GM … Uzman).</summary>
+    public IEnumerable<SelectListItem> SeniorityOptions { get; set; } = SeniorityDisplay.Options();
 }

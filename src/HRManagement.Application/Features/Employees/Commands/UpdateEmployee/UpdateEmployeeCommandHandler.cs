@@ -56,10 +56,10 @@ public sealed class UpdateEmployeeCommandHandler : IRequestHandler<UpdateEmploye
         employee.Phone = request.Phone;
         employee.DateOfBirth = request.BirthDate;
         employee.HireDate = request.HireDate;
-        employee.Position = request.Position;
         employee.DepartmentId = request.DepartmentId;
         employee.UserId = request.UserId;
         employee.ManagerId = request.ManagerId;
+        employee.Seniority = request.Seniority;
         employee.AnnualLeaveDays = request.AnnualLeaveDays;
         employee.IsActive = request.IsActive;
 

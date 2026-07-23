@@ -33,6 +33,12 @@ public class EmployeesController : Controller
             return View(new List<EmployeeResponse>());
         }
 
+        // "Pozisyon" = Departman + Kıdem (türetilir). Liste için departman
+        // Id→Ad sözlüğünü hazırlayıp View'a veriyoruz.
+        var departments = await _departmentApi.GetAllAsync();
+        ViewBag.DepartmentNames = (departments.Data ?? [])
+            .ToDictionary(d => d.Id, d => d.Name);
+
         return View(response.Data ?? new List<EmployeeResponse>());
     }
 
@@ -68,10 +74,10 @@ public class EmployeesController : Controller
             // ModelState geçerliyse [Required] sayesinde bu alanlar dolu.
             BirthDate = form.BirthDate!.Value,
             HireDate = form.HireDate!.Value,
-            Position = form.Position,
             DepartmentId = form.DepartmentId!.Value,
             UserId = form.UserId,
             ManagerId = form.ManagerId,
+            Seniority = form.Seniority,
             AnnualLeaveDays = form.AnnualLeaveDays
         });
 
@@ -108,10 +114,10 @@ public class EmployeesController : Controller
             Phone = response.Data.Phone,
             BirthDate = response.Data.BirthDate,
             HireDate = response.Data.HireDate,
-            Position = response.Data.Position,
             DepartmentId = response.Data.DepartmentId,
             UserId = response.Data.UserId,
             ManagerId = response.Data.ManagerId,
+            Seniority = response.Data.Seniority,
             AnnualLeaveDays = response.Data.AnnualLeaveDays,
             IsActive = response.Data.IsActive
         };
@@ -140,10 +146,10 @@ public class EmployeesController : Controller
             Phone = form.Phone,
             BirthDate = form.BirthDate!.Value,
             HireDate = form.HireDate!.Value,
-            Position = form.Position,
             DepartmentId = form.DepartmentId!.Value,
             UserId = form.UserId,
             ManagerId = form.ManagerId,
+            Seniority = form.Seniority,
             AnnualLeaveDays = form.AnnualLeaveDays,
             IsActive = form.IsActive
         });

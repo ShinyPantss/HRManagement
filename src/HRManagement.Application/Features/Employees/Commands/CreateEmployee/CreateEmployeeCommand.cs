@@ -1,13 +1,15 @@
+using HRManagement.Domain.Enums;
 using MediatR;
 
 namespace HRManagement.Application.Features.Employees.Commands.CreateEmployee;
 
 /// <summary>
-/// "Yeni çalışan ekle" isteği. IRequest&lt;int&gt;: bu mesaj işlendiğinde
-/// geriye yeni kaydın Id'si döner. MediatR bu tipe bakarak handler'ı bulur.
+/// "Yeni çalışan ekle" isteği. Geriye yeni kaydın Id'si döner.
 ///
-/// UserId    → giriş hesabıyla ilişkilendirme (5.2: sonradan da bağlanabilir, null olabilir)
+/// Position (serbest metin) YOK: pozisyon Departman + Seniority'den türetilir.
+/// UserId    → giriş hesabıyla ilişkilendirme (5.2; sonradan da bağlanabilir)
 /// ManagerId → bağlı olduğu yönetici; izin onay zinciri buradan kurulur
+/// Seniority → kıdem/ünvan seviyesi (GM, GMY, Müdür...)
 /// AnnualLeaveDays → izin hakkını elle ezme; normalde null (kıdemden hesaplanır)
 /// </summary>
 public sealed record CreateEmployeeCommand(
@@ -18,8 +20,8 @@ public sealed record CreateEmployeeCommand(
     string? Phone,
     DateTime BirthDate,
     DateTime HireDate,
-    string Position,
     int DepartmentId,
     int? UserId,
     int? ManagerId,
+    SeniorityLevel? Seniority,
     int? AnnualLeaveDays) : IRequest<int>;

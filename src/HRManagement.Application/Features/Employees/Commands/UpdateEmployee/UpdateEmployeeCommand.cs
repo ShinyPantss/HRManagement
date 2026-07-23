@@ -1,3 +1,4 @@
+using HRManagement.Domain.Enums;
 using MediatR;
 
 namespace HRManagement.Application.Features.Employees.Commands.UpdateEmployee;
@@ -11,9 +12,9 @@ public sealed record UpdateEmployeeCommand(
     string? Phone,
     DateTime BirthDate,
     DateTime HireDate,
-    string Position,
     int DepartmentId,
     int? UserId,
     int? ManagerId,
+    SeniorityLevel? Seniority,
     int? AnnualLeaveDays,
     bool IsActive) : IRequest<Unit>;

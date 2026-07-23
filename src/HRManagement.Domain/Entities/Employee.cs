@@ -1,3 +1,5 @@
+using HRManagement.Domain.Enums;
+
 namespace HRManagement.Domain.Entities;
 
 public class Employee
@@ -10,7 +12,14 @@ public class Employee
     public string? Phone { get; set; }
     public DateTime DateOfBirth { get; set; }
     public DateTime HireDate { get; set; }
-    public string Position { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Kıdem/ünvan seviyesi (GM, GMY, Müdür...). "Pozisyon" ayrı bir alan olarak
+    /// TUTULMAZ; gösterimde Departman + Kıdem'den türetilir ("IT Uzmanı" gibi).
+    /// Mevcut kayıtlar için null olabilir.
+    /// </summary>
+    public SeniorityLevel? Seniority { get; set; }
+
     public int DepartmentId { get; set; }
     public int? UserId { get; set; }
 

@@ -19,10 +19,10 @@ public static class EmployeeMapping
         Phone = employee.Phone,
         BirthDate = employee.DateOfBirth,
         HireDate = employee.HireDate,
-        Position = employee.Position,
         DepartmentId = employee.DepartmentId,
         UserId = employee.UserId,
         ManagerId = employee.ManagerId,
+        Seniority = (int?)employee.Seniority,
         AnnualLeaveDays = employee.AnnualLeaveDays,
         IsActive = employee.IsActive
     };

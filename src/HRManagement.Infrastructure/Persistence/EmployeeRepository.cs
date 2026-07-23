@@ -34,8 +34,8 @@ public class EmployeeRepository : IEmployeeRepository
     {
         // CreatedAt yazılmaz: DB default'u (SYSUTCDATETIME) doldurur — saat tek kaynaktan.
         const string sql = @"
-            INSERT INTO Employees (FirstName, LastName, NationalId, DateOfBirth, DepartmentId, Position, HireDate, Email, Phone, IsActive, UserId, ManagerId, AnnualLeaveDays)
-            VALUES (@FirstName, @LastName, @NationalId, @DateOfBirth, @DepartmentId, @Position, @HireDate, @Email, @Phone, @IsActive, @UserId, @ManagerId, @AnnualLeaveDays);
+            INSERT INTO Employees (FirstName, LastName, NationalId, DateOfBirth, DepartmentId, HireDate, Email, Phone, IsActive, UserId, ManagerId, AnnualLeaveDays, Seniority)
+            VALUES (@FirstName, @LastName, @NationalId, @DateOfBirth, @DepartmentId, @HireDate, @Email, @Phone, @IsActive, @UserId, @ManagerId, @AnnualLeaveDays, @Seniority);
             SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
         using var connection = _connectionFactory.CreateConnection();
@@ -53,7 +53,6 @@ public class EmployeeRepository : IEmployeeRepository
                 NationalId = @NationalId,
                 DateOfBirth = @DateOfBirth,
                 DepartmentId = @DepartmentId,
-                Position = @Position,
                 HireDate = @HireDate,
                 Email = @Email,
                 Phone = @Phone,
@@ -61,6 +60,7 @@ public class EmployeeRepository : IEmployeeRepository
                 UserId = @UserId,
                 ManagerId = @ManagerId,
                 AnnualLeaveDays = @AnnualLeaveDays,
+                Seniority = @Seniority,
                 UpdatedAt = SYSUTCDATETIME()
             WHERE Id = @Id";
 

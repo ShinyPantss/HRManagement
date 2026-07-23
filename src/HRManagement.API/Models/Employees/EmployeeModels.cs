@@ -14,10 +14,10 @@ public sealed class CreateEmployeeRequest
         string? phone,
         DateTime birthDate,
         DateTime hireDate,
-        string position,
         int departmentId,
         int? userId,
         int? managerId,
+        int? seniority,
         int? annualLeaveDays)
     {
         FirstName = firstName;
@@ -27,10 +27,10 @@ public sealed class CreateEmployeeRequest
         Phone = phone;
         BirthDate = birthDate;
         HireDate = hireDate;
-        Position = position;
         DepartmentId = departmentId;
         UserId = userId;
         ManagerId = managerId;
+        Seniority = seniority;
         AnnualLeaveDays = annualLeaveDays;
     }
 
@@ -41,10 +41,10 @@ public sealed class CreateEmployeeRequest
     public string? Phone { get; }
     public DateTime BirthDate { get; }
     public DateTime HireDate { get; }
-    public string Position { get; }
     public int DepartmentId { get; }
     public int? UserId { get; }
     public int? ManagerId { get; }
+    public int? Seniority { get; }
     public int? AnnualLeaveDays { get; }
 }
 
@@ -58,10 +58,10 @@ public sealed class UpdateEmployeeRequest
         string? phone,
         DateTime birthDate,
         DateTime hireDate,
-        string position,
         int departmentId,
         int? userId,
         int? managerId,
+        int? seniority,
         int? annualLeaveDays,
         bool isActive)
     {
@@ -72,10 +72,10 @@ public sealed class UpdateEmployeeRequest
         Phone = phone;
         BirthDate = birthDate;
         HireDate = hireDate;
-        Position = position;
         DepartmentId = departmentId;
         UserId = userId;
         ManagerId = managerId;
+        Seniority = seniority;
         AnnualLeaveDays = annualLeaveDays;
         IsActive = isActive;
     }
@@ -87,10 +87,10 @@ public sealed class UpdateEmployeeRequest
     public string? Phone { get; }
     public DateTime BirthDate { get; }
     public DateTime HireDate { get; }
-    public string Position { get; }
     public int DepartmentId { get; }
     public int? UserId { get; }
     public int? ManagerId { get; }
+    public int? Seniority { get; }
     public int? AnnualLeaveDays { get; }
     public bool IsActive { get; }
 }
@@ -106,10 +106,10 @@ public sealed class EmployeeResponse
         string? phone,
         DateTime birthDate,
         DateTime hireDate,
-        string position,
         int departmentId,
         int? userId,
         int? managerId,
+        int? seniority,
         int? annualLeaveDays,
         bool isActive)
     {
@@ -121,10 +121,10 @@ public sealed class EmployeeResponse
         Phone = phone;
         BirthDate = birthDate;
         HireDate = hireDate;
-        Position = position;
         DepartmentId = departmentId;
         UserId = userId;
         ManagerId = managerId;
+        Seniority = seniority;
         AnnualLeaveDays = annualLeaveDays;
         IsActive = isActive;
     }
@@ -137,10 +137,10 @@ public sealed class EmployeeResponse
     public string? Phone { get; }
     public DateTime BirthDate { get; }
     public DateTime HireDate { get; }
-    public string Position { get; }
     public int DepartmentId { get; }
     public int? UserId { get; }
     public int? ManagerId { get; }
+    public int? Seniority { get; }
     public int? AnnualLeaveDays { get; }
     public bool IsActive { get; }
 }

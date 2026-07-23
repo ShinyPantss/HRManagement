@@ -23,8 +23,9 @@ public sealed class CreateEmployeeCommandValidator : AbstractValidator<CreateEmp
             .NotEmpty().WithMessage("E-posta zorunludur.")
             .EmailAddress().WithMessage("Geçerli bir e-posta adresi giriniz.");
 
-        RuleFor(command => command.Position)
-            .MaximumLength(100).WithMessage("Pozisyon en fazla 100 karakter olabilir.");
+        RuleFor(command => command.Seniority!.Value)
+            .IsInEnum().When(command => command.Seniority.HasValue)
+            .WithMessage("Geçerli bir kıdem seçilmelidir.");
 
         RuleFor(command => command.DepartmentId)
             .GreaterThan(0).WithMessage("Departman seçilmelidir.");
