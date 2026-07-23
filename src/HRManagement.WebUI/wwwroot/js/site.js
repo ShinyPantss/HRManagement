@@ -6,3 +6,11 @@ document.addEventListener("click", (e) => {
         document.body.classList.remove("sidebar-open");
     }
 });
+
+// TempData bildirimlerini toast olarak göster (Bootstrap toast'lar elle başlatılır).
+// 5 sn sonra otomatik kapanır; kullanıcı çarpıyla erken kapatabilir.
+document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll(".app-toast").forEach((el) => {
+        bootstrap.Toast.getOrCreateInstance(el, { delay: 5000 }).show();
+    });
+});

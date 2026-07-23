@@ -18,11 +18,11 @@ public interface IDepartmentApi
     Task<BaseResponse<DepartmentResponse>> GetByIdAsync(int id);
 
     [Post("/api/departments")]
-    Task<BaseResponse<int>> CreateAsync([Body] DepartmentRequest request);
+    Task<BaseResponse<int?>> CreateAsync([Body] DepartmentRequest request);
 
     [Put("/api/departments/{id}")]
-    Task<BaseResponse<int>> UpdateAsync(int id, [Body] DepartmentRequest request);
+    Task<BaseResponse<int?>> UpdateAsync(int id, [Body] DepartmentRequest request);
 
     [Delete("/api/departments/{id}")]
-    Task<BaseResponse<int>> DeleteAsync(int id);
+    Task<BaseResponse<int?>> DeleteAsync(int id);
 }

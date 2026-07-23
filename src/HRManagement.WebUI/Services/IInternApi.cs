@@ -18,11 +18,11 @@ public interface IInternApi
     Task<BaseResponse<InternResponse>> GetByIdAsync(int id);
 
     [Post("/api/interns")]
-    Task<BaseResponse<int>> CreateAsync([Body] InternRequest request);
+    Task<BaseResponse<int?>> CreateAsync([Body] InternRequest request);
 
     [Put("/api/interns/{id}")]
-    Task<BaseResponse<int>> UpdateAsync(int id, [Body] InternRequest request);
+    Task<BaseResponse<int?>> UpdateAsync(int id, [Body] InternRequest request);
 
     [Delete("/api/interns/{id}")]
-    Task<BaseResponse<int>> DeleteAsync(int id);
+    Task<BaseResponse<int?>> DeleteAsync(int id);
 }

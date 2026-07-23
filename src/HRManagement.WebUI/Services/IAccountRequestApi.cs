@@ -14,13 +14,13 @@ public interface IAccountRequestApi
     Task<BaseResponse<List<AccountRequestResponse>>> GetPendingAsync();
 
     [Post("/api/accountrequests")]
-    Task<BaseResponse<int>> CreateAsync([Body] CreateAccountRequestRequest request);
+    Task<BaseResponse<int?>> CreateAsync([Body] CreateAccountRequestRequest request);
 
     [Post("/api/accountrequests/{id}/approve")]
-    Task<BaseResponse<int>> ApproveAsync(int id, [Body] ApproveAccountRequestRequest request);
+    Task<BaseResponse<int?>> ApproveAsync(int id, [Body] ApproveAccountRequestRequest request);
 
     [Post("/api/accountrequests/{id}/reject")]
-    Task<BaseResponse<int>> RejectAsync(int id, [Body] RejectAccountRequestRequest request);
+    Task<BaseResponse<int?>> RejectAsync(int id, [Body] RejectAccountRequestRequest request);
 
 
 }

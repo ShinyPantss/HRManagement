@@ -20,6 +20,7 @@ public class Employee
     /// </summary>
     public SeniorityLevel? Seniority { get; set; }
 
+    // GM dahil herkes bir departmana bağlıdır (GM → "Yönetim" departmanı).
     public int DepartmentId { get; set; }
     public int? UserId { get; set; }
 
