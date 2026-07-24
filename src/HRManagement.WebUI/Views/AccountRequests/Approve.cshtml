@@ -5,7 +5,7 @@
 
 <div class="page-head">
     <h1>Talebi Onayla — Hesap Aç</h1>
-    <p class="text-muted mb-0">@Model.SubjectType: <strong>@Model.SubjectName</strong> · Önerilen rol: @Model.SuggestedRole</p>
+    <p class="text-muted mb-0">@Model.SubjectType: <strong>@Model.SubjectName</strong> · Otomatik rol: @Model.SuggestedRole</p>
 </div>
 
 <div class="panel mt-3" style="max-width: 640px;">
@@ -36,12 +36,11 @@
                 <div class="form-text">Otomatik üretilir; kullanıcıya iletin, ilk girişte değiştirmeli.</div>
             </div>
 
-            <div class="mb-3">
-                <label asp-for="Role" class="form-label"></label>
-                <select asp-for="Role" asp-items="Model.RoleOptions" class="form-select">
-                    <option value="">Önerilen rolü kullan (@Model.SuggestedRole)</option>
-                </select>
-                <span asp-validation-for="Role" class="text-danger small"></span>
+            @* Rol SEÇİLMEZ: talebin (kişiden türetilmiş) rolü kullanılır — üstte
+               "Otomatik rol" olarak görünüyor. *@
+            <div class="alert alert-light border small text-muted py-2">
+                Rol otomatik atanır: <strong>@Model.SuggestedRole</strong>. Onaylarken yalnızca
+                kullanıcı adı, e-posta ve geçici şifre belirlenir.
             </div>
 
             <div class="d-flex gap-2 mt-4">

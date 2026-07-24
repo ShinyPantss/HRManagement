@@ -13,8 +13,7 @@ public interface IAccountRequestApi
     [Get("/api/accountrequests/pending")]
     Task<BaseResponse<List<AccountRequestResponse>>> GetPendingAsync();
 
-    [Post("/api/accountrequests")]
-    Task<BaseResponse<int?>> CreateAsync([Body] CreateAccountRequestRequest request);
+    // Manuel talep açma ucu kaldırıldı: talepler kayıt açılırken otomatik oluşuyor.
 
     [Post("/api/accountrequests/{id}/approve")]
     Task<BaseResponse<int?>> ApproveAsync(int id, [Body] ApproveAccountRequestRequest request);

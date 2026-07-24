@@ -12,26 +12,24 @@ public class AccountRequestResponse
     public string SubjectType { get; set; } = string.Empty;
     public int RequestedByUserId { get; set; }
     public string RequestedByUsername { get; set; } = string.Empty;
+
+    // Pozisyon gösterimi (Departman · Birim · Kıdem). Birim/Kıdem opsiyonel.
+    public string DepartmentName { get; set; } = string.Empty;
+    public string? UnitName { get; set; }
+    public int? Seniority { get; set; }
+
     public string SuggestedRole { get; set; } = string.Empty;
     public string? Note { get; set; }
     public string Status { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
 }
 
-public class CreateAccountRequestRequest
-{
-    public int? EmployeeId { get; set; }
-    public int? InternId { get; set; }
-    public int SuggestedRole { get; set; }
-    public string? Note { get; set; }
-}
-
+// Rol gönderilmez: talebin (kişiden türetilmiş) rolü kullanılır.
 public class ApproveAccountRequestRequest
 {
     public string Username { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
-    public int? Role { get; set; }
 }
 
 public class RejectAccountRequestRequest

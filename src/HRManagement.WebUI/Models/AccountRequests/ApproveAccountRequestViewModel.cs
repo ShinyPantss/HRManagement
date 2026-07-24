@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace HRManagement.WebUI.Models.AccountRequests;
 
@@ -32,8 +31,6 @@ public class ApproveAccountRequestViewModel
     [Display(Name = "Geçici Şifre")]
     public string Password { get; set; } = string.Empty;
 
-    [Display(Name = "Rol (boşsa önerilen kullanılır)")]
-    public int? Role { get; set; }
-
-    public IEnumerable<SelectListItem> RoleOptions { get; set; } = [];
+    // Rol onayda SEÇİLMEZ: talebin (kişiden türetilmiş) rolü kullanılır.
+    // SuggestedRole yalnızca üstte bilgi olarak gösterilir.
 }

@@ -93,15 +93,20 @@ public class AccountRequestRepository : IAccountRequestRepository
         // İlk JOIN'li sorgumuz: kişi adı (çalışan veya stajyerden) + talep eden
         // kullanıcı adı tek sorguda gelir. Rol/durum ham int okunur, C# tarafında
         // enum adına çevrilir (Türkçe etiketleri SQL'e gömmemek için).
+        // Departman/Birim adları ve çalışanın kıdemi de gelir: bekleyen ekranı
+        // "Tür + rol" yerine POZİSYON (Departman · Birim · Kıdem) gösterir.
         const string sql = @"
             SELECT ar.Id, ar.EmployeeId, ar.InternId,
                    COALESCE(e.FirstName + ' ' + e.LastName, i.FirstName + ' ' + i.LastName) AS SubjectName,
                    CASE WHEN ar.EmployeeId IS NOT NULL THEN N'Çalışan' ELSE N'Stajyer' END AS SubjectType,
                    ar.RequestedByUserId, ru.Username AS RequestedByUsername,
+                   d.Name AS DepartmentName, u.Name AS UnitName, e.Seniority AS Seniority,
                    ar.SuggestedRole, ar.Status, ar.Note, ar.CreatedAt
             FROM AccountRequests ar
             LEFT JOIN Employees e ON e.Id = ar.EmployeeId
             LEFT JOIN Interns   i ON i.Id = ar.InternId
+            LEFT JOIN Departments d ON d.Id = COALESCE(e.DepartmentId, i.DepartmentId)
+            LEFT JOIN Units u ON u.Id = COALESCE(e.UnitId, i.UnitId)
             JOIN Users ru ON ru.Id = ar.RequestedByUserId
             WHERE ar.Status = @Pending
             ORDER BY ar.CreatedAt";
@@ -118,6 +123,9 @@ public class AccountRequestRepository : IAccountRequestRepository
             SubjectType = r.SubjectType,
             RequestedByUserId = r.RequestedByUserId,
             RequestedByUsername = r.RequestedByUsername,
+            DepartmentName = r.DepartmentName,
+            UnitName = r.UnitName,
+            Seniority = r.Seniority,
             SuggestedRole = ((Role)r.SuggestedRole).ToString(),
             Note = r.Note,
             Status = ((AccountRequestStatus)r.Status).ToString(),
@@ -135,6 +143,9 @@ public class AccountRequestRepository : IAccountRequestRepository
         public string SubjectType { get; set; } = string.Empty;
         public int RequestedByUserId { get; set; }
         public string RequestedByUsername { get; set; } = string.Empty;
+        public string DepartmentName { get; set; } = string.Empty;
+        public string? UnitName { get; set; }
+        public int? Seniority { get; set; }
         public int SuggestedRole { get; set; }
         public int Status { get; set; }
         public string? Note { get; set; }

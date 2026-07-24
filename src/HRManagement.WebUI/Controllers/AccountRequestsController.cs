@@ -3,7 +3,6 @@ using HRManagement.WebUI.Models.Api.AccountRequests;
 using HRManagement.WebUI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace HRManagement.WebUI.Controllers;
 
@@ -36,46 +35,9 @@ public class AccountRequestsController : Controller
         _internApi = internApi;
     }
 
-    // ── HR: talep oluştur ────────────────────────────────────────────────
-    [Authorize(Roles = "HR")]
-    public async Task<IActionResult> Create()
-    {
-        var form = new CreateAccountRequestViewModel();
-        await FillOptionsAsync(form);
-        return View(form);
-    }
-
-    [HttpPost]
-    [Authorize(Roles = "HR")]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(CreateAccountRequestViewModel form)
-    {
-        if (!ModelState.IsValid)
-        {
-            await FillOptionsAsync(form);
-            return View(form);
-        }
-
-        var (employeeId, internId) = ParseSubject(form.Subject);
-
-        var response = await _accountRequestApi.CreateAsync(new CreateAccountRequestRequest
-        {
-            EmployeeId = employeeId,
-            InternId = internId,
-            SuggestedRole = form.SuggestedRole,
-            Note = form.Note
-        });
-
-        if (!response.IsSuccess)
-        {
-            ModelState.AddModelError(string.Empty, response.Message ?? "İşlem başarısız.");
-            await FillOptionsAsync(form);
-            return View(form);
-        }
-
-        TempData["Success"] = response.Message ?? "Hesap talebi oluşturuldu.";
-        return RedirectToAction("Index", "Home");
-    }
+    // Manuel "Hesap Talebi Oluştur" ekranı KALDIRILDI: talepler artık çalışan/stajyer
+    // eklenirken otomatik açılıyor (form kutusu). Bu controller yalnızca Admin'in
+    // bekleyen talepleri işlemesini sağlar.
 
     // ── Admin: bekleyen talepler ─────────────────────────────────────────
     [Authorize(Roles = "Admin")]
@@ -110,8 +72,7 @@ public class AccountRequestsController : Controller
             Id = request.Id,
             SubjectName = request.SubjectName,
             SubjectType = request.SubjectType,
-            SuggestedRole = request.SuggestedRole,
-            RoleOptions = RoleOptions()
+            SuggestedRole = request.SuggestedRole
         };
 
         // Şirket standardında otomatik doldur (Admin yine düzenleyebilir):
@@ -155,23 +116,18 @@ public class AccountRequestsController : Controller
     public async Task<IActionResult> Approve(ApproveAccountRequestViewModel form)
     {
         if (!ModelState.IsValid)
-        {
-            form.RoleOptions = RoleOptions();
             return View(form);
-        }
 
         var response = await _accountRequestApi.ApproveAsync(form.Id, new ApproveAccountRequestRequest
         {
             Username = form.Username,
             Email = form.Email,
-            Password = form.Password,
-            Role = form.Role
+            Password = form.Password
         });
 
         if (!response.IsSuccess)
         {
             ModelState.AddModelError(string.Empty, response.Message ?? "İşlem başarısız.");
-            form.RoleOptions = RoleOptions();
             return View(form);
         }
 
@@ -197,44 +153,4 @@ public class AccountRequestsController : Controller
 
         return RedirectToAction(nameof(Pending));
     }
-
-    // ── Yardımcılar ──────────────────────────────────────────────────────
-
-    // Kişi seçenekleri: hesabı OLMAYAN çalışanlar ve stajyerler tek listede.
-    // Değer "e:{id}"/"i:{id}" olarak kodlanır ki tek dropdown iki tabloyu ayırsın.
-    private async Task FillOptionsAsync(CreateAccountRequestViewModel form)
-    {
-        var options = new List<SelectListItem>();
-
-        var employees = await _employeeApi.GetAllAsync();
-        foreach (var e in (employees.Data ?? []).Where(e => e.UserId is null))
-            options.Add(new SelectListItem($"[Çalışan] {e.FirstName} {e.LastName}", $"e:{e.Id}"));
-
-        var interns = await _internApi.GetAllAsync();
-        foreach (var i in (interns.Data ?? []).Where(i => i.UserId is null))
-            options.Add(new SelectListItem($"[Stajyer] {i.FirstName} {i.LastName}", $"i:{i.Id}"));
-
-        form.SubjectOptions = options;
-        form.RoleOptions = RoleOptions();
-    }
-
-    private static (int? EmployeeId, int? InternId) ParseSubject(string? subject)
-    {
-        if (!string.IsNullOrEmpty(subject) && subject.Length > 2 && int.TryParse(subject[2..], out var id))
-        {
-            if (subject.StartsWith("e:")) return (id, null);
-            if (subject.StartsWith("i:")) return (null, id);
-        }
-        return (null, null); // validator zaten Subject'i zorunlu tutuyor
-    }
-
-    // Rol önerileri: Admin bilinçli olarak listede yok — hesap talebiyle Admin
-    // yükseltmesi yapılmasın (yine de API'de Admin son sözü söyler).
-    private static IEnumerable<SelectListItem> RoleOptions() =>
-    [
-        new SelectListItem("Çalışan", "4"),
-        new SelectListItem("Yönetici", "3"),
-        new SelectListItem("İK (HR)", "2"),
-        new SelectListItem("Stajyer", "5")
-    ];
 }

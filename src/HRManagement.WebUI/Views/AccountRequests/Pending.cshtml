@@ -1,3 +1,4 @@
+@using HRManagement.WebUI.Models
 @model List<HRManagement.WebUI.Models.Api.AccountRequests.AccountRequestResponse>
 @{
     ViewData["Title"] = "Bekleyen Hesap Talepleri";
@@ -20,8 +21,7 @@ else
                 <thead>
                     <tr>
                         <th>Kişi</th>
-                        <th>Tür</th>
-                        <th>Önerilen Rol</th>
+                        <th>Pozisyon</th>
                         <th>Talep Eden</th>
                         <th>Not</th>
                         <th class="text-end">İşlem</th>
@@ -30,10 +30,17 @@ else
                 <tbody>
                     @foreach (var r in Model)
                     {
+                        @* Pozisyon = Departman · Birim · Kıdem. Rol arka planda tutulur
+                           (Admin onay ekranında görür/değiştirir); burada gösterilmez. *@
+                        var pieces = new List<string>();
+                        if (!string.IsNullOrWhiteSpace(r.DepartmentName)) { pieces.Add(r.DepartmentName); }
+                        if (!string.IsNullOrWhiteSpace(r.UnitName)) { pieces.Add(r.UnitName!); }
+                        var kidem = r.SubjectType == "Stajyer" ? "Stajyer" : SeniorityDisplay.Label(r.Seniority);
+                        if (!string.IsNullOrWhiteSpace(kidem) && kidem != "—") { pieces.Add(kidem); }
+
                         <tr>
                             <td>@r.SubjectName</td>
-                            <td>@r.SubjectType</td>
-                            <td>@r.SuggestedRole</td>
+                            <td>@(pieces.Count > 0 ? string.Join(" · ", pieces) : "—")</td>
                             <td>@r.RequestedByUsername</td>
                             <td class="text-muted small">@r.Note</td>
                             <td class="text-end">

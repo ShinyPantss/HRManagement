@@ -17,7 +17,13 @@ public class AccountRequestDto
     public int RequestedByUserId { get; set; }
     public string RequestedByUsername { get; set; } = string.Empty;
 
-    public string SuggestedRole { get; set; } = string.Empty; // enum adı
+    // Pozisyon gösterimi için (Departman · Birim · Kıdem). Birim ve Kıdem opsiyonel:
+    // birimi olmayan departman / stajyerde boş gelebilir.
+    public string DepartmentName { get; set; } = string.Empty;
+    public string? UnitName { get; set; }
+    public int? Seniority { get; set; }   // çalışanın kıdemi (SeniorityLevel sayısal); stajyerde null
+
+    public string SuggestedRole { get; set; } = string.Empty; // enum adı (arka planda tutulur)
     public string? Note { get; set; }
     public string Status { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }

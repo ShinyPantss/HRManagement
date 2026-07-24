@@ -55,8 +55,8 @@ public sealed class ApproveAccountRequestCommandHandler : IRequestHandler<Approv
             Username = username,
             Email = email,
             PasswordHash = _passwordHasher.Hash(request.Password),
-            // Admin rolü değiştirmezse HR'ın önerisi geçerli.
-            Role = request.Role ?? accountRequest.SuggestedRole,
+            // Rol talepten gelir (kişinin kıdeminden/türünden türetilmiş); onayda seçilmez.
+            Role = accountRequest.SuggestedRole,
             IsActive = true
         };
 
