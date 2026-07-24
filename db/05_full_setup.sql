@@ -170,7 +170,9 @@ CREATE TABLE dbo.LeaveRequests
     Type                    int           NOT NULL,
     StartDate               date          NOT NULL,
     EndDate                 date          NOT NULL,
+    WorkingDays             int           NOT NULL CONSTRAINT DF_LeaveRequests_WorkingDays DEFAULT (0),
     Description             nvarchar(500) NULL,
+    MedicalReport           nvarchar(500) NULL,   -- hastalık izninde zorunlu rapor
     Status                  int           NOT NULL CONSTRAINT DF_LeaveRequests_Status DEFAULT (1),
     RejectionReason         nvarchar(500) NULL,
     ManagerApprovedByUserId int           NULL,
@@ -372,6 +374,17 @@ IF COL_LENGTH('dbo.LeaveRequests', 'ManagerApprovedByUserId') IS NULL
         HrApprovedAt            datetime2(0) NULL,
         RejectedByUserId        int          NULL,
         RejectedAt              datetime2(0) NULL;
+GO
+
+/* --- LeaveRequests: iş günü + hastalık raporu --- */
+IF COL_LENGTH('dbo.LeaveRequests', 'WorkingDays') IS NULL
+BEGIN
+    ALTER TABLE dbo.LeaveRequests ADD WorkingDays int NOT NULL CONSTRAINT DF_LeaveRequests_WorkingDays DEFAULT (0);
+    EXEC('UPDATE dbo.LeaveRequests SET WorkingDays = DATEDIFF(DAY, StartDate, EndDate) + 1 WHERE WorkingDays = 0');
+END
+GO
+IF COL_LENGTH('dbo.LeaveRequests', 'MedicalReport') IS NULL
+    ALTER TABLE dbo.LeaveRequests ADD MedicalReport nvarchar(500) NULL;
 GO
 
 /* --- Önceki tasarımda planlanan ayrı bakiye tablosu varsa kaldır --- */
