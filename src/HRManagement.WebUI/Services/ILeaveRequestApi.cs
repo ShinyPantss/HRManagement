@@ -13,6 +13,10 @@ public interface ILeaveRequestApi
     [Get("/api/leaverequests/employee/{employeeId}")]
     Task<BaseResponse<List<LeaveRequestResponse>>> GetByEmployeeAsync(int employeeId);
 
+    // Giriş yapanın onayını bekleyen talepler (çalışan seçmeye gerek yok).
+    [Get("/api/leaverequests/pending-approvals")]
+    Task<BaseResponse<List<PendingApprovalResponse>>> GetPendingApprovalsAsync();
+
     [Post("/api/leaverequests")]
     Task<BaseResponse<int?>> CreateAsync([Body] CreateLeaveRequestRequest request);
 

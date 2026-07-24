@@ -1,3 +1,4 @@
+using HRManagement.Application.DTOs;
 using HRManagement.Domain.Entities;
 
 namespace HRManagement.Application.Interfaces;
@@ -6,6 +7,13 @@ public interface ILeaveRequestRepository
 {
     Task<LeaveRequest?> GetByIdAsync(int id);
     Task<IEnumerable<LeaveRequest>> GetAllAsync();
+
+    /// <summary>
+    /// İşlem BEKLEYEN tüm talepler (Pending + PendingHr), kişi adı + tip + mentor +
+    /// aşama alanlarıyla. "Onay Bekleyenler" ekranı bu listeyi kişiye göre süzer;
+    /// süzme yetki mantığı LeaveApprovalGuard ile aynıdır (handler'da).
+    /// </summary>
+    Task<IEnumerable<PendingApprovalDto>> GetActionableWithNamesAsync();
     Task<IEnumerable<LeaveRequest>> GetByEmployeeIdAsync(int employeeId);
     Task<int> AddAsync(LeaveRequest leaveRequest);
     Task<IEnumerable<LeaveRequest>> GetByInternIdAsync(int internId);

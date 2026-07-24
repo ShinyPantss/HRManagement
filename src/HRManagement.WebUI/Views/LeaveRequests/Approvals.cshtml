@@ -1,0 +1,81 @@
+@model List<HRManagement.WebUI.Models.Api.LeaveRequests.PendingApprovalResponse>
+@{
+    ViewData["Title"] = "Onay Bekleyenler";
+}
+
+<div class="page-head">
+    <h1>Onay Bekleyenler</h1>
+    <p class="text-muted mb-0">Sizin onayınızı bekleyen izin talepleri — tek tek çalışan seçmenize gerek yok.</p>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="panel mt-3"><div class="panel-body text-muted">Onayınızı bekleyen talep yok.</div></div>
+}
+else
+{
+    <div class="panel mt-3">
+        <div class="panel-body p-0">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Kişi</th>
+                        <th>İzin Türü</th>
+                        <th>Başlangıç</th>
+                        <th>Bitiş</th>
+                        <th>Gün</th>
+                        <th>Aşama</th>
+                        <th class="text-end">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model)
+                    {
+                        <tr>
+                            <td>@r.SubjectName <span class="text-muted small">(@r.SubjectType)</span></td>
+                            <td>@r.Type</td>
+                            <td>@r.StartDate.ToString("dd.MM.yyyy")</td>
+                            <td>@r.EndDate.ToString("dd.MM.yyyy")</td>
+                            <td>@r.WorkingDays</td>
+                            <td><span class="badge text-bg-info">@r.Stage</span></td>
+                            <td class="text-end">
+                                <div class="d-flex gap-2 justify-content-end">
+                                    <form asp-action="Approve" method="post" class="d-inline"
+                                          onsubmit="return confirm('Bu izin talebini onaylamak istediğinize emin misiniz?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@r.Id" />
+                                        <input type="hidden" name="employeeId" value="0" />
+                                        <input type="hidden" name="returnTo" value="Approvals" />
+                                        <button type="submit" class="btn btn-sm btn-outline-success">Onayla</button>
+                                    </form>
+                                    <form asp-action="Reject" method="post" class="d-inline"
+                                          onsubmit="return izinRedGerekcesiSor(this);">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@r.Id" />
+                                        <input type="hidden" name="employeeId" value="0" />
+                                        <input type="hidden" name="returnTo" value="Approvals" />
+                                        @* Gerekçe submit anında prompt ile doldurulur. *@
+                                        <input type="hidden" name="reason" />
+                                        <button type="submit" class="btn btn-sm btn-outline-warning">Reddet</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        // Reddetme gerekçesini formun gizli alanına yazar; iptal edilirse form gitmez.
+        function izinRedGerekcesiSor(form) {
+            var reason = prompt('Red gerekçesi (opsiyonel):', '');
+            if (reason === null) { return false; }
+            form.elements['reason'].value = reason;
+            return true;
+        }
+    </script>
+}

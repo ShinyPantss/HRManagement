@@ -74,7 +74,23 @@ public static class LeaveEntitlement
         return GrantForYear(FullYearsOfService(hireDate, asOf) + 1);
     }
 
-    /// <summary>Başlangıç ve bitiş günü DAHİL takvim günü sayısı.</summary>
-    public static int TotalDays(DateTime startDate, DateTime endDate) =>
-        (endDate.Date - startDate.Date).Days + 1;
+    /// <summary>
+    /// Başlangıç ve bitiş DAHİL İŞ GÜNÜ sayısı (Cumartesi/Pazar hariç).
+    /// Resmi tatiller şimdilik sayılır (tatil tablosu eklendiğinde buraya girer).
+    /// İzin "gün"ü iş günüdür: Pzt→bir sonraki Pzt = 6 iş günü (2 hafta sonu düşer).
+    /// </summary>
+    public static int WorkingDays(DateTime startDate, DateTime endDate)
+    {
+        var start = startDate.Date;
+        var end = endDate.Date;
+        if (end < start) return 0;
+
+        var days = 0;
+        for (var day = start; day <= end; day = day.AddDays(1))
+        {
+            if (day.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday))
+                days++;
+        }
+        return days;
+    }
 }

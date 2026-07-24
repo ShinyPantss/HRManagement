@@ -6,8 +6,10 @@ using HRManagement.Application.Features.LeaveRequests.Commands.CreateLeaveReques
 using HRManagement.Application.Features.LeaveRequests.Commands.DeleteLeaveRequest;
 using HRManagement.Application.Features.LeaveRequests.Commands.RejectLeaveRequest;
 using HRManagement.Application.Features.LeaveRequests.Queries.GetLeaveRequestsByEmployee;
+using HRManagement.Application.Features.LeaveRequests.Queries.GetPendingApprovals;
 using HRManagement.Domain.Enums;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HRManagement.API.Controllers;
@@ -29,8 +31,21 @@ public class LeaveRequestsController : ControllerBase
         var requests = await _mediator.Send(new GetLeaveRequestsByEmployeeQuery(employeeId, CurrentUserId()));
         var data = requests.Select(r => new LeaveRequestResponse(
             r.Id, r.EmployeeId, r.InternId, r.Type.ToString(), r.StartDate, r.EndDate,
-            r.TotalDays, r.Status.ToString(), r.Description, r.RejectionReason, r.CreatedAt)).ToList();
+            r.TotalDays, r.Status.ToString(), r.Description, r.MedicalReport, r.RejectionReason, r.CreatedAt)).ToList();
         return Ok(BaseResponse<List<LeaveRequestResponse>>.Success(data));
+    }
+
+    // Giriş yapan kişinin ONAYINI BEKLEYEN talepler (tek tek çalışan seçmeye gerek yok).
+    // Yalnızca onaylayabilecek roller; içerik ayrıca kişiye göre süzülür (Application).
+    [Authorize(Roles = "HR,Manager,Admin")]
+    [HttpGet("pending-approvals")]
+    public async Task<IActionResult> GetPendingApprovals()
+    {
+        var items = await _mediator.Send(new GetPendingApprovalsQuery(CurrentUserId()));
+        var data = items.Select(x => new PendingApprovalResponse(
+            x.Id, x.SubjectName, x.SubjectType, x.TypeName, x.StartDate, x.EndDate, x.WorkingDays,
+            x.Status == LeaveStatus.Pending ? "Yönetici onayı" : "İK onayı")).ToList();
+        return Ok(BaseResponse<List<PendingApprovalResponse>>.Success(data));
     }
 
     [HttpPost]
@@ -38,7 +53,7 @@ public class LeaveRequestsController : ControllerBase
     {
         var id = await _mediator.Send(new CreateLeaveRequestCommand(
             CurrentUserId(), (LeaveType)request.Type, request.StartDate,
-            request.EndDate, request.Description));
+            request.EndDate, request.Description, request.MedicalReport));
         return Ok(BaseResponse<int>.Success(id, "İzin talebi oluşturuldu."));
     }
 

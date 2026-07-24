@@ -28,5 +28,13 @@ public sealed class CreateLeaveRequestCommandValidator : AbstractValidator<Creat
 
         RuleFor(command => command.Description)
             .MaximumLength(500).WithMessage("Açıklama en fazla 500 karakter olabilir.");
+
+        // Hastalık izninde rapor zorunlu (girdi kuralı — DB'ye bakmadan bilinir).
+        RuleFor(command => command.MedicalReport)
+            .NotEmpty().When(command => command.Type == LeaveType.Sick)
+            .WithMessage("Hastalık izni için rapor bilgisi zorunludur.");
+
+        RuleFor(command => command.MedicalReport)
+            .MaximumLength(500).WithMessage("Rapor bilgisi en fazla 500 karakter olabilir.");
     }
 }

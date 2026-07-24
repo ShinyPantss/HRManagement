@@ -32,6 +32,15 @@
                 </div>
             </div>
 
+            @* Rapor alanı: yalnızca Hastalık İzni (Type == 3) seçildiğinde görünür.
+               Sunucu tarafı da bu kuralı doğrular; JS yalnızca UX içindir. *@
+            <div class="mb-3" id="medicalReportGroup">
+                <label asp-for="MedicalReport" class="form-label"></label>
+                <textarea asp-for="MedicalReport" class="form-control" rows="2"
+                          placeholder="Rapor no / doktor / kurum bilgisi"></textarea>
+                <span asp-validation-for="MedicalReport" class="text-danger small"></span>
+            </div>
+
             <div class="mb-3">
                 <label asp-for="Description" class="form-label"></label>
                 <textarea asp-for="Description" class="form-control" rows="3"></textarea>
@@ -48,4 +57,18 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Rapor alanını izin türüne göre göster/gizle: 3 = Hastalık İzni.
+        (function () {
+            var typeSelect = document.getElementById('@Html.IdFor(m => m.Type)');
+            var reportGroup = document.getElementById('medicalReportGroup');
+            if (!typeSelect || !reportGroup) return;
+
+            function toggle() {
+                reportGroup.style.display = typeSelect.value === '3' ? '' : 'none';
+            }
+            typeSelect.addEventListener('change', toggle);
+            toggle(); // ilk yüklemede mevcut seçime göre ayarla
+        })();
+    </script>
 }

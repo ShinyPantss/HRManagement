@@ -6,35 +6,40 @@
 <div class="page-head d-flex align-items-center">
     <div>
         <h1>İzin Talepleri</h1>
-        <p class="text-muted mb-0">Talepler çalışan bazında listelenir; önce bir çalışan seçin.</p>
+        <p class="text-muted mb-0">
+            @(Model.ShowEmployeePicker
+                ? "Talepler çalışan bazında listelenir; önce bir çalışan seçin."
+                : "Kendi izin talepleriniz.")
+        </p>
     </div>
     <a asp-action="Create" class="btn btn-primary ms-auto">Yeni İzin Talebi</a>
 </div>
 
-@* Çalışan seçici: GET formu — seçim query string'e (?employeeId=..) yazılır,
-   böylece liste paylaşılabilir/yenilenebilir bir URL'e sahip olur. *@
-<div class="panel mt-3">
-    <div class="panel-body">
-        <form method="get" class="row g-2 align-items-end">
-            <div class="col-sm-6 col-md-4">
-                <label class="form-label" for="employeeId">Çalışan</label>
-                @* asp-items yalnızca asp-for ile birlikte çalıştığı ve buradaki alan adı
-                   action parametresiyle ("employeeId") aynı olmak zorunda olduğu için
-                   option'ları elle üretiyoruz. *@
-                <select name="employeeId" id="employeeId" class="form-select">
-                    <option value="">Çalışan seçiniz</option>
-                    @foreach (var option in Model.EmployeeOptions)
-                    {
-                        <option value="@option.Value" selected="@(option.Value == Model.SelectedEmployeeId?.ToString())">@option.Text</option>
-                    }
-                </select>
-            </div>
-            <div class="col-sm-auto">
-                <button type="submit" class="btn btn-outline-secondary">Göster</button>
-            </div>
-        </form>
+@* Çalışan seçici yalnızca HR/Admin'e: seçim query string'e (?employeeId=..) yazılır,
+   böylece liste paylaşılabilir/yenilenebilir bir URL'e sahip olur. Diğer roller
+   kendi izinlerine sabitlenir (controller), seçici gösterilmez. *@
+@if (Model.ShowEmployeePicker)
+{
+    <div class="panel mt-3">
+        <div class="panel-body">
+            <form method="get" class="row g-2 align-items-end">
+                <div class="col-sm-6 col-md-4">
+                    <label class="form-label" for="employeeId">Çalışan</label>
+                    <select name="employeeId" id="employeeId" class="form-select">
+                        <option value="">Çalışan seçiniz</option>
+                        @foreach (var option in Model.EmployeeOptions)
+                        {
+                            <option value="@option.Value" selected="@(option.Value == Model.SelectedEmployeeId?.ToString())">@option.Text</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-sm-auto">
+                    <button type="submit" class="btn btn-outline-secondary">Göster</button>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
+}
 
 <div class="panel mt-3">
     <div class="panel-body p-0">
@@ -74,7 +79,10 @@
                         </td>
                         <td>@(string.IsNullOrWhiteSpace(request.Description) ? "—" : request.Description)</td>
                         <td class="text-end">
-                            @if (request.Status == "Pending")
+                            @* Buton görünürlüğü kişiye göre: KENDİ talebimde Onayla/Reddet
+                               çıkmaz (self-approval yasak); Sil ise YALNIZCA kendi talebimde çıkar. *@
+                            @{ var kendiTalebim = request.EmployeeId == Model.CurrentEmployeeId; }
+                            @if (request.Status == "Pending" && !kendiTalebim)
                             {
                                 <form asp-action="Approve" method="post" class="d-inline"
                                       onsubmit="return confirm('Bu izin talebini onaylamak istediğinize emin misiniz?');">
@@ -93,13 +101,16 @@
                                     <button type="submit" class="btn btn-sm btn-outline-warning">Reddet</button>
                                 </form>
                             }
-                            <form asp-action="Delete" method="post" class="d-inline"
-                                  onsubmit="return confirm('Bu izin talebini silmek istediğinize emin misiniz?');">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="id" value="@request.Id" />
-                                <input type="hidden" name="employeeId" value="@Model.SelectedEmployeeId" />
-                                <button type="submit" class="btn btn-sm btn-outline-danger">Sil</button>
-                            </form>
+                            @if (kendiTalebim)
+                            {
+                                <form asp-action="Delete" method="post" class="d-inline"
+                                      onsubmit="return confirm('Bu izin talebini silmek istediğinize emin misiniz?');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@request.Id" />
+                                    <input type="hidden" name="employeeId" value="@Model.SelectedEmployeeId" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Sil</button>
+                                </form>
+                            }
                         </td>
                     </tr>
                 }
@@ -107,9 +118,11 @@
                 {
                     <tr>
                         <td colspan="8" class="text-center text-muted py-4">
-                            @(Model.SelectedEmployeeId is null
-                                ? "Talepleri görmek için yukarıdan bir çalışan seçin."
-                                : "Seçili çalışana ait izin talebi yok.")
+                            @(!Model.ShowEmployeePicker
+                                ? "İzin talebiniz yok."
+                                : Model.SelectedEmployeeId is null
+                                    ? "Talepleri görmek için yukarıdan bir çalışan seçin."
+                                    : "Seçili çalışana ait izin talebi yok.")
                         </td>
                     </tr>
                 }

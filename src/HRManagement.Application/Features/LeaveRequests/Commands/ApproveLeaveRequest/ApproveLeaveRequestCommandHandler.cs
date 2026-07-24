@@ -11,21 +11,27 @@ namespace HRManagement.Application.Features.LeaveRequests.Commands.ApproveLeaveR
 /// İki aşamalı onayın "ilerlet" tarafı:
 ///   Pending    → yönetici onayı işlenir → PendingHr
 ///   PendingHr  → İK onayı işlenir       → Approved
+/// İSTİSNA (kullanıcı kararı, 2026-07-23): talep sahibi HR rolündeyse yönetici
+/// (HR müdürü) onayı YETER — talep doğrudan Approved olur. İkinci aşama "İK
+/// onayı"dır ve İK'nın kendi talebinde o aşama kendi masasına düşerdi.
 /// Yetki kuralları LeaveApprovalGuard'da (Reject ile ortak).
 /// </summary>
 public sealed class ApproveLeaveRequestCommandHandler : IRequestHandler<ApproveLeaveRequestCommand, Unit>
 {
     private readonly ILeaveRequestRepository _leaveRequestRepository;
     private readonly IEmployeeRepository _employeeRepository;
+    private readonly IUserRepository _userRepository;
     private readonly LeaveApprovalGuard _approvalGuard;
 
     public ApproveLeaveRequestCommandHandler(
         ILeaveRequestRepository leaveRequestRepository,
         IEmployeeRepository employeeRepository,
+        IUserRepository userRepository,
         LeaveApprovalGuard approvalGuard)
     {
         _leaveRequestRepository = leaveRequestRepository;
         _employeeRepository = employeeRepository;
+        _userRepository = userRepository;
         _approvalGuard = approvalGuard;
     }
 
@@ -51,7 +57,12 @@ public sealed class ApproveLeaveRequestCommandHandler : IRequestHandler<ApproveL
 
                 leaveRequest.ManagerApprovedByUserId = approver.Id;
                 leaveRequest.ManagerApprovedAt = now;
-                leaveRequest.Status = LeaveStatus.PendingHr;
+
+                // HR çalışanının talebi yönetici onayıyla BİTER; İK aşaması
+                // atlanır (HrApprovedBy boş kalır — denetim izi bunu gösterir).
+                leaveRequest.Status = await IsOwnerHrAsync(leaveRequest)
+                    ? LeaveStatus.Approved
+                    : LeaveStatus.PendingHr;
                 break;
 
             case LeaveStatus.PendingHr:
@@ -64,6 +75,23 @@ public sealed class ApproveLeaveRequestCommandHandler : IRequestHandler<ApproveL
         await _leaveRequestRepository.UpdateAsync(leaveRequest);
 
         return Unit.Value;
+    }
+
+    /// <summary>
+    /// Talep sahibi HR rolünde bir çalışan mı? Rol JWT'den değil DB'den okunur
+    /// (claim bayatlayabilir). Stajyer talepleri her zaman false döner.
+    /// </summary>
+    private async Task<bool> IsOwnerHrAsync(Domain.Entities.LeaveRequest leaveRequest)
+    {
+        if (leaveRequest.EmployeeId is not int employeeId)
+            return false;
+
+        var owner = await _employeeRepository.GetByIdAsync(employeeId);
+        if (owner?.UserId is not int ownerUserId)
+            return false;
+
+        var ownerUser = await _userRepository.GetByIdAsync(ownerUserId);
+        return ownerUser?.Role == Role.HR;
     }
 
     // Bu talep zaten "kullanılan" toplamın İÇİNDE (bekleyenler rezerve sayılır),

@@ -63,6 +63,22 @@ public sealed class CreateLeaveRequestCommandHandler : IRequestHandler<CreateLea
             await EnsureAnnualBalanceAsync(employee!, request.StartDate, request.EndDate);
         }
 
+        // 4) Hastalık izni: rapor ZORUNLU. Diğer türlerde rapor tutulmaz.
+        var medicalReport = request.Type == LeaveType.Sick ? request.MedicalReport?.Trim() : null;
+        if (request.Type == LeaveType.Sick && string.IsNullOrWhiteSpace(medicalReport))
+            throw new ValidationException("Hastalık izni için rapor bilgisi zorunludur.");
+
+        // İş günü sayısı oluşturulurken hesaplanıp saklanır (hafta sonu hariç).
+        var workingDays = LeaveEntitlement.WorkingDays(request.StartDate, request.EndDate);
+        if (workingDays == 0)
+            throw new ValidationException("Seçilen aralıkta iş günü yok (yalnızca hafta sonu).");
+
+        // Başlangıç durumu türe göre: Hastalık izni yönetici aşamasını ATLAR,
+        // doğrudan İK onayına düşer (hasta insan yönetici onayı bekleyemez).
+        var initialStatus = request.Type == LeaveType.Sick
+            ? LeaveStatus.PendingHr
+            : LeaveStatus.Pending;
+
         var leaveRequest = new LeaveRequest
         {
             EmployeeId = employee?.Id,
@@ -70,8 +86,10 @@ public sealed class CreateLeaveRequestCommandHandler : IRequestHandler<CreateLea
             Type = request.Type,
             StartDate = request.StartDate,
             EndDate = request.EndDate,
+            WorkingDays = workingDays,
             Description = request.Description,
-            Status = LeaveStatus.Pending
+            MedicalReport = medicalReport,
+            Status = initialStatus
         };
 
         return await _leaveRequestRepository.AddAsync(leaveRequest);
@@ -90,7 +108,7 @@ public sealed class CreateLeaveRequestCommandHandler : IRequestHandler<CreateLea
         var nextGrant = LeaveEntitlement.NextGrant(employee.HireDate, today, employee.AnnualLeaveDays);
 
         var used = await _leaveRequestRepository.GetTotalUsedAnnualDaysAsync(employee.Id);
-        var requested = LeaveEntitlement.TotalDays(startDate, endDate);
+        var requested = LeaveEntitlement.WorkingDays(startDate, endDate);
 
         if (used + requested > accrued + nextGrant)
             throw new ValidationException(

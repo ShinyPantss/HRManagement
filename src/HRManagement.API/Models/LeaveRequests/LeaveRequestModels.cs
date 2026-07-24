@@ -9,18 +9,48 @@ public sealed class CreateLeaveRequestRequest
         int type,
         DateTime startDate,
         DateTime endDate,
-        string? description)
+        string? description,
+        string? medicalReport)
     {
         Type = type;
         StartDate = startDate;
         EndDate = endDate;
         Description = description;
+        MedicalReport = medicalReport;
     }
 
     public int Type { get; }
     public DateTime StartDate { get; }
     public DateTime EndDate { get; }
     public string? Description { get; }
+    public string? MedicalReport { get; }   // hastalık izninde zorunlu
+}
+
+// "Onay Bekleyenler" satırı — yalnızca görüntü alanları (yetki süzmesi Application'da).
+public sealed class PendingApprovalResponse
+{
+    public PendingApprovalResponse(
+        int id, string subjectName, string subjectType, string type,
+        DateTime startDate, DateTime endDate, int workingDays, string stage)
+    {
+        Id = id;
+        SubjectName = subjectName;
+        SubjectType = subjectType;
+        Type = type;
+        StartDate = startDate;
+        EndDate = endDate;
+        WorkingDays = workingDays;
+        Stage = stage;
+    }
+
+    public int Id { get; }
+    public string SubjectName { get; }
+    public string SubjectType { get; }   // Çalışan | Stajyer
+    public string Type { get; }          // izin türü
+    public DateTime StartDate { get; }
+    public DateTime EndDate { get; }
+    public int WorkingDays { get; }
+    public string Stage { get; }         // "Yönetici onayı" | "İK onayı"
 }
 
 // Red gerekçesi opsiyonel.
@@ -47,6 +77,7 @@ public sealed class LeaveRequestResponse
         int totalDays,
         string status,
         string? description,
+        string? medicalReport,
         string? rejectionReason,
         DateTime createdAt)
     {
@@ -59,6 +90,7 @@ public sealed class LeaveRequestResponse
         TotalDays = totalDays;
         Status = status;
         Description = description;
+        MedicalReport = medicalReport;
         RejectionReason = rejectionReason;
         CreatedAt = createdAt;
     }
@@ -72,9 +104,10 @@ public sealed class LeaveRequestResponse
     public string Type { get; }
     public DateTime StartDate { get; }
     public DateTime EndDate { get; }
-    public int TotalDays { get; }
+    public int TotalDays { get; }   // iş günü (hafta sonu hariç)
     public string Status { get; }
     public string? Description { get; }
+    public string? MedicalReport { get; }
     public string? RejectionReason { get; }
     public DateTime CreatedAt { get; }
 }

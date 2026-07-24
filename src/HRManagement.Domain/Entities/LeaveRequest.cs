@@ -19,7 +19,21 @@ public class LeaveRequest
     public LeaveType Type { get; set; }
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
+
+    /// <summary>
+    /// Talebin İŞ GÜNÜ sayısı (hafta sonları hariç). Oluşturulurken hesaplanıp
+    /// SAKLANIR: dates değişmez, o yüzden drift olmaz; bakiye toplamı bu sütunu
+    /// SUM'lar, SQL'de hafta sonu matematiği tekrarlanmaz (tek doğruluk kaynağı).
+    /// </summary>
+    public int WorkingDays { get; set; }
+
     public string? Description { get; set; }
+
+    /// <summary>
+    /// Hastalık izninde ZORUNLU rapor bilgisi (rapor no / kurum / açıklama).
+    /// Dosya yüklemesi yok; metin olarak tutulur. Diğer türlerde null.
+    /// </summary>
+    public string? MedicalReport { get; set; }
 
     public LeaveStatus Status { get; set; } = LeaveStatus.Pending;
     public string? RejectionReason { get; set; }

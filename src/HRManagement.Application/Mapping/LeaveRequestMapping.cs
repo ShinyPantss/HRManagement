@@ -4,8 +4,8 @@ using HRManagement.Domain.Entities;
 namespace HRManagement.Application.Mapping;
 
 /// <summary>
-/// Entity → DTO dönüşümleri tek yerde. TotalDays entity'de tutulmaz;
-/// başlangıç ve bitiş günleri dahil olacak şekilde burada hesaplanır.
+/// Entity → DTO dönüşümleri tek yerde. TotalDays artık İŞ GÜNÜ sayısıdır ve
+/// oluşturulurken hesaplanıp entity'de saklanır (WorkingDays).
 /// </summary>
 public static class LeaveRequestMapping
 {
@@ -17,9 +17,10 @@ public static class LeaveRequestMapping
         Type = leaveRequest.Type,
         StartDate = leaveRequest.StartDate,
         EndDate = leaveRequest.EndDate,
-        TotalDays = (leaveRequest.EndDate.Date - leaveRequest.StartDate.Date).Days + 1,
+        TotalDays = leaveRequest.WorkingDays,   // iş günü (hafta sonu hariç)
         Status = leaveRequest.Status,
         Description = leaveRequest.Description,
+        MedicalReport = leaveRequest.MedicalReport,
         RejectionReason = leaveRequest.RejectionReason,
         ManagerApprovedByUserId = leaveRequest.ManagerApprovedByUserId,
         ManagerApprovedAt = leaveRequest.ManagerApprovedAt,

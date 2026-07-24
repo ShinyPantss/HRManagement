@@ -32,6 +32,15 @@ public class LeaveRequestFormViewModel
     [Display(Name = "Açıklama")]
     public string? Description { get; set; }
 
+    /// <summary>
+    /// Hastalık izninde (Type == 3) zorunlu rapor bilgisi; diğer türlerde boş kalır.
+    /// Zorunluluk türe bağlı olduğu için [Required] ile değil, controller'da türe
+    /// göre elle doğrulanır (asıl otorite yine API + Application validator'ıdır).
+    /// </summary>
+    [MaxLength(500, ErrorMessage = "Rapor bilgisi en fazla 500 karakter olabilir.")]
+    [Display(Name = "Rapor Bilgisi")]
+    public string? MedicalReport { get; set; }
+
     /// <summary>İzin türü seçenekleri: 1=Yıllık İzin, 2=Ücretsiz İzin, 3=Hastalık İzni.</summary>
     public IEnumerable<SelectListItem> TypeOptions { get; set; } = [];
 }

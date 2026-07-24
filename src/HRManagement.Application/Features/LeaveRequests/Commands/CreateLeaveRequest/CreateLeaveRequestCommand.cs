@@ -17,4 +17,5 @@ public sealed record CreateLeaveRequestCommand(
     LeaveType Type,
     DateTime StartDate,
     DateTime EndDate,
-    string? Description) : IRequest<int>;
+    string? Description,
+    string? MedicalReport) : IRequest<int>;   // Hastalık izninde zorunlu rapor bilgisi

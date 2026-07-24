@@ -1,6 +1,7 @@
 using HRManagement.WebUI.Models.Api.LeaveRequests;
 using HRManagement.WebUI.Models.LeaveRequests;
 using HRManagement.WebUI.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
@@ -25,17 +26,28 @@ public class LeaveRequestsController : Controller
 
     public async Task<IActionResult> Index(int? employeeId)
     {
+        // Rol kapısı: HR/Admin herkesi tarayabilir (çalışan seçici). Diğer roller
+        // yalnızca KENDİ izinlerini görür — seçici gizlenir, liste kendi kaydına sabitlenir.
+        var isBrowser = User.IsInRole("HR") || User.IsInRole("Admin");
+
+        var me = await _employeeApi.GetMyProfileAsync();
+        var currentEmployeeId = me.IsSuccess ? me.Data?.Id : null;
+
+        var effectiveEmployeeId = isBrowser ? employeeId : currentEmployeeId;
+
         var model = new LeaveRequestListViewModel
         {
-            SelectedEmployeeId = employeeId,
-            EmployeeOptions = await GetEmployeeOptionsAsync()
+            SelectedEmployeeId = effectiveEmployeeId,
+            CurrentEmployeeId = currentEmployeeId,
+            ShowEmployeePicker = isBrowser,
+            EmployeeOptions = isBrowser ? await GetEmployeeOptionsAsync() : []
         };
 
-        // API'de "tüm talepleri getir" ucu yok: çalışan seçilmeden liste çekilemez.
-        if (employeeId is null)
+        // API'de "tüm talepleri getir" ucu yok: kişi belirlenmeden liste çekilemez.
+        if (effectiveEmployeeId is null)
             return View(model);
 
-        var response = await _leaveRequestApi.GetByEmployeeAsync(employeeId.Value);
+        var response = await _leaveRequestApi.GetByEmployeeAsync(effectiveEmployeeId.Value);
 
         if (!response.IsSuccess)
         {
@@ -45,6 +57,21 @@ public class LeaveRequestsController : Controller
 
         model.Requests = response.Data ?? [];
         return View(model);
+    }
+
+    // Giriş yapanın ONAYINI BEKLEYEN talepler — tek listede, çalışan seçmeden.
+    [Authorize(Roles = "HR,Manager,Admin")]
+    public async Task<IActionResult> Approvals()
+    {
+        var response = await _leaveRequestApi.GetPendingApprovalsAsync();
+
+        if (!response.IsSuccess)
+        {
+            TempData["Error"] = response.Message ?? "Onay bekleyenler alınamadı.";
+            return View(new List<PendingApprovalResponse>());
+        }
+
+        return View(response.Data ?? []);
     }
 
     public IActionResult Create()
@@ -60,6 +87,13 @@ public class LeaveRequestsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(LeaveRequestFormViewModel form)
     {
+        // Rapor zorunluluğu türe bağlı: yalnızca Hastalık (3) seçiliyse istenir.
+        // [Required] türe göre koşullanamadığı için burada elle ekleniyor; nihai
+        // otorite yine API + Application validator'ıdır (bu sadece erken UX geri bildirimi).
+        const int sickType = 3;
+        if (form.Type == sickType && string.IsNullOrWhiteSpace(form.MedicalReport))
+            ModelState.AddModelError(nameof(form.MedicalReport), "Hastalık izni için rapor bilgisi zorunludur.");
+
         if (!ModelState.IsValid)
             return View(FillOptions(form));
 
@@ -69,7 +103,9 @@ public class LeaveRequestsController : Controller
             Type = form.Type,
             StartDate = form.StartDate!.Value,
             EndDate = form.EndDate!.Value,
-            Description = form.Description
+            Description = form.Description,
+            // Rapor yalnızca hastalık izninde anlamlı; diğer türlerde boş gönderilir.
+            MedicalReport = form.Type == sickType ? form.MedicalReport : null
         });
 
         if (!response.IsSuccess)
@@ -83,9 +119,11 @@ public class LeaveRequestsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    // returnTo: "Approvals" ise Onay Bekleyenler'e döner, aksi hâlde çalışan listesine.
     [HttpPost]
+    [Authorize(Roles = "HR,Manager,Admin")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Approve(int id, int employeeId)
+    public async Task<IActionResult> Approve(int id, int employeeId, string? returnTo)
     {
         var response = await _leaveRequestApi.ApproveAsync(id);
 
@@ -94,12 +132,15 @@ public class LeaveRequestsController : Controller
         else
             TempData["Success"] = response.Message ?? "İzin talebi onaylandı.";
 
-        return RedirectToAction(nameof(Index), new { employeeId });
+        return returnTo == "Approvals"
+            ? RedirectToAction(nameof(Approvals))
+            : RedirectToAction(nameof(Index), new { employeeId });
     }
 
     [HttpPost]
+    [Authorize(Roles = "HR,Manager,Admin")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Reject(int id, int employeeId, string? reason)
+    public async Task<IActionResult> Reject(int id, int employeeId, string? reason, string? returnTo)
     {
         var response = await _leaveRequestApi.RejectAsync(id, new RejectLeaveRequestRequest
         {
@@ -111,7 +152,9 @@ public class LeaveRequestsController : Controller
         else
             TempData["Success"] = response.Message ?? "İzin talebi reddedildi.";
 
-        return RedirectToAction(nameof(Index), new { employeeId });
+        return returnTo == "Approvals"
+            ? RedirectToAction(nameof(Approvals))
+            : RedirectToAction(nameof(Index), new { employeeId });
     }
 
     [HttpPost]

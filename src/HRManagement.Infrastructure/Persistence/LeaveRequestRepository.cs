@@ -1,4 +1,5 @@
 using Dapper;
+using HRManagement.Application.DTOs;
 using HRManagement.Application.Interfaces;
 using HRManagement.Domain.Entities;
 using HRManagement.Domain.Enums;
@@ -38,8 +39,8 @@ public class LeaveRequestRepository : ILeaveRequestRepository
     public async Task<int> AddAsync(LeaveRequest leaveRequest)
     {
         const string sql = @"
-            INSERT INTO LeaveRequests (EmployeeId, InternId, Type, StartDate, EndDate, Description, Status, RejectionReason)
-            VALUES (@EmployeeId, @InternId, @Type, @StartDate, @EndDate, @Description, @Status, @RejectionReason);
+            INSERT INTO LeaveRequests (EmployeeId, InternId, Type, StartDate, EndDate, WorkingDays, Description, MedicalReport, Status, RejectionReason)
+            VALUES (@EmployeeId, @InternId, @Type, @StartDate, @EndDate, @WorkingDays, @Description, @MedicalReport, @Status, @RejectionReason);
             SELECT CAST(SCOPE_IDENTITY() AS INT);";
         using var connection = _connectionFactory.CreateConnection();
         return await connection.QuerySingleAsync<int>(sql, leaveRequest);
@@ -135,13 +136,74 @@ public class LeaveRequestRepository : ILeaveRequestRepository
         });
     }
 
+    public async Task<IEnumerable<PendingApprovalDto>> GetActionableWithNamesAsync()
+    {
+        // İşlem bekleyen (Pending + PendingHr) talepler + kişi adı, tip, sahip hesabı,
+        // stajyer mentoru ve 1. aşama onaylayanı. Yetki süzmesi handler'da yapılır.
+        const string sql = @"
+            SELECT lr.Id,
+                   COALESCE(e.FirstName + ' ' + e.LastName, i.FirstName + ' ' + i.LastName) AS SubjectName,
+                   CASE WHEN lr.EmployeeId IS NOT NULL THEN N'Çalışan' ELSE N'Stajyer' END AS SubjectType,
+                   lr.Type, lr.StartDate, lr.EndDate, lr.WorkingDays, lr.Status,
+                   lr.EmployeeId, lr.InternId,
+                   COALESCE(e.UserId, i.UserId) AS OwnerUserId,
+                   i.MentorId AS MentorId,
+                   lr.ManagerApprovedByUserId
+            FROM LeaveRequests lr
+            LEFT JOIN Employees e ON e.Id = lr.EmployeeId
+            LEFT JOIN Interns   i ON i.Id = lr.InternId
+            WHERE lr.Status IN @Statuses
+            ORDER BY lr.StartDate";
+
+        using var connection = _connectionFactory.CreateConnection();
+        var rows = await connection.QueryAsync<ActionableRow>(sql, new
+        {
+            Statuses = new[] { (int)LeaveStatus.Pending, (int)LeaveStatus.PendingHr }
+        });
+
+        return rows.Select(r => new PendingApprovalDto
+        {
+            Id = r.Id,
+            SubjectName = r.SubjectName,
+            SubjectType = r.SubjectType,
+            TypeName = ((LeaveType)r.Type).ToString(),
+            StartDate = r.StartDate,
+            EndDate = r.EndDate,
+            WorkingDays = r.WorkingDays,
+            Status = (LeaveStatus)r.Status,
+            EmployeeId = r.EmployeeId,
+            InternId = r.InternId,
+            OwnerUserId = r.OwnerUserId,
+            MentorId = r.MentorId,
+            ManagerApprovedByUserId = r.ManagerApprovedByUserId
+        }).ToList();
+    }
+
+    // Dapper'ın ham satırı map ettiği ara tip (Type/Status int okunur, C#'ta enum'a çevrilir).
+    private sealed class ActionableRow
+    {
+        public int Id { get; set; }
+        public string SubjectName { get; set; } = string.Empty;
+        public string SubjectType { get; set; } = string.Empty;
+        public int Type { get; set; }
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+        public int WorkingDays { get; set; }
+        public int Status { get; set; }
+        public int? EmployeeId { get; set; }
+        public int? InternId { get; set; }
+        public int? OwnerUserId { get; set; }
+        public int? MentorId { get; set; }
+        public int? ManagerApprovedByUserId { get; set; }
+    }
+
     public async Task<int> GetTotalUsedAnnualDaysAsync(int employeeId)
     {
-        // Gün sayısı = DATEDIFF + 1 (başlangıç ve bitiş günü dahil).
-        // Kümülatif model: dönem filtresi YOK — çalışanın tüm aktif yıllık
-        // izinleri toplanır. Reddedilenler sayılmaz (Status listesi dışında).
+        // İŞ GÜNÜ toplamı: oluşturulurken hesaplanıp saklanan WorkingDays sütunu
+        // SUM'lanır — hafta sonu matematiği SQL'de tekrarlanmaz (C# ile tek kaynak).
+        // Kümülatif model: dönem filtresi YOK; reddedilenler sayılmaz.
         const string sql = @"
-            SELECT COALESCE(SUM(DATEDIFF(DAY, StartDate, EndDate) + 1), 0)
+            SELECT COALESCE(SUM(WorkingDays), 0)
             FROM LeaveRequests
             WHERE EmployeeId = @EmployeeId
               AND Type = @AnnualType

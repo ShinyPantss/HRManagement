@@ -152,14 +152,24 @@ public class LeaveEntitlementTests
         Assert.False(0 + requested <= accrued + nextGrant); // 15 ≤ 14 değil
     }
 
-    // ── Gün sayımı: başlangıç ve bitiş DAHİL ────────────────────────────────
+    // ── İş günü sayımı: hafta sonu hariç, iki uç dahil ──────────────────────
 
     [Theory]
-    [InlineData("2026-07-22", "2026-07-22", 1)] // tek gün = 1 (off-by-one tuzağı)
+    // 2026-07-20 Pzt, 24 Cuma → 5 iş günü
     [InlineData("2026-07-20", "2026-07-24", 5)]
-    public void TotalDays_iki_ucu_da_dahil_sayar(string start, string end, int expected)
+    // 20 Pzt → 27 Pzt (bir sonraki): araya Cmt+Pzr girer → 6 iş günü
+    [InlineData("2026-07-20", "2026-07-27", 6)]
+    // Tek gün, hafta içi → 1
+    [InlineData("2026-07-22", "2026-07-22", 1)]
+    // Cumartesi tek gün → 0 iş günü
+    [InlineData("2026-07-25", "2026-07-25", 0)]
+    // Cmt+Pzr → 0
+    [InlineData("2026-07-25", "2026-07-26", 0)]
+    // Cuma→Pazartesi: Cuma + Pzt sayılır, Cmt/Pzr düşer → 2
+    [InlineData("2026-07-24", "2026-07-27", 2)]
+    public void WorkingDays_hafta_sonunu_haric_tutar(string start, string end, int expected)
     {
         Assert.Equal(expected,
-            LeaveEntitlement.TotalDays(DateTime.Parse(start), DateTime.Parse(end)));
+            LeaveEntitlement.WorkingDays(DateTime.Parse(start), DateTime.Parse(end)));
     }
 }

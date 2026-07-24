@@ -19,7 +19,8 @@ public class CreateLeaveRequestCommandValidatorTests
         Type: LeaveType.Annual,
         StartDate: new DateTime(2026, 8, 3),
         EndDate: new DateTime(2026, 8, 7),
-        Description: "Yaz tatili");
+        Description: "Yaz tatili",
+        MedicalReport: null);
 
     [Fact]
     public void baslangic_bitisten_sonra_ise_hata_doner()

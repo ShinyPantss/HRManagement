@@ -15,9 +15,10 @@ public class LeaveRequestResponse
     public string Type { get; set; } = string.Empty;
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
-    public int TotalDays { get; set; }
+    public int TotalDays { get; set; }   // iş günü (hafta sonu hariç)
     public string Status { get; set; } = string.Empty;
     public string? Description { get; set; }
+    public string? MedicalReport { get; set; }   // hastalık izninde dolu, diğerlerinde null
     public string? RejectionReason { get; set; }
     public DateTime CreatedAt { get; set; }
 }
@@ -31,9 +32,23 @@ public class CreateLeaveRequestRequest
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
     public string? Description { get; set; }
+    public string? MedicalReport { get; set; }   // hastalık izninde zorunlu
 }
 
 public class RejectLeaveRequestRequest
 {
     public string? Reason { get; set; }
+}
+
+// "Onay Bekleyenler" satırı — API'nin PendingApprovalResponse'uyla aynı şekil.
+public class PendingApprovalResponse
+{
+    public int Id { get; set; }
+    public string SubjectName { get; set; } = string.Empty;
+    public string SubjectType { get; set; } = string.Empty; // Çalışan | Stajyer
+    public string Type { get; set; } = string.Empty;        // izin türü
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
+    public int WorkingDays { get; set; }
+    public string Stage { get; set; } = string.Empty;       // "Yönetici onayı" | "İK onayı"
 }
