@@ -13,6 +13,7 @@ public sealed record UpdateEmployeeCommand(
     DateTime BirthDate,
     DateTime HireDate,
     int DepartmentId,
+    int? UnitId,
     int? UserId,
     int? ManagerId,
     SeniorityLevel? Seniority,

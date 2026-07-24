@@ -41,6 +41,10 @@ public sealed class UpdateEmployeeCommandValidator : AbstractValidator<UpdateEmp
             .GreaterThan(0).When(command => command.ManagerId.HasValue)
             .WithMessage("Geçerli bir yönetici seçilmelidir.");
 
+        RuleFor(command => command.UnitId)
+            .GreaterThan(0).When(command => command.UnitId.HasValue)
+            .WithMessage("Geçerli bir birim seçilmelidir.");
+
         RuleFor(command => command.AnnualLeaveDays)
             .GreaterThanOrEqualTo(0).When(command => command.AnnualLeaveDays.HasValue)
             .WithMessage("Yıllık izin günü negatif olamaz.");

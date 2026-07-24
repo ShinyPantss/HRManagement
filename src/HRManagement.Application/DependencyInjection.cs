@@ -31,6 +31,13 @@ public static class DependencyInjection
         // "Kim hangi çalışanı görebilir" kuralı — liste ve detay sorguları paylaşır.
         services.AddScoped<Features.Employees.Shared.EmployeeVisibility>();
 
+        // Detay DTO'sunu derleyip hassas alanları istekçiye göre kırpar —
+        // Id ile detay ve "profilim" sorguları paylaşır.
+        services.AddScoped<Features.Employees.Shared.EmployeeDetailAssembler>();
+
+        // "Bu stajyerin mentoru mu?" kuralı — mentorluk query/command'ları paylaşır.
+        services.AddScoped<Features.Interns.Shared.MentorshipGuard>();
+
         return services;
     }
 }

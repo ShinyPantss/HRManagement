@@ -1,0 +1,45 @@
+@*
+    Birim dropdown'ını (otorite backend'de; bu UX):
+      1) DEPARTMANA göre süzer — o departmana ait olmayan birimler gizlenir.
+      2) KIDEME göre: GM/GMY yalnızca departmana bağlıdır, birimleri olmaz →
+         kıdem GM/GMY seçiliyse birim alanı gizlenir ve seçim temizlenir.
+    Beklenen: departman id="DepartmentId", (varsa) kıdem id="Seniority",
+    birim select [data-unit-select] ve sarmalayan grup id="unitGroup".
+    Stajyer formunda kıdem yoktur → birim yalnızca departmana göre süzülür.
+*@
+<script>
+    (function () {
+        var department = document.getElementById('DepartmentId');
+        var seniority = document.getElementById('Seniority');
+        var unit = document.querySelector('[data-unit-select]');
+        var unitGroup = document.getElementById('unitGroup');
+        if (!unit) return;
+
+        // GM (1) ve GMY (2) birime bağlanamaz; kıdem alanı yoksa (stajyer) kısıt yok.
+        function unitAllowed() {
+            if (!seniority) return true;
+            var s = parseInt(seniority.value, 10);
+            return !(s === 1 || s === 2);
+        }
+
+        function apply() {
+            var allowed = unitAllowed();
+            if (unitGroup) unitGroup.style.display = allowed ? '' : 'none';
+            if (!allowed) { unit.value = ''; return; } // GM/GMY: birim seçilemez
+
+            var pickedDept = department ? parseInt(department.value, 10) : NaN;
+            for (var i = 0; i < unit.options.length; i++) {
+                var opt = unit.options[i];
+                if (opt.value === '') { opt.hidden = false; continue; } // "Yok" hep dursun
+                var d = parseInt(opt.getAttribute('data-department'), 10);
+                var hide = !isNaN(pickedDept) && !isNaN(d) && d !== pickedDept;
+                opt.hidden = hide;
+                if (hide && opt.selected) { unit.value = ''; } // geçersiz kalan seçimi düşür
+            }
+        }
+
+        if (department) department.addEventListener('change', apply);
+        if (seniority) seniority.addEventListener('change', apply);
+        apply(); // ilk yüklemede mevcut duruma göre ayarla
+    })();
+</script>

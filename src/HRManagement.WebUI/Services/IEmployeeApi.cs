@@ -17,6 +17,16 @@ public interface IEmployeeApi
     [Get("/api/employees/{id}")]
     Task<BaseResponse<EmployeeResponse>> GetByIdAsync(int id);
 
+    [Get("/api/employees/{id}/detail")]
+    Task<BaseResponse<EmployeeDetailResponse>> GetDetailAsync(int id);
+
+    // "Profilim": id yok, API kimliği token'dan çözer.
+    [Get("/api/employees/me")]
+    Task<BaseResponse<EmployeeDetailResponse>> GetMyProfileAsync();
+
+    [Post("/api/employees/{id}/notes")]
+    Task<BaseResponse<int?>> AddNoteAsync(int id, [Body] AddEmployeeNoteRequest request);
+
     [Post("/api/employees")]
     Task<BaseResponse<int?>> CreateAsync([Body] CreateEmployeeRequest request);
 

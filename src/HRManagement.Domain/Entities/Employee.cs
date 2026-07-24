@@ -22,6 +22,14 @@ public class Employee
 
     // GM dahil herkes bir departmana bağlıdır (GM → "Yönetim" departmanı).
     public int DepartmentId { get; set; }
+
+    /// <summary>
+    /// Departmanın alt kırılımı (Birim). Opsiyonel: birimi olmayan departmanlar
+    /// (Yönetim) ve eski kayıtlar için null. Doluysa seçilen birim çalışanın
+    /// departmanına ait olmalıdır (iş kuralı handler'da denetlenir).
+    /// </summary>
+    public int? UnitId { get; set; }
+
     public int? UserId { get; set; }
 
     /// <summary>

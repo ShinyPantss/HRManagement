@@ -1,6 +1,7 @@
 using HRManagement.WebUI.Models;
 using HRManagement.WebUI.Models.Api.Employees;
 using HRManagement.WebUI.Models.Employees;
+using HRManagement.WebUI.Models.Units;
 using HRManagement.WebUI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,11 +18,13 @@ public class EmployeesController : Controller
 {
     private readonly IEmployeeApi _employeeApi;
     private readonly IDepartmentApi _departmentApi;
+    private readonly IUnitApi _unitApi;
 
-    public EmployeesController(IEmployeeApi employeeApi, IDepartmentApi departmentApi)
+    public EmployeesController(IEmployeeApi employeeApi, IDepartmentApi departmentApi, IUnitApi unitApi)
     {
         _employeeApi = employeeApi;
         _departmentApi = departmentApi;
+        _unitApi = unitApi;
     }
 
     public async Task<IActionResult> Index()
@@ -43,17 +46,84 @@ public class EmployeesController : Controller
         return View(response.Data ?? new List<EmployeeResponse>());
     }
 
-    // Çalışan kaydı açmak/değiştirmek/silmek İK işidir; Yönetici yalnızca görür.
-    [Authorize(Roles = "HR,Admin")]
+    // Detay sayfası. Rol attribute'u YOK: kimin kimi görebileceğine API karar
+    // verir (Employee başkasının id'sini yazarsa API reddeder, biz mesajı gösteririz).
+    public async Task<IActionResult> Details(int id)
+    {
+        var response = await _employeeApi.GetDetailAsync(id);
+
+        if (!response.IsSuccess || response.Data is null)
+        {
+            TempData["Error"] = response.Message ?? "Çalışan bulunamadı.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        return View(response.Data);
+    }
+
+    // "Profilim": kişinin KENDİ detay sayfası — aynı view, veri /me ucundan.
+    // Hesap bir çalışan kaydına bağlı değilse (ör. Admin) API 404 döner.
+    public async Task<IActionResult> Profile()
+    {
+        var response = await _employeeApi.GetMyProfileAsync();
+
+        if (!response.IsSuccess || response.Data is null)
+        {
+            TempData["Error"] = response.Message ?? "Hesabınız bir çalışan kaydına bağlı değil.";
+            return RedirectToAction("Index", "Home");
+        }
+
+        // "İzin Talep Et" gibi yalnızca kişinin kendi profilinde anlamlı
+        // öğeleri view bu bayrakla açar.
+        ViewData["IsOwnProfile"] = true;
+        return View(nameof(Details), response.Data);
+    }
+
+    // Not ekleme (§5.2). Rol attribute'u UX içindir; Manager'ın "yalnızca kendi
+    // ekibi" kısıtı dahil son söz API + Application'dadır.
+    [HttpPost]
+    [Authorize(Roles = "HR,Manager")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddNote(int id, string? content)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            TempData["Error"] = "Not içeriği boş olamaz.";
+        }
+        else
+        {
+            var response = await _employeeApi.AddNoteAsync(id, new AddEmployeeNoteRequest
+            {
+                Content = content.Trim()
+            });
+
+            if (response.IsSuccess)
+                TempData["Success"] = response.Message ?? "Not eklendi.";
+            else
+                TempData["Error"] = response.Message ?? "Not eklenemedi.";
+        }
+
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    // Çalışan kaydı AÇMAK yalnızca İK işidir; Admin dahil kimse açamaz
+    // (kullanıcı kararı). Düzenleme HR+Admin'de kalır.
+    [Authorize(Roles = "HR")]
     public async Task<IActionResult> Create()
     {
-        var form = new EmployeeFormViewModel { IsActive = true };
+        var form = new EmployeeFormViewModel
+        {
+            IsActive = true,
+            // Boş date input'ta takvim bugünden açılır; doğum tarihi için
+            // 2000'den başlatmak seçim yapmayı kolaylaştırır.
+            BirthDate = new DateTime(2000, 1, 1)
+        };
         await FillOptionsAsync(form);
         return View(form);
     }
 
     [HttpPost]
-    [Authorize(Roles = "HR,Admin")]
+    [Authorize(Roles = "HR")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(EmployeeFormViewModel form)
     {
@@ -79,7 +149,9 @@ public class EmployeesController : Controller
             UserId = form.UserId,
             ManagerId = form.ManagerId,
             Seniority = form.Seniority,
-            AnnualLeaveDays = form.AnnualLeaveDays
+            AnnualLeaveDays = form.AnnualLeaveDays,
+            UnitId = form.UnitId,
+            RequestLoginAccount = form.RequestLoginAccount
         });
 
         if (!response.IsSuccess)
@@ -120,6 +192,7 @@ public class EmployeesController : Controller
             ManagerId = response.Data.ManagerId,
             Seniority = response.Data.Seniority,
             AnnualLeaveDays = response.Data.AnnualLeaveDays,
+            UnitId = response.Data.UnitId,
             IsActive = response.Data.IsActive
         };
 
@@ -152,6 +225,7 @@ public class EmployeesController : Controller
             ManagerId = form.ManagerId,
             Seniority = form.Seniority,
             AnnualLeaveDays = form.AnnualLeaveDays,
+            UnitId = form.UnitId,
             IsActive = form.IsActive
         });
 
@@ -213,7 +287,13 @@ public class EmployeesController : Controller
 
         form.ManagerCandidates = (employees.Data ?? [])
             .Where(e => e.Id != form.Id && SeniorityDisplay.IsManagerial(e.Seniority))
-            .Select(e => new ManagerCandidate(e.Id, $"{e.FirstName} {e.LastName}", e.Seniority))
+            .Select(e => new ManagerCandidate(e.Id, $"{e.FirstName} {e.LastName}", e.Seniority, e.DepartmentId))
+            .ToList();
+
+        // Tüm birimler; view'daki dropdown seçilen departmana göre JS ile süzülür.
+        var units = await _unitApi.GetAllAsync();
+        form.UnitCandidates = (units.Data ?? [])
+            .Select(u => new UnitOption(u.Id, u.Name, u.DepartmentId))
             .ToList();
     }
 }

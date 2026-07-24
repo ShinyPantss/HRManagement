@@ -13,4 +13,5 @@ public sealed record UpdateInternCommand(
     DateTime StartDate,
     DateTime EndDate,
     int? MentorId,
-    int DepartmentId) : IRequest<Unit>;
+    int DepartmentId,
+    int? UnitId) : IRequest<Unit>;

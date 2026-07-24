@@ -1,29 +1,43 @@
 @*
-    Yönetici dropdown'ını, çalışanın seçtiği kıdeme göre süzer:
-    yönetici çalışandan KIDEMCE YÜKSEK olmalı (data-seniority < seçilen kıdem;
-    sayı küçüldükçe kıdem artar). Kıdemi bilinmeyen aday (boş) süzülmez.
-    Otorite backend'dedir; bu yalnızca UX kolaylığı.
+    Yönetici dropdown'ını iki ölçütle süzer (otorite backend'de; bu yalnızca UX):
+      1) KIDEM: yönetici çalışandan kıdemce yüksek olmalı (data-seniority < seçilen
+         kıdem; sayı küçüldükçe kıdem artar).
+      2) DEPARTMAN: yönetici çalışanla aynı departmanda olmalı — TEK istisna GM
+         (data-seniority == 1), o "departman üstü" olduğu için her departmanda görünür.
+    Kıdemi/departmanı bilinmeyen aday süzülmez. "Yok (tepe)" seçeneği hep durur.
 *@
 <script>
     (function () {
         var seniority = document.getElementById('Seniority');
+        var department = document.getElementById('DepartmentId');
         var manager = document.querySelector('[data-manager-select]');
-        if (!seniority || !manager) return;
+        if (!manager || (!seniority && !department)) return;
 
         function apply() {
-            var picked = parseInt(seniority.value, 10);
+            var pickedSeniority = seniority ? parseInt(seniority.value, 10) : NaN;
+            var pickedDept = department ? parseInt(department.value, 10) : NaN;
+
             for (var i = 0; i < manager.options.length; i++) {
                 var opt = manager.options[i];
                 if (opt.value === '') { opt.hidden = false; continue; } // "Yok" hep dursun
+
                 var s = parseInt(opt.getAttribute('data-seniority'), 10);
-                // Aday, çalışandan kıdemce yüksek DEĞİLSE gizle (eşit veya düşük).
-                var hide = !isNaN(picked) && !isNaN(s) && s >= picked;
+                var d = parseInt(opt.getAttribute('data-department'), 10);
+
+                // Kıdem: aday çalışandan kıdemce yüksek DEĞİLSE gizle (eşit/düşük).
+                var hideBySeniority = !isNaN(pickedSeniority) && !isNaN(s) && s >= pickedSeniority;
+
+                // Departman: GM (s === 1) hariç, aday farklı departmandaysa gizle.
+                var hideByDept = s !== 1 && !isNaN(pickedDept) && !isNaN(d) && d !== pickedDept;
+
+                var hide = hideBySeniority || hideByDept;
                 opt.hidden = hide;
                 if (hide && opt.selected) { manager.value = ''; } // geçersiz kalan seçimi düşür
             }
         }
 
-        seniority.addEventListener('change', apply);
+        if (seniority) seniority.addEventListener('change', apply);
+        if (department) department.addEventListener('change', apply);
         apply();
     })();
 </script>

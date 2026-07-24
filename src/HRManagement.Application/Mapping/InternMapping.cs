@@ -22,6 +22,7 @@ public static class InternMapping
         EndDate = intern.EndDate,
         MentorId = intern.MentorId,
         DepartmentId = intern.DepartmentId,
+        UnitId = intern.UnitId,
         UserId = intern.UserId
     };
 }

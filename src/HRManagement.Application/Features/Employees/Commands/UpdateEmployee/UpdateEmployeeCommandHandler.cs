@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
+using HRManagement.Application.Features.Units.Shared;
 using HRManagement.Application.Interfaces;
+using HRManagement.Domain.Enums;
 using MediatR;
 
 namespace HRManagement.Application.Features.Employees.Commands.UpdateEmployee;
@@ -10,17 +12,20 @@ public sealed class UpdateEmployeeCommandHandler : IRequestHandler<UpdateEmploye
     private readonly IDepartmentRepository _departmentRepository;
     private readonly IUserRepository _userRepository;
     private readonly IInternRepository _internRepository;
+    private readonly IUnitRepository _unitRepository;
 
     public UpdateEmployeeCommandHandler(
         IEmployeeRepository employeeRepository,
         IDepartmentRepository departmentRepository,
         IUserRepository userRepository,
-        IInternRepository internRepository)
+        IInternRepository internRepository,
+        IUnitRepository unitRepository)
     {
         _employeeRepository = employeeRepository;
         _departmentRepository = departmentRepository;
         _userRepository = userRepository;
         _internRepository = internRepository;
+        _unitRepository = unitRepository;
     }
 
     // Input validation UpdateEmployeeCommandValidator'da.
@@ -37,13 +42,20 @@ public sealed class UpdateEmployeeCommandHandler : IRequestHandler<UpdateEmploye
         if (await _departmentRepository.GetByIdAsync(request.DepartmentId) is null)
             throw new ValidationException("Departman bulunamadı.");
 
+        // GM ve GMY yalnızca departmana bağlıdır; birimleri olmaz (sorumlu oldukları alan).
+        if (request.UnitId is not null && request.Seniority is SeniorityLevel lvl && !lvl.CanBelongToUnit())
+            throw new ValidationException("Genel Müdür ve GMY yalnızca departmana bağlıdır; birim seçilemez.");
+
+        // Seçilen birim (varsa) bu departmana ait olmalı.
+        await UnitAssignment.EnsureUnitInDepartmentAsync(_unitRepository, request.UnitId, request.DepartmentId);
+
         // E-posta başka bir çalışanda mı? (kendi kaydı hariç)
         var byEmail = await _employeeRepository.GetByEmailAsync(email);
         if (byEmail is not null && byEmail.Id != employee.Id)
             throw new ValidationException("Bu e-posta ile kayıtlı başka bir çalışan var.");
 
         if (request.ManagerId is int managerId)
-            await EnsureManagerAssignableAsync(employee.Id, managerId, request.Seniority);
+            await EnsureManagerAssignableAsync(employee.Id, managerId, request.Seniority, request.DepartmentId);
 
         // Hesap bağlantısı değişiyorsa yeni hesabın uygunluğunu denetle.
         if (request.UserId is int userId && userId != employee.UserId)
@@ -57,6 +69,7 @@ public sealed class UpdateEmployeeCommandHandler : IRequestHandler<UpdateEmploye
         employee.DateOfBirth = request.BirthDate;
         employee.HireDate = request.HireDate;
         employee.DepartmentId = request.DepartmentId;
+        employee.UnitId = request.UnitId;
         employee.UserId = request.UserId;
         employee.ManagerId = request.ManagerId;
         employee.Seniority = request.Seniority;
@@ -69,7 +82,8 @@ public sealed class UpdateEmployeeCommandHandler : IRequestHandler<UpdateEmploye
     }
 
     private async Task EnsureManagerAssignableAsync(
-        int employeeId, int managerId, HRManagement.Domain.Enums.SeniorityLevel? employeeSeniority)
+        int employeeId, int managerId,
+        HRManagement.Domain.Enums.SeniorityLevel? employeeSeniority, int employeeDepartmentId)
     {
         if (managerId == employeeId)
             throw new ValidationException("Bir çalışan kendi yöneticisi olamaz.");
@@ -78,8 +92,9 @@ public sealed class UpdateEmployeeCommandHandler : IRequestHandler<UpdateEmploye
         if (manager is null)
             throw new ValidationException("Seçilen yönetici bulunamadı.");
 
-        // Yönetici kademesi + kıdem kuralı (Uzman/Kıd.Uzman/Müdür Yrd. yönetici olamaz).
-        Shared.ManagerAssignment.EnsureManagerEligible(manager.Seniority, employeeSeniority);
+        // Yönetici kademesi + kıdem + departman kuralı (GM hariç aynı departman).
+        Shared.ManagerAssignment.EnsureManagerEligible(
+            manager.Seniority, manager.DepartmentId, employeeSeniority, employeeDepartmentId);
 
         // Döngü önleme: yeni yönetici bu çalışanın ALTINDA ise (çalışan, adayın
         // zincirinde yukarıdaysa) bağ kurulunca A→B→A döngüsü oluşur ve onay

@@ -20,6 +20,7 @@ public static class EmployeeMapping
         BirthDate = employee.DateOfBirth,
         HireDate = employee.HireDate,
         DepartmentId = employee.DepartmentId,
+        UnitId = employee.UnitId,
         UserId = employee.UserId,
         ManagerId = employee.ManagerId,
         Seniority = (int?)employee.Seniority,

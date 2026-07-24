@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using HRManagement.Application.Features.Units.Shared;
 using HRManagement.Application.Interfaces;
 using MediatR;
 
@@ -7,10 +8,14 @@ namespace HRManagement.Application.Features.Interns.Commands.UpdateIntern;
 public sealed class UpdateInternCommandHandler : IRequestHandler<UpdateInternCommand, Unit>
 {
     private readonly IInternRepository _internRepository;
+    private readonly IUnitRepository _unitRepository;
 
-    public UpdateInternCommandHandler(IInternRepository internRepository)
+    public UpdateInternCommandHandler(
+        IInternRepository internRepository,
+        IUnitRepository unitRepository)
     {
         _internRepository = internRepository;
+        _unitRepository = unitRepository;
     }
 
     // Input validation UpdateInternCommandValidator'da.
@@ -22,6 +27,9 @@ public sealed class UpdateInternCommandHandler : IRequestHandler<UpdateInternCom
         if (intern is null)
             throw new ValidationException("Stajyer bulunamadı.");
 
+        // Seçilen birim (varsa) bu departmana ait olmalı.
+        await UnitAssignment.EnsureUnitInDepartmentAsync(_unitRepository, request.UnitId, request.DepartmentId);
+
         intern.FirstName = request.FirstName.Trim();
         intern.LastName = request.LastName.Trim();
         intern.Email = request.Email.Trim();
@@ -32,6 +40,7 @@ public sealed class UpdateInternCommandHandler : IRequestHandler<UpdateInternCom
         intern.EndDate = request.EndDate;
         intern.MentorId = request.MentorId;
         intern.DepartmentId = request.DepartmentId;
+        intern.UnitId = request.UnitId;
 
         await _internRepository.UpdateAsync(intern);
 

@@ -1,7 +1,10 @@
 using System.ComponentModel.DataAnnotations;
+using HRManagement.Application.Features.AccountRequests.Shared;
 using HRManagement.Application.Features.Employees.Shared;
+using HRManagement.Application.Features.Units.Shared;
 using HRManagement.Application.Interfaces;
 using HRManagement.Domain.Entities;
+using HRManagement.Domain.Enums;
 using MediatR;
 
 namespace HRManagement.Application.Features.Employees.Commands.CreateEmployee;
@@ -12,17 +15,23 @@ public sealed class CreateEmployeeCommandHandler : IRequestHandler<CreateEmploye
     private readonly IDepartmentRepository _departmentRepository;
     private readonly IUserRepository _userRepository;
     private readonly IInternRepository _internRepository;
+    private readonly IAccountRequestRepository _accountRequestRepository;
+    private readonly IUnitRepository _unitRepository;
 
     public CreateEmployeeCommandHandler(
         IEmployeeRepository employeeRepository,
         IDepartmentRepository departmentRepository,
         IUserRepository userRepository,
-        IInternRepository internRepository)
+        IInternRepository internRepository,
+        IAccountRequestRepository accountRequestRepository,
+        IUnitRepository unitRepository)
     {
         _employeeRepository = employeeRepository;
         _departmentRepository = departmentRepository;
         _userRepository = userRepository;
         _internRepository = internRepository;
+        _accountRequestRepository = accountRequestRepository;
+        _unitRepository = unitRepository;
     }
 
     // Input validation CreateEmployeeCommandValidator'da.
@@ -33,6 +42,13 @@ public sealed class CreateEmployeeCommandHandler : IRequestHandler<CreateEmploye
 
         if (await _departmentRepository.GetByIdAsync(request.DepartmentId) is null)
             throw new ValidationException("Departman bulunamadı.");
+
+        // GM ve GMY yalnızca departmana bağlıdır; birimleri olmaz (sorumlu oldukları alan).
+        if (request.UnitId is not null && request.Seniority is SeniorityLevel lvl && !lvl.CanBelongToUnit())
+            throw new ValidationException("Genel Müdür ve GMY yalnızca departmana bağlıdır; birim seçilemez.");
+
+        // Seçilen birim (varsa) bu departmana ait olmalı.
+        await UnitAssignment.EnsureUnitInDepartmentAsync(_unitRepository, request.UnitId, request.DepartmentId);
 
         // E-posta benzersizliği: DB'de UNIQUE kısıt var, ama ona takılmak 500 üretir.
         // Kuralı burada önden uygulayıp anlaşılır bir 400 mesajı veriyoruz.
@@ -45,8 +61,9 @@ public sealed class CreateEmployeeCommandHandler : IRequestHandler<CreateEmploye
             if (manager is null)
                 throw new ValidationException("Seçilen yönetici bulunamadı.");
 
-            // Yönetici kademesi + kıdem kuralı (Uzman/Kıd.Uzman/Müdür Yrd. yönetici olamaz).
-            ManagerAssignment.EnsureManagerEligible(manager.Seniority, request.Seniority);
+            // Yönetici kademesi + kıdem + departman kuralı (GM hariç aynı departman).
+            ManagerAssignment.EnsureManagerEligible(
+                manager.Seniority, manager.DepartmentId, request.Seniority, request.DepartmentId);
         }
 
         if (request.UserId is int userId)
@@ -62,13 +79,34 @@ public sealed class CreateEmployeeCommandHandler : IRequestHandler<CreateEmploye
             DateOfBirth = request.BirthDate,
             HireDate = request.HireDate,
             DepartmentId = request.DepartmentId,
+            UnitId = request.UnitId,
             UserId = request.UserId,
             ManagerId = request.ManagerId,
             Seniority = request.Seniority,
             AnnualLeaveDays = request.AnnualLeaveDays
         };
 
-        return await _employeeRepository.AddAsync(employee);
+        var employeeId = await _employeeRepository.AddAsync(employee);
+
+        // Otomatik hesap talebi: çalışan eklenince HR'ın AYRICA gidip talep açmasına
+        // gerek kalmasın diye Admin'e Pending talep düşer. Onay yine Admin'de kalır —
+        // görev ayrılığı (HR ister, Admin verir) ve denetim izi korunur; sadece HR'ın
+        // fazladan adımı gider. Kutu işaretsizse ya da kayıt zaten bir hesaba
+        // bağlandıysa (UserId dolu) talep açılmaz.
+        if (request.RequestLoginAccount && request.UserId is null)
+            await _accountRequestRepository.AddAsync(new AccountRequest
+            {
+                EmployeeId = employeeId,
+                RequestedByUserId = request.CreatedByUserId,
+                // Rol KIDEMDEN türetilir (tek kural, AccountRoleResolver): yönetici
+                // kademesi (GM/GMY/Müdür, Direktör=Müdür) → Yönetici; diğerleri → Çalışan.
+                // Nihai rolü Admin onay ekranında yine değiştirebilir.
+                SuggestedRole = AccountRoleResolver.ForEmployee(request.Seniority),
+                Note = "Çalışan kaydı oluşturulurken otomatik açıldı.",
+                Status = AccountRequestStatus.Pending
+            });
+
+        return employeeId;
     }
 
     // Bir hesap yalnızca TEK kişiye bağlanabilir: aksi hâlde "giriş yapan kim?"

@@ -41,5 +41,13 @@ public sealed class CreateInternCommandValidator : AbstractValidator<CreateInter
 
         RuleFor(command => command.DepartmentId)
             .GreaterThan(0).WithMessage("Departman seçilmelidir.");
+
+        RuleFor(command => command.UnitId)
+            .GreaterThan(0).When(command => command.UnitId.HasValue)
+            .WithMessage("Geçerli bir birim seçilmelidir.");
+
+        // Otomatik hesap talebinin "talep eden"i; oturumdan (JWT) gelir, 0 olmamalı.
+        RuleFor(command => command.CreatedByUserId)
+            .GreaterThan(0).WithMessage("Kaydı açan oturum belirlenemedi.");
     }
 }

@@ -34,8 +34,8 @@ public class EmployeeRepository : IEmployeeRepository
     {
         // CreatedAt yazılmaz: DB default'u (SYSUTCDATETIME) doldurur — saat tek kaynaktan.
         const string sql = @"
-            INSERT INTO Employees (FirstName, LastName, NationalId, DateOfBirth, DepartmentId, HireDate, Email, Phone, IsActive, UserId, ManagerId, AnnualLeaveDays, Seniority)
-            VALUES (@FirstName, @LastName, @NationalId, @DateOfBirth, @DepartmentId, @HireDate, @Email, @Phone, @IsActive, @UserId, @ManagerId, @AnnualLeaveDays, @Seniority);
+            INSERT INTO Employees (FirstName, LastName, NationalId, DateOfBirth, DepartmentId, UnitId, HireDate, Email, Phone, IsActive, UserId, ManagerId, AnnualLeaveDays, Seniority)
+            VALUES (@FirstName, @LastName, @NationalId, @DateOfBirth, @DepartmentId, @UnitId, @HireDate, @Email, @Phone, @IsActive, @UserId, @ManagerId, @AnnualLeaveDays, @Seniority);
             SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
         using var connection = _connectionFactory.CreateConnection();
@@ -53,6 +53,7 @@ public class EmployeeRepository : IEmployeeRepository
                 NationalId = @NationalId,
                 DateOfBirth = @DateOfBirth,
                 DepartmentId = @DepartmentId,
+                UnitId = @UnitId,
                 HireDate = @HireDate,
                 Email = @Email,
                 Phone = @Phone,

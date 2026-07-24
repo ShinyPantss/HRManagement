@@ -60,13 +60,15 @@
             <div class="row">
                 <div class="col-md-6 mb-3">
                     <label asp-for="BirthDate" class="form-label"></label>
-                    <input asp-for="BirthDate" type="text" class="form-control" placeholder="gg.aa.yyyy" />
+                    @* type="date" tarayıcı takvimi açar; value ISO (yyyy-MM-dd) ister,
+                       asp-format ViewModel'deki dd.MM.yyyy edit formatını bu input için ezer. *@
+                    <input asp-for="BirthDate" type="date" asp-format="{0:yyyy-MM-dd}" class="form-control" />
                     <span asp-validation-for="BirthDate" class="text-danger small"></span>
                 </div>
 
                 <div class="col-md-6 mb-3">
                     <label asp-for="HireDate" class="form-label"></label>
-                    <input asp-for="HireDate" type="text" class="form-control" placeholder="gg.aa.yyyy" />
+                    <input asp-for="HireDate" type="date" asp-format="{0:yyyy-MM-dd}" class="form-control" />
                     <span asp-validation-for="HireDate" class="text-danger small"></span>
                 </div>
             </div>
@@ -86,11 +88,26 @@
                         <option value="">Yok (zincirin tepesi)</option>
                         @foreach (var m in Model.ManagerCandidates)
                         {
-                            <option value="@m.Id" data-seniority="@m.Seniority">@m.Name</option>
+                            <option value="@m.Id" data-seniority="@m.Seniority" data-department="@m.DepartmentId">@m.Name</option>
                         }
                     </select>
                     <span asp-validation-for="ManagerId" class="text-danger small"></span>
                     <div class="form-text">Yalnızca Müdür, GMY, GM ve çalışandan kıdemli olanlar listelenir.</div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3" id="unitGroup">
+                    <label asp-for="UnitId" class="form-label"></label>
+                    <select asp-for="UnitId" class="form-select" data-unit-select>
+                        <option value="">Birim yok / seçiniz…</option>
+                        @foreach (var u in Model.UnitCandidates)
+                        {
+                            <option value="@u.Id" data-department="@u.DepartmentId">@u.Name</option>
+                        }
+                    </select>
+                    <span asp-validation-for="UnitId" class="text-danger small"></span>
+                    <div class="form-text">Seçilen departmana göre süzülür; zorunlu değil.</div>
                 </div>
             </div>
 
@@ -108,6 +125,15 @@
                 </div>
             </div>
 
+            @* Otomatik hesap talebi: işaretliyse çalışan eklenince Admin'e Pending
+               talep düşer (HR ayrıca talep açmaz). Yukarıda mevcut bir hesap Id'si
+               yazıldıysa sunucu talebi zaten açmaz. *@
+            <div class="form-check mb-3">
+                <input asp-for="RequestLoginAccount" class="form-check-input" />
+                <label asp-for="RequestLoginAccount" class="form-check-label"></label>
+                <div class="form-text">Onayı Admin verir; işaretli değilse hesap talebi oluşmaz.</div>
+            </div>
+
             <div class="d-flex gap-2 mt-4">
                 <button type="submit" class="btn btn-primary">Kaydet</button>
                 <a asp-action="Index" class="btn btn-outline-secondary">Vazgeç</a>
@@ -119,4 +145,5 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <partial name="_ManagerSeniorityFilter" />
+    <partial name="_UnitDepartmentFilter" />
 }

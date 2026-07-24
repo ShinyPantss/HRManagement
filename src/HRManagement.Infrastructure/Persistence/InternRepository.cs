@@ -30,8 +30,8 @@ public class InternRepository : IInternRepository
     public async Task<int> AddAsync(Intern intern)
     {
         const string sql = @"
-            INSERT INTO Interns (FirstName, LastName, Email, University, Major, Grade, StartDate, EndDate, MentorId, DepartmentId, UserId)
-            VALUES (@FirstName, @LastName, @Email, @University, @Major, @Grade, @StartDate, @EndDate, @MentorId, @DepartmentId, @UserId);
+            INSERT INTO Interns (FirstName, LastName, Email, University, Major, Grade, StartDate, EndDate, MentorId, DepartmentId, UnitId, UserId)
+            VALUES (@FirstName, @LastName, @Email, @University, @Major, @Grade, @StartDate, @EndDate, @MentorId, @DepartmentId, @UnitId, @UserId);
             SELECT CAST(SCOPE_IDENTITY() AS INT);";
         using var connection = _connectionFactory.CreateConnection();
         return await connection.QuerySingleAsync<int>(sql, intern);
@@ -51,6 +51,7 @@ public class InternRepository : IInternRepository
                 EndDate = @EndDate,
                 MentorId = @MentorId,
                 DepartmentId = @DepartmentId,
+                UnitId = @UnitId,
                 UserId = @UserId,
                 UpdatedAt = SYSUTCDATETIME()
             WHERE Id = @Id";
@@ -135,5 +136,12 @@ public class InternRepository : IInternRepository
         const string sql = "SELECT * FROM Interns WHERE UserId = @UserId";
         using var connection = _connectionFactory.CreateConnection();
         return await connection.QueryFirstOrDefaultAsync<Intern>(sql, new { UserId = userId });
+    }
+
+    public async Task<IEnumerable<Intern>> GetByMentorIdAsync(int mentorEmployeeId)
+    {
+        const string sql = "SELECT * FROM Interns WHERE MentorId = @MentorId";
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.QueryAsync<Intern>(sql, new { MentorId = mentorEmployeeId });
     }
 }

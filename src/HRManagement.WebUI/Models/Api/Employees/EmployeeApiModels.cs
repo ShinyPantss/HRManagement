@@ -20,6 +20,7 @@ public class EmployeeResponse
     public DateTime BirthDate { get; set; }
     public DateTime HireDate { get; set; }
     public int DepartmentId { get; set; }
+    public int? UnitId { get; set; }   // departmanın alt kırılımı (Birim); opsiyonel
     public int? UserId { get; set; }
     public int? ManagerId { get; set; }
     public int? Seniority { get; set; }
@@ -39,10 +40,14 @@ public class CreateEmployeeRequest
     public DateTime BirthDate { get; set; }
     public DateTime HireDate { get; set; }
     public int DepartmentId { get; set; }
+    public int? UnitId { get; set; }   // departmanın alt kırılımı (Birim); opsiyonel
     public int? UserId { get; set; }
     public int? ManagerId { get; set; }
     public int? Seniority { get; set; }
     public int? AnnualLeaveDays { get; set; }
+
+    // true ise çalışan eklenince Admin'e otomatik hesap talebi düşer.
+    public bool RequestLoginAccount { get; set; }
 }
 
 public class UpdateEmployeeRequest
@@ -55,6 +60,7 @@ public class UpdateEmployeeRequest
     public DateTime BirthDate { get; set; }
     public DateTime HireDate { get; set; }
     public int DepartmentId { get; set; }
+    public int? UnitId { get; set; }   // departmanın alt kırılımı (Birim); opsiyonel
     public int? UserId { get; set; }
     public int? ManagerId { get; set; }
     public int? Seniority { get; set; }

@@ -37,5 +37,9 @@ public sealed class UpdateInternCommandValidator : AbstractValidator<UpdateInter
 
         RuleFor(command => command.DepartmentId)
             .GreaterThan(0).WithMessage("Departman seçilmelidir.");
+
+        RuleFor(command => command.UnitId)
+            .GreaterThan(0).When(command => command.UnitId.HasValue)
+            .WithMessage("Geçerli bir birim seçilmelidir.");
     }
 }

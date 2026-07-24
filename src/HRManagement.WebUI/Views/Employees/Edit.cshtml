@@ -87,11 +87,26 @@
                         <option value="">Yok (zincirin tepesi)</option>
                         @foreach (var m in Model.ManagerCandidates)
                         {
-                            <option value="@m.Id" data-seniority="@m.Seniority">@m.Name</option>
+                            <option value="@m.Id" data-seniority="@m.Seniority" data-department="@m.DepartmentId">@m.Name</option>
                         }
                     </select>
                     <span asp-validation-for="ManagerId" class="text-danger small"></span>
                     <div class="form-text">Yalnızca Müdür, GMY, GM ve çalışandan kıdemli olanlar listelenir.</div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3" id="unitGroup">
+                    <label asp-for="UnitId" class="form-label"></label>
+                    <select asp-for="UnitId" class="form-select" data-unit-select>
+                        <option value="">Birim yok / seçiniz…</option>
+                        @foreach (var u in Model.UnitCandidates)
+                        {
+                            <option value="@u.Id" data-department="@u.DepartmentId">@u.Name</option>
+                        }
+                    </select>
+                    <span asp-validation-for="UnitId" class="text-danger small"></span>
+                    <div class="form-text">Seçilen departmana göre süzülür; zorunlu değil.</div>
                 </div>
             </div>
 
@@ -129,4 +144,5 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <partial name="_ManagerSeniorityFilter" />
+    <partial name="_UnitDepartmentFilter" />
 }

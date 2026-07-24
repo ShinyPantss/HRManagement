@@ -21,7 +21,10 @@ public class CreateInternCommandValidatorTests
         StartDate: new DateTime(2026, 6, 1),
         EndDate: new DateTime(2026, 9, 1),
         MentorId: null,
-        DepartmentId: 1);
+        DepartmentId: 1,
+        UnitId: null,
+        CreatedByUserId: 1,
+        RequestLoginAccount: true);
 
     [Fact]
     public void zorunlu_alanlar_bos_ise_her_biri_icin_hata_doner()

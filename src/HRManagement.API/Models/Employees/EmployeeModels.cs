@@ -3,6 +3,8 @@ namespace HRManagement.API.Models.Employees;
 // UserId          → giriş hesabıyla ilişkilendirme (5.2; sonradan da bağlanabilir)
 // ManagerId       → bağlı olduğu yönetici; izin onay zinciri buradan kurulur
 // AnnualLeaveDays → izin hakkını elle ezme; normalde null (kıdemden hesaplanır)
+// UnitId          → departmanın alt kırılımı (Birim); opsiyonel, departmana ait olmalı
+// RequestLoginAccount → true ise çalışan eklenince Admin'e otomatik hesap talebi düşer
 
 public sealed class CreateEmployeeRequest
 {
@@ -15,10 +17,12 @@ public sealed class CreateEmployeeRequest
         DateTime birthDate,
         DateTime hireDate,
         int departmentId,
+        int? unitId,
         int? userId,
         int? managerId,
         int? seniority,
-        int? annualLeaveDays)
+        int? annualLeaveDays,
+        bool requestLoginAccount)
     {
         FirstName = firstName;
         LastName = lastName;
@@ -28,10 +32,12 @@ public sealed class CreateEmployeeRequest
         BirthDate = birthDate;
         HireDate = hireDate;
         DepartmentId = departmentId;
+        UnitId = unitId;
         UserId = userId;
         ManagerId = managerId;
         Seniority = seniority;
         AnnualLeaveDays = annualLeaveDays;
+        RequestLoginAccount = requestLoginAccount;
     }
 
     public string FirstName { get; }
@@ -42,10 +48,12 @@ public sealed class CreateEmployeeRequest
     public DateTime BirthDate { get; }
     public DateTime HireDate { get; }
     public int DepartmentId { get; }
+    public int? UnitId { get; }
     public int? UserId { get; }
     public int? ManagerId { get; }
     public int? Seniority { get; }
     public int? AnnualLeaveDays { get; }
+    public bool RequestLoginAccount { get; }
 }
 
 public sealed class UpdateEmployeeRequest
@@ -59,6 +67,7 @@ public sealed class UpdateEmployeeRequest
         DateTime birthDate,
         DateTime hireDate,
         int departmentId,
+        int? unitId,
         int? userId,
         int? managerId,
         int? seniority,
@@ -73,6 +82,7 @@ public sealed class UpdateEmployeeRequest
         BirthDate = birthDate;
         HireDate = hireDate;
         DepartmentId = departmentId;
+        UnitId = unitId;
         UserId = userId;
         ManagerId = managerId;
         Seniority = seniority;
@@ -88,6 +98,7 @@ public sealed class UpdateEmployeeRequest
     public DateTime BirthDate { get; }
     public DateTime HireDate { get; }
     public int DepartmentId { get; }
+    public int? UnitId { get; }
     public int? UserId { get; }
     public int? ManagerId { get; }
     public int? Seniority { get; }
@@ -107,6 +118,7 @@ public sealed class EmployeeResponse
         DateTime birthDate,
         DateTime hireDate,
         int departmentId,
+        int? unitId,
         int? userId,
         int? managerId,
         int? seniority,
@@ -122,6 +134,7 @@ public sealed class EmployeeResponse
         BirthDate = birthDate;
         HireDate = hireDate;
         DepartmentId = departmentId;
+        UnitId = unitId;
         UserId = userId;
         ManagerId = managerId;
         Seniority = seniority;
@@ -138,6 +151,7 @@ public sealed class EmployeeResponse
     public DateTime BirthDate { get; }
     public DateTime HireDate { get; }
     public int DepartmentId { get; }
+    public int? UnitId { get; }
     public int? UserId { get; }
     public int? ManagerId { get; }
     public int? Seniority { get; }

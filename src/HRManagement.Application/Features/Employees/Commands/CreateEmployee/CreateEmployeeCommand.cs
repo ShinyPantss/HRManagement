@@ -11,6 +11,10 @@ namespace HRManagement.Application.Features.Employees.Commands.CreateEmployee;
 /// ManagerId → bağlı olduğu yönetici; izin onay zinciri buradan kurulur
 /// Seniority → kıdem/ünvan seviyesi (GM, GMY, Müdür...)
 /// AnnualLeaveDays → izin hakkını elle ezme; normalde null (kıdemden hesaplanır)
+/// CreatedByUserId → kaydı açan (imzalı JWT'den); otomatik hesap talebinin
+///   "talep eden"i olur, denetim izi doğru kalsın diye gövdeden değil claim'den gelir.
+/// RequestLoginAccount → true ise çalışan eklenince Admin'e otomatik hesap talebi
+///   düşer (HR ayrı adım atmasın). Zaten bir hesaba bağlandıysa (UserId dolu) etkisiz.
 /// </summary>
 public sealed record CreateEmployeeCommand(
     string FirstName,
@@ -21,7 +25,10 @@ public sealed record CreateEmployeeCommand(
     DateTime BirthDate,
     DateTime HireDate,
     int DepartmentId,
+    int? UnitId,
     int? UserId,
     int? ManagerId,
     SeniorityLevel? Seniority,
-    int? AnnualLeaveDays) : IRequest<int>;
+    int? AnnualLeaveDays,
+    int CreatedByUserId,
+    bool RequestLoginAccount) : IRequest<int>;

@@ -1,5 +1,6 @@
 using HRManagement.WebUI.Models.Api.Interns;
 using HRManagement.WebUI.Models.Interns;
+using HRManagement.WebUI.Models.Units;
 using HRManagement.WebUI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,13 +17,19 @@ public class InternsController : Controller
 {
     private readonly IInternApi _internApi;
     private readonly IDepartmentApi _departmentApi;
+    private readonly IUnitApi _unitApi;
 
-    public InternsController(IInternApi internApi, IDepartmentApi departmentApi)
+    public InternsController(IInternApi internApi, IDepartmentApi departmentApi, IUnitApi unitApi)
     {
         _internApi = internApi;
         _departmentApi = departmentApi;
+        _unitApi = unitApi;
     }
 
+    // Stajyer LİSTESİ yönetim ekranıdır: Manager ve Employee göremez (onlar
+    // kendi stajyerlerine Mentorluk'tan ulaşır). Menüde gizli olması yetmez,
+    // URL ile de girilememeli.
+    [Authorize(Roles = "HR,Admin,Intern")]
     public async Task<IActionResult> Index()
     {
         var response = await _internApi.GetAllAsync();
@@ -36,6 +43,9 @@ public class InternsController : Controller
         return View(response.Data ?? new List<InternResponse>());
     }
 
+    // Stajyer kaydı AÇMAK yalnızca İK işidir (çalışan tarafıyla aynı kural).
+    // Bu kontroller UX içindir; son söz her zaman API'dedir.
+    [Authorize(Roles = "HR")]
     public async Task<IActionResult> Create()
     {
         var form = new InternFormViewModel();
@@ -44,6 +54,7 @@ public class InternsController : Controller
     }
 
     [HttpPost]
+    [Authorize(Roles = "HR")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(InternFormViewModel form)
     {
@@ -68,6 +79,7 @@ public class InternsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    [Authorize(Roles = "HR,Admin")]
     public async Task<IActionResult> Edit(int id)
     {
         var response = await _internApi.GetByIdAsync(id);
@@ -90,7 +102,8 @@ public class InternsController : Controller
             StartDate = response.Data.StartDate,
             EndDate = response.Data.EndDate,
             MentorId = response.Data.MentorId,
-            DepartmentId = response.Data.DepartmentId
+            DepartmentId = response.Data.DepartmentId,
+            UnitId = response.Data.UnitId
         };
 
         await FillDepartmentOptionsAsync(form);
@@ -98,6 +111,7 @@ public class InternsController : Controller
     }
 
     [HttpPost]
+    [Authorize(Roles = "HR,Admin")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(InternFormViewModel form)
     {
@@ -150,7 +164,10 @@ public class InternsController : Controller
         StartDate = form.StartDate!.Value,
         EndDate = form.EndDate!.Value,
         MentorId = form.MentorId,
-        DepartmentId = form.DepartmentId!.Value
+        DepartmentId = form.DepartmentId!.Value,
+        UnitId = form.UnitId,
+        // Yalnızca oluşturmada anlamlı; güncellemede API bu alanı yok sayar.
+        RequestLoginAccount = form.RequestLoginAccount
     };
 
     /// <summary>
@@ -174,6 +191,12 @@ public class InternsController : Controller
                 Text = department.Name,
                 Value = department.Id.ToString()
             })
+            .ToList();
+
+        // Tüm birimler; view'daki dropdown seçilen departmana göre JS ile süzülür.
+        var units = await _unitApi.GetAllAsync();
+        form.UnitCandidates = (units.Data ?? [])
+            .Select(u => new UnitOption(u.Id, u.Name, u.DepartmentId))
             .ToList();
     }
 }

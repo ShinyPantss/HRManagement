@@ -1,5 +1,7 @@
 namespace HRManagement.API.Models.Interns;
 
+// UnitId → departmanın alt kırılımı (Birim); opsiyonel, departmana ait olmalı.
+// RequestLoginAccount → true ise stajyer eklenince Admin'e otomatik hesap talebi düşer.
 public sealed class CreateInternRequest
 {
     public CreateInternRequest(
@@ -12,7 +14,9 @@ public sealed class CreateInternRequest
         DateTime startDate,
         DateTime endDate,
         int? mentorId,
-        int departmentId)
+        int departmentId,
+        int? unitId,
+        bool requestLoginAccount)
     {
         FirstName = firstName;
         LastName = lastName;
@@ -24,6 +28,8 @@ public sealed class CreateInternRequest
         EndDate = endDate;
         MentorId = mentorId;
         DepartmentId = departmentId;
+        UnitId = unitId;
+        RequestLoginAccount = requestLoginAccount;
     }
 
     public string FirstName { get; }
@@ -36,6 +42,8 @@ public sealed class CreateInternRequest
     public DateTime EndDate { get; }
     public int? MentorId { get; }
     public int DepartmentId { get; }
+    public int? UnitId { get; }
+    public bool RequestLoginAccount { get; }
 }
 
 public sealed class UpdateInternRequest
@@ -50,7 +58,8 @@ public sealed class UpdateInternRequest
         DateTime startDate,
         DateTime endDate,
         int? mentorId,
-        int departmentId)
+        int departmentId,
+        int? unitId)
     {
         FirstName = firstName;
         LastName = lastName;
@@ -62,6 +71,7 @@ public sealed class UpdateInternRequest
         EndDate = endDate;
         MentorId = mentorId;
         DepartmentId = departmentId;
+        UnitId = unitId;
     }
 
     public string FirstName { get; }
@@ -74,6 +84,7 @@ public sealed class UpdateInternRequest
     public DateTime EndDate { get; }
     public int? MentorId { get; }
     public int DepartmentId { get; }
+    public int? UnitId { get; }
 }
 
 public sealed class InternResponse
@@ -90,6 +101,7 @@ public sealed class InternResponse
         DateTime endDate,
         int? mentorId,
         int departmentId,
+        int? unitId,
         int? userId)
     {
         Id = id;
@@ -103,6 +115,7 @@ public sealed class InternResponse
         EndDate = endDate;
         MentorId = mentorId;
         DepartmentId = departmentId;
+        UnitId = unitId;
         UserId = userId;
     }
 
@@ -117,5 +130,6 @@ public sealed class InternResponse
     public DateTime EndDate { get; }
     public int? MentorId { get; }
     public int DepartmentId { get; }
+    public int? UnitId { get; }
     public int? UserId { get; }
 }

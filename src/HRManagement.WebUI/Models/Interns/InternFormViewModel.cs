@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using HRManagement.WebUI.Models.Units;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace HRManagement.WebUI.Models.Interns;
@@ -55,6 +56,20 @@ public class InternFormViewModel
     [Display(Name = "Departman")]
     public int? DepartmentId { get; set; }
 
+    // Birim opsiyonel; doluysa seçilen departmana ait olmalı (API + Application doğrular).
+    [Display(Name = "Birim (opsiyonel)")]
+    public int? UnitId { get; set; }
+
+    /// <summary>
+    /// İşaretliyse (varsayılan) stajyer eklenince Admin'e otomatik hesap talebi düşer;
+    /// HR ayrıca talep açmak zorunda kalmaz. Yalnızca oluşturma ekranında gösterilir.
+    /// </summary>
+    [Display(Name = "Bu stajyer için giriş hesabı talep et")]
+    public bool RequestLoginAccount { get; set; } = true;
+
     // Departman dropdown'ının kaynağı; controller her form gösteriminde doldurur.
     public IEnumerable<SelectListItem> DepartmentOptions { get; set; } = [];
+
+    /// <summary>Birim adayları (tümü); JS seçilen departmana göre süzer.</summary>
+    public IEnumerable<UnitOption> UnitCandidates { get; set; } = [];
 }

@@ -15,8 +15,11 @@ public class Intern
     public DateTime StartDate { get; set; }                
     public DateTime EndDate { get; set; }                  
 
-    public int? MentorId { get; set; }                      
+    public int? MentorId { get; set; }
     public int DepartmentId { get; set; }
+
+    // Departmanın alt kırılımı (Birim); opsiyonel, seçilirse departmana ait olmalı.
+    public int? UnitId { get; set; }
 
     public int? UserId { get; set; }
 

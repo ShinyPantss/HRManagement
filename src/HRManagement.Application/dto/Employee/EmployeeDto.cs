@@ -11,6 +11,7 @@ public class EmployeeDto
     public DateTime BirthDate { get; set; }
     public DateTime HireDate { get; set; }
     public int DepartmentId { get; set; }
+    public int? UnitId { get; set; }   // departmanın alt kırılımı (Birim); opsiyonel
     public int? UserId { get; set; }
     public int? ManagerId { get; set; }
     public int? Seniority { get; set; }   // SeniorityLevel enum'ının sayısal karşılığı

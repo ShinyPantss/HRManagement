@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using HRManagement.WebUI.Models.Units;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace HRManagement.WebUI.Models.Employees;
@@ -46,6 +47,11 @@ public class EmployeeFormViewModel
     [Display(Name = "Departman")]
     public int? DepartmentId { get; set; }
 
+    // Birim opsiyonel: birimi olmayan departmanlar (Yönetim) için boş kalabilir.
+    // Doluysa seçilen birim, seçilen departmana ait olmalı (API + Application doğrular).
+    [Display(Name = "Birim (opsiyonel)")]
+    public int? UnitId { get; set; }
+
     // Pozisyon ARTIK GİRİLMİYOR: Departman + Kıdem'den türetilir ("IT Uzmanı").
     [Required(ErrorMessage = "Kıdem seçimi zorunludur.")]
     [Display(Name = "Kıdem / Ünvan")]
@@ -65,6 +71,14 @@ public class EmployeeFormViewModel
     public bool IsActive { get; set; }
 
     /// <summary>
+    /// İşaretliyse (varsayılan) çalışan eklenince Admin'e otomatik hesap talebi düşer;
+    /// HR ayrıca talep açmak zorunda kalmaz. Yalnızca oluşturma ekranında gösterilir.
+    /// Mevcut bir hesaba bağlandıysa (UserId dolu) sunucu talebi yine de açmaz.
+    /// </summary>
+    [Display(Name = "Bu çalışan için giriş hesabı talep et")]
+    public bool RequestLoginAccount { get; set; } = true;
+
+    /// <summary>
     /// Departman dropdown'ının seçenekleri. Form her View'a dönmeden önce
     /// controller tarafından doldurulur; aksi halde liste boş görünür.
     /// </summary>
@@ -77,9 +91,15 @@ public class EmployeeFormViewModel
     /// </summary>
     public IEnumerable<ManagerCandidate> ManagerCandidates { get; set; } = [];
 
+    /// <summary>Birim adayları (tümü); JS seçilen departmana göre süzer.</summary>
+    public IEnumerable<UnitOption> UnitCandidates { get; set; } = [];
+
     /// <summary>Kıdem dropdown'ı (GM … Uzman).</summary>
     public IEnumerable<SelectListItem> SeniorityOptions { get; set; } = SeniorityDisplay.Options();
 }
 
-/// <summary>Yönetici dropdown'ı için aday: kıdem, süzme (JS) için taşınır.</summary>
-public record ManagerCandidate(int Id, string Name, int? Seniority);
+/// <summary>
+/// Yönetici dropdown'ı için aday. Kıdem VE departman, JS süzmesi için taşınır:
+/// yönetici çalışandan kıdemce yüksek + (GM hariç) aynı departmanda olmalı.
+/// </summary>
+public record ManagerCandidate(int Id, string Name, int? Seniority, int DepartmentId);

@@ -58,13 +58,15 @@
             <div class="row">
                 <div class="col-md-6 mb-3">
                     <label asp-for="StartDate" class="form-label"></label>
-                    <input asp-for="StartDate" type="text" class="form-control" placeholder="gg.aa.yyyy" />
+                    @* type="date" tarayıcı takvimi açar; value ISO (yyyy-MM-dd) ister,
+                       asp-format ViewModel'deki dd.MM.yyyy edit formatını bu input için ezer. *@
+                    <input asp-for="StartDate" type="date" asp-format="{0:yyyy-MM-dd}" class="form-control" />
                     <span asp-validation-for="StartDate" class="text-danger small"></span>
                 </div>
 
                 <div class="col-md-6 mb-3">
                     <label asp-for="EndDate" class="form-label"></label>
-                    <input asp-for="EndDate" type="text" class="form-control" placeholder="gg.aa.yyyy" />
+                    <input asp-for="EndDate" type="date" asp-format="{0:yyyy-MM-dd}" class="form-control" />
                     <span asp-validation-for="EndDate" class="text-danger small"></span>
                 </div>
             </div>
@@ -85,6 +87,29 @@
                 </div>
             </div>
 
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="UnitId" class="form-label"></label>
+                    <select asp-for="UnitId" class="form-select" data-unit-select>
+                        <option value="">Birim yok / seçiniz…</option>
+                        @foreach (var u in Model.UnitCandidates)
+                        {
+                            <option value="@u.Id" data-department="@u.DepartmentId">@u.Name</option>
+                        }
+                    </select>
+                    <span asp-validation-for="UnitId" class="text-danger small"></span>
+                    <div class="form-text">Seçilen departmana göre süzülür; zorunlu değil.</div>
+                </div>
+            </div>
+
+            @* Otomatik hesap talebi: işaretliyse stajyer eklenince Admin'e Pending
+               talep düşer (HR ayrıca talep açmaz). Onayı Admin verir. *@
+            <div class="form-check mb-3">
+                <input asp-for="RequestLoginAccount" class="form-check-input" />
+                <label asp-for="RequestLoginAccount" class="form-check-label"></label>
+                <div class="form-text">Onayı Admin verir; işaretli değilse hesap talebi oluşmaz.</div>
+            </div>
+
             <div class="d-flex gap-2 mt-4">
                 <button type="submit" class="btn btn-primary">Kaydet</button>
                 <a asp-action="Index" class="btn btn-outline-secondary">Vazgeç</a>
@@ -95,4 +120,5 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <partial name="_UnitDepartmentFilter" />
 }

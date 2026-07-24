@@ -45,8 +45,16 @@ public sealed class CreateEmployeeCommandValidator : AbstractValidator<CreateEmp
             .GreaterThan(0).When(command => command.ManagerId.HasValue)
             .WithMessage("Geçerli bir yönetici seçilmelidir.");
 
+        RuleFor(command => command.UnitId)
+            .GreaterThan(0).When(command => command.UnitId.HasValue)
+            .WithMessage("Geçerli bir birim seçilmelidir.");
+
         RuleFor(command => command.AnnualLeaveDays)
             .GreaterThanOrEqualTo(0).When(command => command.AnnualLeaveDays.HasValue)
             .WithMessage("Yıllık izin günü negatif olamaz.");
+
+        // Otomatik hesap talebinin "talep eden"i; oturumdan (JWT) gelir, 0 olmamalı.
+        RuleFor(command => command.CreatedByUserId)
+            .GreaterThan(0).WithMessage("Kaydı açan oturum belirlenemedi.");
     }
 }
