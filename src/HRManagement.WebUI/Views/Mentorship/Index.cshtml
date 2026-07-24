@@ -1,0 +1,49 @@
+@model IEnumerable<HRManagement.WebUI.Models.Api.Interns.InternResponse>
+@{
+    ViewData["Title"] = "Mentorluk";
+}
+
+<div class="page-head">
+    <h1>Mentorluk</h1>
+    <p class="text-muted mb-0">Mentorluk verdiğiniz stajyerlar. Görev atamak ve not yazmak için detaya girin.</p>
+</div>
+
+<div class="panel mt-3">
+    <div class="panel-body p-0">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Ad Soyad</th>
+                    <th>Üniversite</th>
+                    <th>Bölüm</th>
+                    <th>Sınıf</th>
+                    <th>Staj Dönemi</th>
+                    <th class="text-end">İşlemler</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var intern in Model)
+                {
+                    <tr>
+                        <td>@intern.FirstName @intern.LastName</td>
+                        <td>@intern.University</td>
+                        <td>@(string.IsNullOrWhiteSpace(intern.Major) ? "—" : intern.Major)</td>
+                        <td>@intern.Grade</td>
+                        <td>@intern.StartDate.ToString("dd.MM.yyyy") – @intern.EndDate.ToString("dd.MM.yyyy")</td>
+                        <td class="text-end">
+                            <a asp-action="Detail" asp-route-id="@intern.Id" class="btn btn-sm btn-outline-primary">Detay</a>
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">
+                            Mentorluk verdiğiniz bir stajyer bulunmuyor.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

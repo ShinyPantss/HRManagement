@@ -1,0 +1,155 @@
+@model HRManagement.WebUI.Models.Api.Mentorship.MentoredInternDetailResponse
+@{
+    ViewData["Title"] = "Stajyer Detayı";
+    var fullName = $"{Model.FirstName} {Model.LastName}";
+}
+
+@functions {
+    string DateText(DateTime d) => d.ToString("dd.MM.yyyy");
+
+    (string Badge, string Text) TaskStatusBadge(string status) => status switch
+    {
+        "Pending" => ("text-bg-warning", "Bekliyor"),
+        "InProgress" => ("text-bg-info", "Devam Ediyor"),
+        "Done" => ("text-bg-success", "Tamamlandı"),
+        _ => ("text-bg-secondary", status)
+    };
+}
+
+<div class="page-head d-flex align-items-center">
+    <div>
+        <h1>@fullName</h1>
+        <p class="text-muted mb-0">
+            @Model.University@(string.IsNullOrWhiteSpace(Model.Major) ? "" : $" · {Model.Major}") · @Model.Grade. sınıf
+            · @Model.DepartmentName · @DateText(Model.StartDate) – @DateText(Model.EndDate) · @Model.Email
+        </p>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary ms-auto">Listeye Dön</a>
+</div>
+
+<div class="row mt-3 g-3">
+    @* ── Görevler ────────────────────────────────────────────── *@
+    <div class="col-lg-7">
+        <div class="panel h-100">
+            <div class="panel-body">
+                <h3 class="h6 text-muted text-uppercase">Görevler (@Model.Tasks.Count)</h3>
+
+                <form asp-action="AddTask" asp-route-id="@Model.Id" method="post" class="mb-3">
+                    @Html.AntiForgeryToken()
+                    <div class="row g-2">
+                        <div class="col-md-5">
+                            <input type="text" name="title" class="form-control" maxlength="200"
+                                   placeholder="Görev başlığı" required />
+                        </div>
+                        <div class="col-md-4">
+                            <input type="text" name="description" class="form-control" maxlength="1000"
+                                   placeholder="Açıklama (opsiyonel)" />
+                        </div>
+                        <div class="col-md-2">
+                            <input type="date" name="dueDate" class="form-control" title="Termin (opsiyonel)" />
+                        </div>
+                        <div class="col-md-1 d-grid">
+                            <button type="submit" class="btn btn-outline-primary">Ata</button>
+                        </div>
+                    </div>
+                </form>
+
+                @if (Model.Tasks.Any())
+                {
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Görev</th>
+                                <th>Termin</th>
+                                <th>Durum</th>
+                                <th class="text-end">İlerlet</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var task in Model.Tasks)
+                            {
+                                var (badgeClass, statusText) = TaskStatusBadge(task.Status);
+                                <tr>
+                                    <td>
+                                        @task.Title
+                                        @if (!string.IsNullOrWhiteSpace(task.Description))
+                                        {
+                                            <div class="text-muted small">@task.Description</div>
+                                        }
+                                    </td>
+                                    <td>@(task.DueDate is DateTime due ? DateText(due) : "—")</td>
+                                    <td><span class="badge @badgeClass">@statusText</span></td>
+                                    <td class="text-end">
+                                        @* Durum akışı ileri yönlü: Bekliyor → Devam → Tamam. *@
+                                        @if (task.Status == "Pending")
+                                        {
+                                            <form asp-action="UpdateTaskStatus" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@Model.Id" />
+                                                <input type="hidden" name="taskId" value="@task.Id" />
+                                                <input type="hidden" name="status" value="2" />
+                                                <button type="submit" class="btn btn-sm btn-outline-info">Başlat</button>
+                                            </form>
+                                        }
+                                        @if (task.Status is "Pending" or "InProgress")
+                                        {
+                                            <form asp-action="UpdateTaskStatus" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@Model.Id" />
+                                                <input type="hidden" name="taskId" value="@task.Id" />
+                                                <input type="hidden" name="status" value="3" />
+                                                <button type="submit" class="btn btn-sm btn-outline-success">Tamamla</button>
+                                            </form>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <p class="text-muted mb-0">Henüz görev atanmamış.</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* ── Mentor notları ──────────────────────────────────────── *@
+    <div class="col-lg-5">
+        <div class="panel h-100">
+            <div class="panel-body">
+                <h3 class="h6 text-muted text-uppercase">Mentor Notları (@Model.Notes.Count)</h3>
+
+                <form asp-action="AddNote" asp-route-id="@Model.Id" method="post" class="mb-3">
+                    @Html.AntiForgeryToken()
+                    <div class="d-flex gap-2">
+                        <input type="text" name="content" class="form-control" maxlength="1000"
+                               placeholder="Kısa geri bildirim…" required />
+                        <button type="submit" class="btn btn-outline-primary">Ekle</button>
+                    </div>
+                </form>
+
+                @if (Model.Notes.Any())
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var note in Model.Notes)
+                        {
+                            <li class="list-group-item px-0">
+                                <div class="d-flex justify-content-between">
+                                    <strong class="small">@note.AuthorName</strong>
+                                    <span class="text-muted small">@note.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                                </div>
+                                <div>@note.Content</div>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <p class="text-muted mb-0">Henüz not girilmemiş.</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>

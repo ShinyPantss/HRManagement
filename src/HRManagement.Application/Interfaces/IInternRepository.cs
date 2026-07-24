@@ -24,4 +24,7 @@ public interface IInternRepository
 
     /// <summary>User ↔ Intern köprüsü: giriş yapan hesabın stajyer kaydını bulur.</summary>
     Task<Intern?> GetByUserIdAsync(int userId);
+
+    /// <summary>Bir çalışanın mentorluk verdiği stajyerlar (çalışan detay sayfası).</summary>
+    Task<IEnumerable<Intern>> GetByMentorIdAsync(int mentorEmployeeId);
 }

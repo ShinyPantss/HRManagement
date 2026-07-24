@@ -90,6 +90,35 @@ body {
     font-size: .65rem;
 }
 
+/* ── Sidebar'ın en altı: izin talebi kısayolu ── */
+.sidebar-cta {
+    /* alttan bolca boşluk: buton dibe yapışmasın, belirgin şekilde yukarıda dursun */
+    padding: .75rem .75rem 2.5rem;
+}
+
+.sidebar-cta-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .55rem;
+    width: 100%;
+    padding: .65rem .8rem;
+    border-radius: .65rem;
+    background: linear-gradient(135deg, var(--c-accent), #2563eb);
+    color: #fff;
+    text-decoration: none;
+    font-size: .95rem;
+    font-weight: 600;
+    box-shadow: 0 6px 16px rgba(59, 130, 246, .35);
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.sidebar-cta-btn:hover {
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(59, 130, 246, .45);
+}
+
 .sidebar-footer {
     padding: .9rem 1.25rem;
     border-top: 1px solid rgba(255, 255, 255, .07);

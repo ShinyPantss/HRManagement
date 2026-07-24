@@ -1,14 +1,17 @@
 @using HRManagement.WebUI.Models
 @model IEnumerable<HRManagement.WebUI.Models.Api.Employees.EmployeeResponse>
 @{
-    ViewData["Title"] = "Çalışanlar";
+    // Manager ve Employee için bu ekran "Ekibim"dir — menü etiketiyle tutarlı.
+    ViewData["Title"] = (User.IsInRole("HR") || User.IsInRole("Admin")) ? "Çalışanlar" : "Ekibim";
     var deptNames = ViewBag.DepartmentNames as Dictionary<int, string> ?? new();
     string PositionOf(HRManagement.WebUI.Models.Api.Employees.EmployeeResponse e) =>
         SeniorityDisplay.Position(deptNames.TryGetValue(e.DepartmentId, out var n) ? n : null, e.Seniority);
 }
 
 @{
-    // Çalışan kaydı açma/değiştirme İK işidir. Yönetici yalnızca ekibini GÖRÜR.
+    // Yeni kayıt AÇMAK yalnızca İK'da; Admin dahil kimse açamaz (kullanıcı kararı).
+    var canCreate = User.IsInRole("HR");
+    // Düzenleme HR + Admin'de. Yönetici yalnızca ekibini GÖRÜR.
     var canManage = User.IsInRole("HR") || User.IsInRole("Admin");
     // Silme yalnızca Admin'de (HR silemez).
     var canDelete = User.IsInRole("Admin");
@@ -16,12 +19,12 @@
 
 <div class="page-head d-flex align-items-center">
     <div>
-        <h1>Çalışanlar</h1>
+        <h1>@ViewData["Title"]</h1>
         <p class="text-muted mb-0">
             @(canManage ? "Şirketteki tüm çalışanlar." : "Size bağlı ekip üyeleri.")
         </p>
     </div>
-    @if (canManage)
+    @if (canCreate)
     {
         <a asp-action="Create" class="btn btn-primary ms-auto">Yeni Çalışan</a>
     }
@@ -61,6 +64,8 @@
                             }
                         </td>
                         <td class="text-end">
+                            @* Listede görünen herkesin detayı açılabilir — görünürlük zaten API'de daraltıldı. *@
+                            <a asp-action="Details" asp-route-id="@employee.Id" class="btn btn-sm btn-outline-primary">Detay</a>
                             @if (canManage)
                             {
                                 <a asp-action="Edit" asp-route-id="@employee.Id" class="btn btn-sm btn-outline-secondary">Düzenle</a>

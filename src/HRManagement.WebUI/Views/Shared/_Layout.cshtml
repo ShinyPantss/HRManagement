@@ -27,30 +27,66 @@
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5V21a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1z"/></svg>
                     Ana Sayfa
                 </a>
-                <a class="nav-item @Active("Employees")" asp-controller="Employees" asp-action="Index">
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                    Çalışanlar
-                </a>
-                <a class="nav-item @Active("LeaveRequests")" asp-controller="LeaveRequests" asp-action="Index">
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                    İzin Talepleri
-                </a>
-                <a class="nav-item @Active("Interns")" asp-controller="Interns" asp-action="Index">
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/></svg>
-                    Stajyerler
-                </a>
-                <a class="nav-item @Active("Departments")" asp-controller="Departments" asp-action="Index">
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 9h1M9 13h1M14 9h1M14 13h1M11 21v-4h2v4"/></svg>
-                    Departmanlar
-                </a>
-                @* Rol bazlı: hesap talebini yalnızca HR açar (Admin onaylar). *@
-                @if (User.IsInRole("HR"))
+                @* Profilim: kişinin kendi çalışan kaydı. Admin'in çalışan kaydı yok
+                   (sistem rolü), Intern'in profili ise Employee değil — ikisine de çıkmaz. *@
+                @if (User.Identity?.IsAuthenticated == true
+                    && !User.IsInRole("Admin") && !User.IsInRole("Intern"))
                 {
-                    <a class="nav-item @Active2("AccountRequests", "Create")" asp-controller="AccountRequests" asp-action="Create">
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 10.6-6"/><path d="M19 8v6M22 11h-6"/></svg>
-                        Hesap Talebi
+                    <a class="nav-item @Active2("Employees", "Profile")" asp-controller="Employees" asp-action="Profile">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>
+                        Profilim
                     </a>
                 }
+                @* "Çalışanlar" adı yalnızca HR/Admin'de: Manager ve Employee aynı
+                   ekranı "Ekibim" olarak görür (API içeriği zaten role göre daraltıyor).
+                   İleride buradan bir Şirket Organizasyonu sayfası doğacak. *@
+                @{
+                    var employeesLabel = (User.IsInRole("HR") || User.IsInRole("Admin")) ? "Çalışanlar" : "Ekibim";
+                }
+                <a class="nav-item @ActiveExcept("Employees", "Profile")" asp-controller="Employees" asp-action="Index">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    @employeesLabel
+                </a>
+                @* Mentorluk: Manager da Employee da mentor olabilir — kişi yalnızca
+                   KENDİ stajyerlerini görür (yetki API'de, ilişkiden). *@
+                @if (User.IsInRole("Manager") || User.IsInRole("Employee"))
+                {
+                    <a class="nav-item @Active("Mentorship")" asp-controller="Mentorship" asp-action="Index">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/><path d="M22 10v6"/></svg>
+                        Mentorluk
+                    </a>
+                }
+                <a class="nav-item @ActiveExcept("LeaveRequests", "Approvals")" asp-controller="LeaveRequests" asp-action="Index">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                    İzin Geçmişi
+                </a>
+                @* Onay Bekleyenler: yalnızca onaylayabilen roller. *@
+                @if (User.IsInRole("HR") || User.IsInRole("Manager") || User.IsInRole("Admin"))
+                {
+                    <a class="nav-item @Active2("LeaveRequests", "Approvals")" asp-controller="LeaveRequests" asp-action="Approvals">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                        Onay Bekleyenler
+                    </a>
+                }
+                @* Stajyerler (tüm liste) yönetim ekranıdır: yalnızca HR/Admin (+Intern
+                   kendi dünyası). Manager ve Employee stajyerlere Mentorluk'tan ulaşır. *@
+                @if (User.IsInRole("HR") || User.IsInRole("Admin") || User.IsInRole("Intern"))
+                {
+                    <a class="nav-item @Active("Interns")" asp-controller="Interns" asp-action="Index">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/></svg>
+                        Stajyerler
+                    </a>
+                }
+                @* Departmanlar Employee'ye görünmez (kullanıcı kararı). *@
+                @if (!User.IsInRole("Employee"))
+                {
+                    <a class="nav-item @Active("Departments")" asp-controller="Departments" asp-action="Index">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 9h1M9 13h1M14 9h1M14 13h1M11 21v-4h2v4"/></svg>
+                        Departmanlar
+                    </a>
+                }
+                @* HR'ın manuel "Hesap Talebi Oluştur" menüsü kaldırıldı: talepler
+                   çalışan/stajyer eklenirken otomatik açılıyor. *@
 
                 @* Yalnızca Admin bekleyen talepleri işler. *@
                 @if (User.IsInRole("Admin"))
@@ -62,7 +98,18 @@
                 }
             </nav>
 
-            <div class="sidebar-footer">HepiyiHR · staj projesi · v0.1</div>
+            @* İzin talebi kısayolu — sidebar'ın en altı. Talep açabilecek herkes
+               görür; yalnızca Admin görmez (çalışan kaydı yok). *@
+            @if (User.IsInRole("HR") || User.IsInRole("Manager")
+                || User.IsInRole("Employee") || User.IsInRole("Intern"))
+            {
+                <div class="sidebar-cta">
+                    <a asp-controller="LeaveRequests" asp-action="Create" class="sidebar-cta-btn">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M12 14v4M10 16h4"/></svg>
+                        İzin Talep Et
+                    </a>
+                </div>
+            }
         </aside>
 
         <div class="main">
@@ -136,6 +183,18 @@
     {
         var current = ViewContext.RouteData.Values["controller"] as string ?? "";
         return current.Equals(controller, StringComparison.OrdinalIgnoreCase) ? "active" : "";
+    }
+
+    // Controller eşleşince aktif, verilen action'lar HARİÇ. Örn. Profilim de
+    // Employees controller'ında yaşadığı için "Çalışanlar" menüsü Profile
+    // action'ında yanmamalı — o sayfanın menüdeki sahibi Profilim'dir.
+    string ActiveExcept(string controller, params string[] excludedActions)
+    {
+        var c = ViewContext.RouteData.Values["controller"] as string ?? "";
+        var a = ViewContext.RouteData.Values["action"] as string ?? "";
+        return c.Equals(controller, StringComparison.OrdinalIgnoreCase)
+            && !excludedActions.Any(x => x.Equals(a, StringComparison.OrdinalIgnoreCase))
+            ? "active" : "";
     }
 
     // Aynı controller altında iki menü öğesi olduğunda (ör. AccountRequests →

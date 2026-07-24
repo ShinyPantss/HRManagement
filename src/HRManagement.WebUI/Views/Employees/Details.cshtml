@@ -1,0 +1,310 @@
+@using HRManagement.WebUI.Models
+@model HRManagement.WebUI.Models.Api.Employees.EmployeeDetailResponse
+@{
+    var isOwnProfile = ViewData["IsOwnProfile"] is true;
+    ViewData["Title"] = isOwnProfile ? "Profilim" : "Çalışan Detayı";
+
+    var fullName = $"{Model.FirstName} {Model.LastName}";
+    var initials = $"{(Model.FirstName.Length > 0 ? Model.FirstName[0] : '?')}{(Model.LastName.Length > 0 ? Model.LastName[0] : ' ')}".Trim().ToUpperInvariant();
+    var position = SeniorityDisplay.Position(Model.DepartmentName, Model.Seniority);
+
+    // Yönetici/ekip linkleri yalnızca detayını GERÇEKTEN açabilecek rollere
+    // verilir (UX; son söz her zaman API'de). Employee kendi profilindeki
+    // yönetici adını görür ama sayfasına gidemez.
+    var canNavigateToOthers = User.IsInRole("HR") || User.IsInRole("Admin") || User.IsInRole("Manager");
+}
+
+@functions {
+    string DateText(DateTime d) => d.ToString("dd.MM.yyyy");
+
+    // Yaş ve kıdem: doğum günü/yıldönümü henüz gelmediyse bir eksik sayılır.
+    int FullYears(DateTime from, DateTime asOf)
+    {
+        var years = asOf.Year - from.Year;
+        if (from.Date.AddYears(years) > asOf.Date) years--;
+        return Math.Max(0, years);
+    }
+
+    string LeaveTypeText(string type) => type switch
+    {
+        "Annual" => "Yıllık",
+        "Unpaid" => "Ücretsiz",
+        "Sick" => "Hastalık",
+        _ => type
+    };
+
+    (string Badge, string Text) LeaveStatusBadge(string status) => status switch
+    {
+        "Pending" => ("text-bg-warning", "Yönetici Onayı Bekliyor"),
+        "PendingHr" => ("text-bg-info", "İK Onayı Bekliyor"),
+        "Approved" => ("text-bg-success", "Onaylandı"),
+        "Rejected" => ("text-bg-danger", "Reddedildi"),
+        _ => ("text-bg-secondary", status)
+    };
+}
+
+<div class="page-head d-flex align-items-center">
+    <div>
+        <h1>@ViewData["Title"]</h1>
+        <p class="text-muted mb-0">@(isOwnProfile ? "Bilgileriniz ve izin durumunuz." : "Çalışanın profili ve izin durumu.")</p>
+    </div>
+    <div class="ms-auto d-flex gap-2">
+        @if (isOwnProfile)
+        {
+            <a asp-controller="LeaveRequests" asp-action="Create" class="btn btn-primary">İzin Talep Et</a>
+        }
+        @if (User.IsInRole("HR") || User.IsInRole("Admin"))
+        {
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-secondary">Düzenle</a>
+        }
+        @if (!isOwnProfile)
+        {
+            <a asp-action="Index" class="btn btn-outline-secondary">Listeye Dön</a>
+        }
+    </div>
+</div>
+
+@* ── Başlık kartı ─────────────────────────────────────────────── *@
+<div class="panel mt-3">
+    <div class="panel-body d-flex align-items-center gap-3">
+        <span class="user-avatar" style="width:56px;height:56px;font-size:1.3rem;">@initials</span>
+        <div>
+            <h2 class="h4 mb-1">@fullName</h2>
+            <div class="text-muted">@(string.IsNullOrWhiteSpace(position) ? "—" : position)</div>
+        </div>
+        <div class="ms-auto">
+            @if (Model.IsActive)
+            {
+                <span class="badge text-bg-success">Aktif</span>
+            }
+            else
+            {
+                <span class="badge text-bg-secondary">Pasif</span>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3 g-3">
+    @* ── Sol: kişisel + istihdam ─────────────────────────────── *@
+    <div class="col-lg-6">
+        <div class="panel h-100">
+            <div class="panel-body">
+                <h3 class="h6 text-muted text-uppercase">Bilgiler</h3>
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        <tr>
+                            <th class="text-muted fw-normal w-50">E-posta</th>
+                            <td>@Model.Email</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted fw-normal">Telefon</th>
+                            <td>@(string.IsNullOrWhiteSpace(Model.Phone) ? "—" : Model.Phone)</td>
+                        </tr>
+                        @* API bu alanı yalnızca HR'a doldurur; null ise satır hiç yok. *@
+                        @if (!string.IsNullOrWhiteSpace(Model.NationalId))
+                        {
+                            <tr>
+                                <th class="text-muted fw-normal">T.C. Kimlik No</th>
+                                <td>@Model.NationalId</td>
+                            </tr>
+                        }
+                        <tr>
+                            <th class="text-muted fw-normal">Doğum Tarihi</th>
+                            <td>@DateText(Model.BirthDate) <span class="text-muted">(@FullYears(Model.BirthDate, DateTime.Today) yaş)</span></td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted fw-normal">İşe Giriş</th>
+                            <td>@DateText(Model.HireDate) <span class="text-muted">(@FullYears(Model.HireDate, DateTime.Today) yıl kıdem)</span></td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted fw-normal">Departman</th>
+                            <td>@Model.DepartmentName</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted fw-normal">Kıdem Seviyesi</th>
+                            <td>@SeniorityDisplay.Label(Model.Seniority)</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted fw-normal">Yöneticisi</th>
+                            <td>
+                                @if (Model.ManagerId is int managerId && Model.ManagerFullName is not null)
+                                {
+                                    @if (canNavigateToOthers)
+                                    {
+                                        <a asp-action="Details" asp-route-id="@managerId">@Model.ManagerFullName</a>
+                                    }
+                                    else
+                                    {
+                                        @Model.ManagerFullName
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="text-muted">— (en üst kademe)</span>
+                                }
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    @* ── Sağ: izin bakiyesi ──────────────────────────────────── *@
+    <div class="col-lg-6">
+        <div class="panel h-100">
+            <div class="panel-body">
+                <h3 class="h6 text-muted text-uppercase">Yıllık İzin</h3>
+                <div class="row text-center g-2 mb-3">
+                    <div class="col-4">
+                        <div class="fs-3 fw-semibold">@Model.AccruedLeaveDays</div>
+                        <div class="text-muted small">Hak Edilen</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="fs-3 fw-semibold">@Model.UsedLeaveDays</div>
+                        <div class="text-muted small">Kullanılan + Bekleyen</div>
+                    </div>
+                    <div class="col-4">
+                        @* Eksi bakiye = avans izin (bir sonraki yılın hakkından). *@
+                        <div class="fs-3 fw-semibold @(Model.RemainingLeaveDays < 0 ? "text-danger" : "text-success")">@Model.RemainingLeaveDays</div>
+                        <div class="text-muted small">Kalan</div>
+                    </div>
+                </div>
+
+                <h3 class="h6 text-muted text-uppercase">Son İzin Talepleri</h3>
+                @if (Model.RecentLeaveRequests.Any())
+                {
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Tür</th>
+                                <th>Tarih</th>
+                                <th>Gün</th>
+                                <th>Durum</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var leave in Model.RecentLeaveRequests)
+                            {
+                                var (badgeClass, statusText) = LeaveStatusBadge(leave.Status);
+                                <tr>
+                                    <td>@LeaveTypeText(leave.Type)</td>
+                                    <td>@DateText(leave.StartDate) – @DateText(leave.EndDate)</td>
+                                    <td>@leave.TotalDays</td>
+                                    <td>
+                                        @* Açıklamayı API yalnızca kendisi/HR/Admin'e gönderir. *@
+                                        <span class="badge @badgeClass" title="@leave.Description">@statusText</span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <p class="text-muted mb-0">Henüz izin talebi yok.</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ── İlişkiler: yalnızca doluysa görünür ─────────────────────── *@
+@if (Model.DirectReports.Any())
+{
+    <div class="panel mt-3">
+        <div class="panel-body">
+            <h3 class="h6 text-muted text-uppercase">Doğrudan Ekibi (@Model.DirectReports.Count)</h3>
+            <div class="d-flex flex-wrap gap-2">
+                @foreach (var member in Model.DirectReports)
+                {
+                    @if (canNavigateToOthers)
+                    {
+                        <a asp-action="Details" asp-route-id="@member.Id" class="badge text-bg-light border text-decoration-none">
+                            @member.FullName <span class="text-muted">· @SeniorityDisplay.Label(member.Seniority)</span>
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="badge text-bg-light border">
+                            @member.FullName <span class="text-muted">· @SeniorityDisplay.Label(member.Seniority)</span>
+                        </span>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@* ── Notlar (§5.2): API null gönderdiyse istekçi göremez — panel hiç yok.
+     Kişi kendi profilinde kendi notlarını GÖRMEZ; HR/Admin/yetkili Manager görür. *@
+@if (Model.Notes is not null)
+{
+    <div class="panel mt-3">
+        <div class="panel-body">
+            <h3 class="h6 text-muted text-uppercase">Notlar (@Model.Notes.Count)</h3>
+
+            @* Girme yetkisi HR + (kendi ekibi için) Manager'dadır; Admin okur, yazamaz. *@
+            @if (User.IsInRole("HR") || User.IsInRole("Manager"))
+            {
+                <form asp-action="AddNote" asp-route-id="@Model.Id" method="post" class="mb-3">
+                    @Html.AntiForgeryToken()
+                    <div class="d-flex gap-2">
+                        <input type="text" name="content" class="form-control" maxlength="1000"
+                               placeholder="Çalışan hakkında kısa not…" required />
+                        <button type="submit" class="btn btn-outline-primary">Ekle</button>
+                    </div>
+                </form>
+            }
+
+            @if (Model.Notes.Any())
+            {
+                <ul class="list-group list-group-flush">
+                    @foreach (var note in Model.Notes)
+                    {
+                        <li class="list-group-item px-0">
+                            <div class="d-flex justify-content-between">
+                                <strong class="small">@note.AuthorName</strong>
+                                <span class="text-muted small">@note.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                            </div>
+                            <div>@note.Content</div>
+                        </li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <p class="text-muted mb-0">Henüz not girilmemiş.</p>
+            }
+        </div>
+    </div>
+}
+
+@if (Model.MentoredInterns.Any())
+{
+    <div class="panel mt-3">
+        <div class="panel-body">
+            <h3 class="h6 text-muted text-uppercase">Mentorluk Verdiği Stajyerler (@Model.MentoredInterns.Count)</h3>
+            <table class="table table-sm table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Ad Soyad</th>
+                        <th>Üniversite</th>
+                        <th>Staj Dönemi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var intern in Model.MentoredInterns)
+                    {
+                        <tr>
+                            <td>@intern.FullName</td>
+                            <td>@intern.University</td>
+                            <td>@DateText(intern.StartDate) – @DateText(intern.EndDate)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

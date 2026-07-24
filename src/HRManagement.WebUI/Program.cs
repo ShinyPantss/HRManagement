@@ -65,6 +65,14 @@ builder.Services.AddRefitClient<IInternApi>(refitSettings)
     .ConfigureHttpClient(client => client.BaseAddress = new Uri(apiBaseUrl))
     .AddHttpMessageHandler<BearerTokenHandler>();
 
+builder.Services.AddRefitClient<IMentorshipApi>(refitSettings)
+    .ConfigureHttpClient(client => client.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<BearerTokenHandler>();
+
+builder.Services.AddRefitClient<IUnitApi>(refitSettings)
+    .ConfigureHttpClient(client => client.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<BearerTokenHandler>();
+
 builder.Services.AddRefitClient<ILeaveRequestApi>(refitSettings)
     .ConfigureHttpClient(client => client.BaseAddress = new Uri(apiBaseUrl))
     .AddHttpMessageHandler<BearerTokenHandler>();

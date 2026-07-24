@@ -1,6 +1,7 @@
 using HRManagement.WebUI.Models.Api.Departments;
 using HRManagement.WebUI.Models.Departments;
 using HRManagement.WebUI.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HRManagement.WebUI.Controllers;
@@ -18,6 +19,10 @@ public class DepartmentsController : Controller
         _departmentApi = departmentApi;
     }
 
+    // Departmanlar ekranı Employee'ye kapalı (kullanıcı kararı) — menüde gizli
+    // olması yetmez, URL ile de girilememeli. Departman VERİSİ ise API'de açık
+    // kalır: Ekibim/İzin ekranları pozisyon türetmek için onu okur.
+    [Authorize(Roles = "HR,Admin,Manager,Intern")]
     public async Task<IActionResult> Index()
     {
         var response = await _departmentApi.GetAllAsync();
