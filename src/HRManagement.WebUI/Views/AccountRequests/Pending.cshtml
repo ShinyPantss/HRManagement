@@ -2,61 +2,91 @@
 @model List<HRManagement.WebUI.Models.Api.AccountRequests.AccountRequestResponse>
 @{
     ViewData["Title"] = "Bekleyen Hesap Talepleri";
+    ViewData["Subtitle"] = Model.Any()
+        ? $"{Model.Count} kişi için giriş hesabı açılması bekleniyor."
+        : "Çalışan/stajyer eklendiğinde açılan hesap talepleri burada toplanır.";
 }
-
-<div class="page-head">
-    <h1>Bekleyen Hesap Talepleri</h1>
-    <p class="text-muted mb-0">HR tarafından açılan talepleri onaylayın veya reddedin.</p>
-</div>
 
 @if (!Model.Any())
 {
-    <div class="panel mt-3"><div class="panel-body text-muted">Bekleyen talep yok.</div></div>
+    <div class="card">
+        <div class="empty">
+            <div class="empty-title">Bekleyen talep yok</div>
+            <div class="empty-text">İK yeni bir çalışan veya stajyer eklediğinde talep otomatik olarak buraya düşer.</div>
+        </div>
+    </div>
 }
 else
 {
-    <div class="panel mt-3">
-        <div class="panel-body p-0">
-            <table class="table mb-0 align-middle">
-                <thead>
-                    <tr>
-                        <th>Kişi</th>
-                        <th>Pozisyon</th>
-                        <th>Talep Eden</th>
-                        <th>Not</th>
-                        <th class="text-end">İşlem</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var r in Model)
-                    {
-                        @* Pozisyon = Departman · Birim · Kıdem. Rol arka planda tutulur
-                           (Admin onay ekranında görür/değiştirir); burada gösterilmez. *@
-                        var pieces = new List<string>();
-                        if (!string.IsNullOrWhiteSpace(r.DepartmentName)) { pieces.Add(r.DepartmentName); }
-                        if (!string.IsNullOrWhiteSpace(r.UnitName)) { pieces.Add(r.UnitName!); }
-                        var kidem = r.SubjectType == "Stajyer" ? "Stajyer" : SeniorityDisplay.Label(r.Seniority);
-                        if (!string.IsNullOrWhiteSpace(kidem) && kidem != "—") { pieces.Add(kidem); }
-
-                        <tr>
-                            <td>@r.SubjectName</td>
-                            <td>@(pieces.Count > 0 ? string.Join(" · ", pieces) : "—")</td>
-                            <td>@r.RequestedByUsername</td>
-                            <td class="text-muted small">@r.Note</td>
-                            <td class="text-end">
-                                <div class="d-flex gap-2 justify-content-end">
-                                    <a asp-action="Approve" asp-route-id="@r.Id" class="btn btn-sm btn-primary">Onayla</a>
-                                    <form asp-action="Reject" asp-route-id="@r.Id" method="post" class="d-inline"
-                                          onsubmit="return confirm('Bu talep reddedilsin mi?');">
-                                        <input type="hidden" name="reason" value="" />
-                                        <button type="submit" class="btn btn-sm btn-outline-danger">Reddet</button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+    <div class="callout">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 8v5M12 16.5h.01" /><circle cx="12" cy="12" r="9" /></svg>
+        <div class="callout-text">
+            Rol, kişinin kıdeminden türetilir; onay ekranında değiştirebilirsin.
+            İK ve Admin gibi kıdemden türetilemeyen roller elle seçilir.
         </div>
     </div>
+
+    <section class="card card-flush">
+        <div class="dt" style="--cols: 1.6fr 1.6fr 1fr 1.2fr auto;">
+            <div class="dt-head">
+                <span>Kişi</span><span>Pozisyon</span><span>Önerilen rol</span><span>Talep eden</span><span style="padding-left: 14px;">İşlem</span>
+            </div>
+
+            @for (var i = 0; i < Model.Count; i++)
+            {
+                var r = Model[i];
+
+                @* Pozisyon = Departman · Birim · Kıdem. *@
+                var pieces = new List<string>();
+                if (!string.IsNullOrWhiteSpace(r.DepartmentName)) { pieces.Add(r.DepartmentName); }
+                if (!string.IsNullOrWhiteSpace(r.UnitName)) { pieces.Add(r.UnitName!); }
+                var kidem = r.SubjectType == "Stajyer" ? "Stajyer" : SeniorityDisplay.Label(r.Seniority);
+                if (!string.IsNullOrWhiteSpace(kidem) && kidem != "—") { pieces.Add(kidem); }
+
+                <div class="dt-row">
+                    <div class="person">
+                        <span class="avatar avatar-sm av-@(i % 6 + 1)">@Init(r.SubjectName)</span>
+                        <div class="person-text">
+                            <div class="dt-primary">@r.SubjectName</div>
+                            <div class="dt-secondary">@r.SubjectType · @r.CreatedAt.ToString("dd.MM.yyyy")</div>
+                        </div>
+                    </div>
+
+                    <span class="dt-cell-muted">@(pieces.Count > 0 ? string.Join(" · ", pieces) : "—")</span>
+
+                    <span><span class="badge badge-sm badge-brand">@r.SuggestedRole</span></span>
+
+                    <div style="min-width: 0;">
+                        <div class="dt-cell">@r.RequestedByUsername</div>
+                        @if (!string.IsNullOrWhiteSpace(r.Note))
+                        {
+                            <div class="dt-secondary" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">@r.Note</div>
+                        }
+                    </div>
+
+                    <div class="task-actions" style="padding-left: 14px;">
+                        <form asp-action="Reject" asp-route-id="@r.Id" method="post" style="display: inline;"
+                              data-confirm="@($"{r.SubjectName} için hesap talebi reddedilsin mi?")"
+                              data-confirm-ok="Reddet" data-reason data-danger>
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="reason" />
+                            <button type="submit" class="btn btn-md btn-danger">Reddet</button>
+                        </form>
+                        <a asp-action="Approve" asp-route-id="@r.Id" class="btn btn-md btn-primary">Onayla</a>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+}
+
+@functions {
+    string Init(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2
+            ? $"{char.ToUpperInvariant(parts[0][0])}{char.ToUpperInvariant(parts[^1][0])}"
+            : char.ToUpperInvariant(parts[0][0]).ToString();
+    }
 }

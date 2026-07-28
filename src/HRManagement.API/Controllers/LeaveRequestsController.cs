@@ -5,6 +5,8 @@ using HRManagement.Application.Features.LeaveRequests.Commands.ApproveLeaveReque
 using HRManagement.Application.Features.LeaveRequests.Commands.CreateLeaveRequest;
 using HRManagement.Application.Features.LeaveRequests.Commands.DeleteLeaveRequest;
 using HRManagement.Application.Features.LeaveRequests.Commands.RejectLeaveRequest;
+using HRManagement.Application.Features.LeaveRequests.Queries.GetAllLeaveRequests;
+using HRManagement.Application.Features.LeaveRequests.Queries.GetLeaveRequestDetail;
 using HRManagement.Application.Features.LeaveRequests.Queries.GetLeaveRequestsByEmployee;
 using HRManagement.Application.Features.LeaveRequests.Queries.GetPendingApprovals;
 using HRManagement.Domain.Enums;
@@ -46,6 +48,34 @@ public class LeaveRequestsController : ControllerBase
             x.Id, x.SubjectName, x.SubjectType, x.TypeName, x.StartDate, x.EndDate, x.WorkingDays,
             x.Status == LeaveStatus.Pending ? "Yönetici onayı" : "İK onayı")).ToList();
         return Ok(BaseResponse<List<PendingApprovalResponse>>.Success(data));
+    }
+
+    // Tek talebin DETAYI + iki aşamalı onay izi. Rol kapısı YOK: görüntüleme yetkisini
+    // handler çözer (HR/Admin, talep sahibi ya da işleme yetkili yönetici/mentor).
+    // CanActNow: giriş yapan bu talebi şu an onaylayıp reddedebilir mi (buton görünürlüğü).
+    [HttpGet("{id:int}/detail")]
+    public async Task<IActionResult> GetDetail(int id)
+    {
+        var x = await _mediator.Send(new GetLeaveRequestDetailQuery(id, CurrentUserId()));
+        var data = new LeaveDetailResponse(
+            x.Id, x.SubjectName, x.SubjectType, x.TypeName, x.StartDate, x.EndDate,
+            x.WorkingDays, x.Status.ToString(), x.Description, x.MedicalReport, x.RejectionReason,
+            x.CreatedAt, x.ManagerApprovedByName, x.ManagerApprovedAt, x.HrApprovedByName,
+            x.HrApprovedAt, x.RejectedByName, x.RejectedAt, x.CanActNow);
+        return Ok(BaseResponse<LeaveDetailResponse>.Success(data));
+    }
+
+    // TÜM izin geçmişi (her durumda) — "İzin Geçmişi" ekranı. Şirket geneli hassas veri:
+    // yalnızca İK/Admin. İçerik salt görüntüdür (onay burada değil, Onay Bekleyenler'de).
+    [Authorize(Roles = "HR,Admin")]
+    [HttpGet("all")]
+    public async Task<IActionResult> GetAll()
+    {
+        var items = await _mediator.Send(new GetAllLeaveRequestsQuery(CurrentUserId()));
+        var data = items.Select(x => new LeaveHistoryResponse(
+            x.Id, x.SubjectName, x.SubjectType, x.TypeName, x.StartDate, x.EndDate,
+            x.WorkingDays, x.Status.ToString(), x.Description, x.RejectionReason, x.CreatedAt)).ToList();
+        return Ok(BaseResponse<List<LeaveHistoryResponse>>.Success(data));
     }
 
     [HttpPost]

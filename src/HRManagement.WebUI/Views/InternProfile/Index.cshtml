@@ -1,0 +1,153 @@
+@using HRManagement.WebUI.Models
+@model HRManagement.WebUI.Models.Api.Interns.MyInternProfileResponse
+@{
+    ViewData["Title"] = "Profilim";
+    ViewData["Subtitle"] = "Kimlik, eğitim ve staj kaydın. Bilgilerinde hata varsa İK'ya bildir.";
+
+    // Bu ekran KÜNYEDİR — staj ilerlemesi, görevler ve izinler Ana Sayfa'dadır.
+    var fullName = $"{Model.FirstName} {Model.LastName}";
+    var initials = $"{(Model.FirstName.Length > 0 ? Model.FirstName[0] : '?')}{(Model.LastName.Length > 0 ? Model.LastName[0] : ' ')}".Trim().ToUpperInvariant();
+
+    var today = DateTime.Today;
+    var remainingDays = (Model.EndDate.Date - today).Days;
+    var isFinished = remainingDays < 0;
+}
+
+@functions {
+    string DateText(DateTime d) => d.ToString("dd.MM.yyyy");
+
+    string Init(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "—";
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2
+            ? $"{char.ToUpperInvariant(parts[0][0])}{char.ToUpperInvariant(parts[^1][0])}"
+            : char.ToUpperInvariant(parts[0][0]).ToString();
+    }
+}
+
+@section PageActions {
+    <a asp-controller="Home" asp-action="Index" class="btn">Staj panelim</a>
+}
+
+@* ── Kimlik kartı ──────────────────────────────────────────────────── *@
+<section class="card card-pad-lg">
+    <div class="row-center" style="gap: 20px;">
+        <span class="avatar avatar-xl av-3">@initials</span>
+
+        <div style="min-width: 220px;">
+            <div class="row-tight" style="margin-bottom: 6px;">
+                <h2 style="font-size: 20px; font-weight: 800; letter-spacing: -.5px;">@fullName</h2>
+                <span class="badge badge-sm @(isFinished ? "badge-neutral" : "badge-ok")">
+                    @(isFinished ? "Staj sona erdi" : "Aktif stajyer")
+                </span>
+            </div>
+
+            <div class="row-tight" style="margin-bottom: 6px; flex-wrap: wrap;">
+                <span class="badge badge-sm badge-brand">@Model.DepartmentName</span>
+                @if (!string.IsNullOrWhiteSpace(Model.UnitName))
+                {
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#b6bbc4" stroke-width="2.4" stroke-linecap="round"><path d="m9 6 6 6-6 6" /></svg>
+                    <span class="badge badge-sm badge-neutral">@Model.UnitName</span>
+                }
+            </div>
+
+            <div class="page-sub">@Model.Email</div>
+        </div>
+    </div>
+</section>
+
+<div class="grid g-2">
+    @* ── Kişisel + eğitim ──────────────────────────────────────────── *@
+    <section class="card card-pad">
+        <h2 class="section-title">Kişisel bilgiler</h2>
+        <div class="kv">
+            <div class="kv-row">
+                <span class="kv-key">Ad soyad</span>
+                <span class="kv-val">@fullName</span>
+            </div>
+            <div class="kv-row">
+                <span class="kv-key">E-posta</span>
+                <span class="kv-val">@Model.Email</span>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <h2 class="section-title">Eğitim</h2>
+        <div class="kv">
+            <div class="kv-row">
+                <span class="kv-key">Üniversite</span>
+                <span class="kv-val">@Model.University</span>
+            </div>
+            <div class="kv-row">
+                <span class="kv-key">Bölüm</span>
+                <span class="kv-val">@(string.IsNullOrWhiteSpace(Model.Major) ? "—" : Model.Major)</span>
+            </div>
+            <div class="kv-row">
+                <span class="kv-key">Sınıf</span>
+                <span class="kv-val">@GradeDisplay.Label(Model.Grade)</span>
+            </div>
+        </div>
+    </section>
+
+    @* ── Staj kaydı + sorumlular ───────────────────────────────────── *@
+    <section class="card card-pad">
+        <h2 class="section-title">Staj kaydım</h2>
+        <div class="kv">
+            <div class="kv-row">
+                <span class="kv-key">Departman</span>
+                <span class="kv-val">@Model.DepartmentName</span>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(Model.UnitName))
+            {
+                <div class="kv-row">
+                    <span class="kv-key">Birim</span>
+                    <span class="kv-val">@Model.UnitName</span>
+                </div>
+            }
+            <div class="kv-row">
+                <span class="kv-key">Başlangıç</span>
+                <span class="kv-val num">@DateText(Model.StartDate)</span>
+            </div>
+            <div class="kv-row">
+                <span class="kv-key">Bitiş</span>
+                <span class="kv-val num">@DateText(Model.EndDate)</span>
+            </div>
+            <div class="kv-row">
+                <span class="kv-key">Kalan süre</span>
+                <span class="kv-val">@(isFinished ? "—" : $"{remainingDays} gün")</span>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="stack" style="gap: 12px;">
+            <div class="row-center" style="gap: 11px; flex-wrap: nowrap;">
+                <span class="avatar avatar-md av-3">@Init(Model.MentorFullName)</span>
+                <div class="flex-1">
+                    <div class="mini-stat-label" style="margin-bottom: 2px;">MENTORUM</div>
+                    <div class="dt-primary">@(Model.MentorFullName ?? "Henüz atanmadı")</div>
+                    <div class="dt-secondary">Görevleri atar, gelişim notlarını yazar.</div>
+                </div>
+            </div>
+            @* Yönetici ≠ mentor: birimin (yoksa departmanın) yöneticisi. *@
+            <div class="row-center" style="gap: 11px; flex-wrap: nowrap;">
+                <span class="avatar avatar-md av-2">@Init(Model.ManagerFullName)</span>
+                <div class="flex-1">
+                    <div class="mini-stat-label" style="margin-bottom: 2px;">YÖNETİCİM</div>
+                    <div class="dt-primary">@(Model.ManagerFullName ?? "—")</div>
+                    <div class="dt-secondary">Birimin bağlı olduğu yönetici.</div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<div class="callout">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 8v5M12 16.5h.01" /><circle cx="12" cy="12" r="9" /></svg>
+    <div class="callout-text">
+        Bu bilgiler İK tarafından yönetilir; kendin değiştiremezsin.
+        Staj ilerlemen, görevlerin ve izin durumun <a asp-controller="Home" asp-action="Index">Staj Panelim</a> ekranında.
+    </div>
+</div>

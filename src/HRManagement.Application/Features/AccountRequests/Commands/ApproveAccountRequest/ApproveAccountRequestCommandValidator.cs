@@ -24,7 +24,10 @@ public sealed class ApproveAccountRequestCommandValidator : AbstractValidator<Ap
             .NotEmpty().WithMessage("Şifre zorunludur.")
             .MinimumLength(6).WithMessage("Şifre en az 6 karakter olmalıdır.");
 
-        // Rol artık onayda seçilmiyor (talepten, kişiden türetilmiş olarak gelir) →
-        // doğrulanacak rol alanı yok.
+        // Rol OPSİYONEL override: verilmişse geçerli bir enum olmalı; boşsa talebin
+        // türetilmiş rolü kullanılır.
+        RuleFor(command => command.Role!.Value)
+            .IsInEnum().When(command => command.Role.HasValue)
+            .WithMessage("Geçerli bir rol seçilmelidir.");
     }
 }

@@ -1,54 +1,70 @@
 @model HRManagement.WebUI.Models.AccountRequests.ApproveAccountRequestViewModel
 @{
-    ViewData["Title"] = "Talebi Onayla";
+    ViewData["Title"] = "Hesap Aç";
+    ViewData["Subtitle"] = $"{Model.SubjectType}: {Model.SubjectName} · kıdemden türetilen rol: {Model.SuggestedRole}";
+    ViewData["Crumb"] = "Bekleyen Talepler";
+    ViewData["CrumbUrl"] = Url.Action("Pending", "AccountRequests");
 }
 
-<div class="page-head">
-    <h1>Talebi Onayla — Hesap Aç</h1>
-    <p class="text-muted mb-0">@Model.SubjectType: <strong>@Model.SubjectName</strong> · Otomatik rol: @Model.SuggestedRole</p>
-</div>
+<div class="card card-pad-lg narrow">
+    <form asp-action="Approve" method="post" novalidate>
+        <div asp-validation-summary="ModelOnly"></div>
 
-<div class="panel mt-3" style="max-width: 640px;">
-    <div class="panel-body">
-        <form asp-action="Approve" method="post" novalidate>
-            <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
-            <input type="hidden" asp-for="Id" />
-            <input type="hidden" asp-for="SubjectName" />
-            <input type="hidden" asp-for="SubjectType" />
-            <input type="hidden" asp-for="SuggestedRole" />
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="SubjectName" />
+        <input type="hidden" asp-for="SubjectType" />
+        <input type="hidden" asp-for="SuggestedRole" />
 
-            <div class="mb-3">
-                <label asp-for="Username" class="form-label"></label>
-                <input asp-for="Username" class="form-control" autocomplete="off" />
-                <span asp-validation-for="Username" class="text-danger small"></span>
+        <div class="callout" style="margin-bottom: 22px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 8v5M12 16.5h.01" /><circle cx="12" cy="12" r="9" /></svg>
+            <div class="callout-text">
+                Kullanıcı adı, e-posta ve geçici şifre şirket standardında önceden dolduruldu.
+                Değiştirebilirsin; şifreyi kullanıcıya ilet, ilk girişte değiştirmesini iste.
+            </div>
+        </div>
+
+        <div class="stack">
+            <div class="form-grid">
+                <div class="field">
+                    <label class="field-label" asp-for="Username"></label>
+                    <input asp-for="Username" class="input" autocomplete="off" />
+                    <span asp-validation-for="Username"></span>
+                </div>
+
+                <div class="field">
+                    <label class="field-label" asp-for="Email"></label>
+                    <input asp-for="Email" class="input" autocomplete="off" />
+                    <span asp-validation-for="Email"></span>
+                </div>
             </div>
 
-            <div class="mb-3">
-                <label asp-for="Email" class="form-label"></label>
-                <input asp-for="Email" class="form-control" autocomplete="off" />
-                <span asp-validation-for="Email" class="text-danger small"></span>
+            <div class="field">
+                <label class="field-label" asp-for="Password"></label>
+                <input asp-for="Password" type="text" class="input" autocomplete="off" />
+                <span class="field-hint">Otomatik üretildi; kullanıcıya iletin, ilk girişte değiştirmeli.</span>
+                <span asp-validation-for="Password"></span>
             </div>
 
-            <div class="mb-3">
-                <label asp-for="Password" class="form-label"></label>
-                <input asp-for="Password" type="text" class="form-control" autocomplete="off" />
-                <span asp-validation-for="Password" class="text-danger small"></span>
-                <div class="form-text">Otomatik üretilir; kullanıcıya iletin, ilk girişte değiştirmeli.</div>
+            @* Rol override (yalnızca Admin bu ekrana girer): genelde boş bırakılır ve
+               talebin otomatik türetilmiş rolü kullanılır. İK/Admin gibi kıdemden
+               türetilemeyen roller için elle seçilir — ör. İK Müdürü için "İK (HR)". *@
+            <div class="field">
+                <label class="field-label" asp-for="Role"></label>
+                <select asp-for="Role" asp-items="Model.RoleOptions" class="select">
+                    <option value="">Otomatik rolü kullan (@Model.SuggestedRole)</option>
+                </select>
+                <span class="field-hint">
+                    Boş = otomatik rol. İK/Admin gibi türetilemeyen roller için seçin (ör. İK Müdürü → İK).
+                </span>
+                <span asp-validation-for="Role"></span>
             </div>
+        </div>
 
-            @* Rol SEÇİLMEZ: talebin (kişiden türetilmiş) rolü kullanılır — üstte
-               "Otomatik rol" olarak görünüyor. *@
-            <div class="alert alert-light border small text-muted py-2">
-                Rol otomatik atanır: <strong>@Model.SuggestedRole</strong>. Onaylarken yalnızca
-                kullanıcı adı, e-posta ve geçici şifre belirlenir.
-            </div>
-
-            <div class="d-flex gap-2 mt-4">
-                <button type="submit" class="btn btn-primary">Onayla ve Hesabı Aç</button>
-                <a asp-action="Pending" class="btn btn-outline-secondary">Vazgeç</a>
-            </div>
-        </form>
-    </div>
+        <div class="form-actions" style="margin-top: 22px;">
+            <button type="submit" class="btn btn-primary btn-lg">Onayla ve hesabı aç</button>
+            <a asp-action="Pending" class="btn btn-lg">Vazgeç</a>
+        </div>
+    </form>
 </div>
 
 @section Scripts {

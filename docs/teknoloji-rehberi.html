@@ -1,0 +1,2076 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>HRManagement — Teknoloji ve Mimari Kararları Rehberi</title>
+<style>
+  @page { size: A4; margin: 17mm 15mm 17mm 15mm; }
+
+  * { box-sizing: border-box; }
+
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  body {
+    font-family: "Segoe UI", "Calibri", system-ui, sans-serif;
+    font-size: 10.2pt;
+    line-height: 1.55;
+    color: #1c2530;
+    margin: 0;
+  }
+
+  /* ---------- KAPAK ---------- */
+  .kapak {
+    height: 262mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    page-break-after: always;
+  }
+  .kapak .etiket {
+    font-size: 9pt;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: #2563eb;
+    font-weight: 700;
+    margin-bottom: 14mm;
+  }
+  .kapak h1 {
+    font-size: 30pt;
+    line-height: 1.15;
+    margin: 0 0 6mm 0;
+    color: #12243a;
+    font-weight: 700;
+    letter-spacing: -.02em;
+  }
+  .kapak h2 {
+    font-size: 13.5pt;
+    font-weight: 400;
+    color: #52606d;
+    margin: 0 0 16mm 0;
+    line-height: 1.5;
+  }
+  .kapak .cizgi { height: 3px; width: 70mm; background: #2563eb; margin-bottom: 16mm; }
+  .kapak .meta { font-size: 9.5pt; color: #52606d; }
+  .kapak .meta div { margin-bottom: 2.5mm; }
+  .kapak .meta b { color: #12243a; font-weight: 600; }
+  .kapak .not {
+    margin-top: 18mm;
+    background: #f2f6fc;
+    border-left: 3px solid #2563eb;
+    padding: 5mm 6mm;
+    font-size: 9.5pt;
+    color: #34435a;
+  }
+
+  /* ---------- İÇİNDEKİLER ---------- */
+  .toc { page-break-after: always; }
+  .toc h2 { border: none; margin-top: 0; }
+  .toc ol { list-style: none; padding: 0; margin: 8mm 0 0 0; counter-reset: toc; }
+  .toc li {
+    counter-increment: toc;
+    padding: 3.2mm 0;
+    border-bottom: 1px solid #e4e9f0;
+    display: flex;
+    align-items: baseline;
+    gap: 5mm;
+  }
+  .toc li .no {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    color: #2563eb;
+    min-width: 12mm;
+    font-size: 10pt;
+  }
+  .toc li .baslik { font-weight: 600; color: #12243a; }
+  .toc li .soru { display: block; font-weight: 400; color: #6b7785; font-size: 9pt; margin-top: 1mm; }
+
+  /* ---------- BÖLÜM ---------- */
+  .bolum { page-break-before: always; }
+  .bolum-head { margin-bottom: 8mm; }
+  .bolum-no {
+    font-size: 8.5pt;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: #2563eb;
+    font-weight: 700;
+  }
+  .bolum-head h1 {
+    font-size: 20pt;
+    margin: 2mm 0 3mm 0;
+    color: #12243a;
+    letter-spacing: -.01em;
+    line-height: 1.2;
+  }
+  .bolum-head .lead {
+    margin: 0;
+    color: #52606d;
+    font-size: 10.5pt;
+    border-left: 3px solid #dbe3ee;
+    padding-left: 4mm;
+  }
+
+  h2 {
+    font-size: 12.5pt;
+    color: #12243a;
+    margin: 8mm 0 3mm 0;
+    padding-bottom: 1.5mm;
+    border-bottom: 1.5px solid #e4e9f0;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-size: 10.8pt;
+    color: #1f3a5f;
+    margin: 5mm 0 2mm 0;
+    page-break-after: avoid;
+  }
+  p { margin: 0 0 3mm 0; }
+  ul, ol { margin: 0 0 3mm 0; padding-left: 6mm; }
+  li { margin-bottom: 1.6mm; }
+  strong { color: #12243a; font-weight: 600; }
+
+  code {
+    font-family: "Cascadia Mono", "Consolas", monospace;
+    font-size: 9pt;
+    background: #eef2f8;
+    padding: .4mm 1.2mm;
+    border-radius: 2px;
+    color: #1f3a5f;
+  }
+  pre {
+    font-family: "Cascadia Mono", "Consolas", monospace;
+    font-size: 8.6pt;
+    line-height: 1.5;
+    background: #f7f9fc;
+    border: 1px solid #e4e9f0;
+    border-left: 3px solid #94a3b8;
+    padding: 3.5mm 4mm;
+    margin: 3mm 0;
+    overflow-x: auto;
+    white-space: pre;
+    page-break-inside: avoid;
+    color: #24303f;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+  .yorum { color: #7a8896; }
+  .kotu { border-left-color: #dc2626; background: #fdf5f5; }
+  .iyi  { border-left-color: #16a34a; background: #f4faf5; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 3mm 0 4mm 0;
+    font-size: 9.2pt;
+    page-break-inside: avoid;
+  }
+  th {
+    background: #1f3a5f;
+    color: #fff;
+    text-align: left;
+    padding: 2.4mm 3mm;
+    font-weight: 600;
+    font-size: 9pt;
+  }
+  td { padding: 2.4mm 3mm; border-bottom: 1px solid #e4e9f0; vertical-align: top; }
+  tr:nth-child(even) td { background: #fafbfd; }
+
+  /* ---------- KUTULAR ---------- */
+  .kutu {
+    padding: 4mm 4.5mm;
+    margin: 4mm 0;
+    border-radius: 3px;
+    page-break-inside: avoid;
+    font-size: 9.8pt;
+  }
+  .kutu .kutu-baslik {
+    font-size: 8.5pt;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 2mm;
+  }
+  .kutu p:last-child, .kutu ul:last-child { margin-bottom: 0; }
+
+  .anahtar { background: #eef4ff; border-left: 3px solid #2563eb; }
+  .anahtar .kutu-baslik { color: #1d4ed8; }
+
+  .uyari { background: #fff8ec; border-left: 3px solid #d97706; }
+  .uyari .kutu-baslik { color: #b45309; }
+
+  .bedel { background: #fdf4f4; border-left: 3px solid #dc2626; }
+  .bedel .kutu-baslik { color: #b91c1c; }
+
+  .kanit { background: #f4faf6; border-left: 3px solid #16a34a; }
+  .kanit .kutu-baslik { color: #15803d; }
+
+  /* ---------- SORU / CEVAP ---------- */
+  .qa { margin: 3mm 0; page-break-inside: avoid; }
+  .qa .s {
+    font-weight: 600;
+    color: #12243a;
+    background: #f2f5f9;
+    padding: 2.2mm 3mm;
+    border-radius: 3px 3px 0 0;
+    border-left: 3px solid #1f3a5f;
+  }
+  .qa .c {
+    padding: 2.2mm 3mm 2.6mm 3mm;
+    border-left: 3px solid #cbd5e1;
+    background: #fcfdfe;
+    border-radius: 0 0 3px 3px;
+  }
+  .qa .c::before { content: "→ "; color: #2563eb; font-weight: 700; }
+
+  .dosya {
+    font-family: "Cascadia Mono", "Consolas", monospace;
+    font-size: 8.6pt;
+    color: #1d4ed8;
+  }
+
+  .sema {
+    font-family: "Cascadia Mono", "Consolas", monospace;
+    font-size: 8.8pt;
+    line-height: 1.65;
+    background: #12243a;
+    color: #dbe7f5;
+    padding: 5mm;
+    border-radius: 3px;
+    margin: 4mm 0;
+    white-space: pre;
+    page-break-inside: avoid;
+  }
+  .sema .vurgu { color: #7dd3fc; }
+
+  .kart-liste { margin: 4mm 0; }
+  .kart {
+    border: 1px solid #e4e9f0;
+    border-left: 3px solid #2563eb;
+    padding: 3mm 4mm;
+    margin-bottom: 2.5mm;
+    border-radius: 3px;
+    page-break-inside: avoid;
+    font-size: 9.6pt;
+  }
+  .kart b { display: block; color: #12243a; margin-bottom: 1mm; }
+
+  .sozluk dt { font-weight: 600; color: #1f3a5f; margin-top: 3mm; font-size: 10pt; }
+  .sozluk dd { margin: .8mm 0 0 0; color: #34435a; font-size: 9.6pt; }
+
+  .kucuk { font-size: 9pt; color: #6b7785; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ KAPAK ══════════════════ -->
+<div class="kapak">
+  <div class="etiket">Staj Projesi · Savunma Rehberi</div>
+  <h1>HRManagement<br>Teknoloji ve Mimari<br>Kararları</h1>
+  <div class="cizgi"></div>
+  <h2>Her teknoloji için: neden seçildi, alternatifi neydi,<br>kullanılmasaydı ne olurdu ve bedeli ne oldu.</h2>
+  <div class="meta">
+    <div><b>Proje:</b> İnsan Kaynakları Yönetim Uygulaması</div>
+    <div><b>Yığın:</b> .NET 10 · ASP.NET Core Web API + MVC · Dapper · SQL Server</div>
+    <div><b>Mimari:</b> Clean Architecture · CQRS (MediatR) · Repository Pattern</div>
+    <div><b>Tarih:</b> 27 Temmuz 2026</div>
+  </div>
+  <div class="not">
+    <b>Bu belge nasıl kullanılır:</b> Her bölüm aynı altı soruyu cevaplar — <i>ne yaptık,
+    hangi problemi çözüyor, alternatifleri neydi, kullanmasaydık ne olurdu, bedeli ne,
+    hangi sorular gelir.</i> Savunmada en çok işe yarayacak iki bölüm: <b>Bölüm 0</b>
+    (bir isteğin baştan sona yolculuğu) ve <b>Bölüm 10</b> (projenin bilinçli zayıf noktaları).
+    Sondaki <b>Ek A</b> hızlı tekrar için tek cümlelik cevap kartlarıdır.
+  </div>
+</div>
+
+<!-- ══════════════════ İÇİNDEKİLER ══════════════════ -->
+<div class="toc">
+  <h2>İçindekiler</h2>
+  <ol>
+    <li><span class="no">0</span><span><span class="baslik">Projeye Kuşbakışı</span><span class="soru">30 saniyede proje tanıtımı + bir isteğin baştan sona yolculuğu</span></span></li>
+    <li><span class="no">1</span><span><span class="baslik">Clean Architecture ve Katman Ayrımı</span><span class="soru">Neden 5 proje? Tek projede yazsan olmaz mıydı?</span></span></li>
+    <li><span class="no">2</span><span><span class="baslik">CQRS ve MediatR</span><span class="soru">Neden Service class değil de Mediator deseni?</span></span></li>
+    <li><span class="no">3</span><span><span class="baslik">FluentValidation ve Pipeline Behavior</span><span class="soru">Validation'ı neden handler'ın içine yazmadın?</span></span></li>
+    <li><span class="no">4</span><span><span class="baslik">Dapper, SQL Server ve Repository</span><span class="soru">Neden EF Core kullanmadın? ORM'siz nasıl idare ediyorsun?</span></span></li>
+    <li><span class="no">5</span><span><span class="baslik">İki Host: API + WebUI, Refit, BaseResponse</span><span class="soru">Neden iki ayrı uygulama? Neden paylaşılan Contracts projesi yok?</span></span></li>
+    <li><span class="no">6</span><span><span class="baslik">Kimlik Doğrulama: JWT + Cookie</span><span class="soru">Neden ikisi birden? Token'ı neden localStorage'a koymadın?</span></span></li>
+    <li><span class="no">7</span><span><span class="baslik">Hata Yönetimi ve Cross-Cutting Concerns</span><span class="soru">ProblemDetails standardı varken neden kendi zarfın?</span></span></li>
+    <li><span class="no">8</span><span><span class="baslik">Test Stratejisi</span><span class="soru">Neden sadece Application test ediliyor? Neden Moq yok?</span></span></li>
+    <li><span class="no">9</span><span><span class="baslik">Domain Modeli ve İş Kurallarının Yeri</span><span class="soru">Entity'lerin anemik — bu DDD değil, sorun değil mi?</span></span></li>
+    <li><span class="no">10</span><span><span class="baslik">Zayıf Noktalar ve Bilinçli Ödünler</span><span class="soru">"Bunu neden yapmadın?" sorusunun hazır cevabı</span></span></li>
+    <li><span class="no">A</span><span><span class="baslik">Ek A — Hızlı Cevap Kartları</span><span class="soru">Tek cümlelik savunmalar, son tekrar için</span></span></li>
+    <li><span class="no">B</span><span><span class="baslik">Ek B — Terimler Sözlüğü</span><span class="soru">Savunmada geçecek kavramların net tanımları</span></span></li>
+  </ol>
+</div>
+
+<!-- ══════════════════ BÖLÜM 0 ══════════════════ -->
+<section class="bolum">
+  <div class="bolum-head">
+    <div class="bolum-no">Bölüm 0</div>
+    <h1>Projeye Kuşbakışı</h1>
+    <p class="lead">Savunmanın ilk 60 saniyesi burada geçer. "Projeni anlat" ve "bir isteği
+    baştan sona anlat" soruları neredeyse her zaman sorulur; ikisinin de cevabı hazır olmalı.</p>
+  </div>
+
+  <h2>1. Otuz saniyede proje</h2>
+  <p>
+    Bir şirketin İK süreçlerini yöneten web uygulaması. Beş rol var: <b>Admin, İK, Yönetici,
+    Çalışan, Stajyer.</b> Uygulama çalışan ve stajyer kayıtlarını, departman/birim
+    organizasyon şemasını, iki aşamalı izin onay akışını, stajyer görev-not takibini ve
+    rol bazlı ekranları kapsıyor.
+  </p>
+  <p>
+    Teknik olarak <b>Clean Architecture</b> ile beş projeye bölünmüş bir .NET 10 çözümü.
+    Use-case'ler <b>CQRS</b> deseniyle MediatR üzerinden yürüyor, veri erişimi <b>Dapper</b>
+    ile ham SQL. Arayüz ayrı bir ASP.NET Core MVC uygulaması ve backend'e yalnızca
+    <b>HTTP</b> üzerinden, <b>Refit</b> ile bağlanıyor — aralarında proje referansı yok.
+  </p>
+
+  <div class="kutu anahtar">
+    <div class="kutu-baslik">Projenin tek cümlelik tasarım felsefesi</div>
+    <p>
+      <b>İş kuralları merkezde ve teknolojiden bağımsız; yetki her zaman sunucuda; her
+      kural tek bir yerde yaşar.</b> Bu belgedeki kararların neredeyse tamamı bu üç
+      cümleden türüyor.
+    </p>
+  </div>
+
+  <h2>2. Teknoloji seçimleri — tek bakışta</h2>
+  <table>
+    <tr><th style="width:22%">Teknoloji</th><th style="width:20%">Nerede</th><th>Tek cümlelik gerekçe</th></tr>
+    <tr><td><b>.NET 10 / C#</b></td><td>Her yer</td><td>Kurumsal .NET ekosistemi; staj ortamının standart yığını.</td></tr>
+    <tr><td><b>ASP.NET Core Web API</b></td><td>API</td><td>İş mantığının tek sahibi; ileride mobil/başka istemciler de aynı ucu tüketebilsin.</td></tr>
+    <tr><td><b>ASP.NET Core MVC</b></td><td>WebUI</td><td>Sunucuda render edilen sayfalar; ayrı bir JS build zinciri ve SPA karmaşası olmadan tam işlevsel arayüz.</td></tr>
+    <tr><td><b>MediatR 12.5</b></td><td>Application</td><td>Her use-case tek sınıf; validation/logging gibi ortak işler tek boru hattında.</td></tr>
+    <tr><td><b>FluentValidation</b></td><td>Application</td><td>Koşullu ve çapraz alan kuralları okunur biçimde, test edilebilir ayrı sınıflarda.</td></tr>
+    <tr><td><b>Dapper</b></td><td>Infrastructure</td><td>SQL'i gizlemeyen, ne çalıştığı belli olan ince eşleyici — öğrenme projesinde SQL'i görünür tutmak bilinçli tercih.</td></tr>
+    <tr><td><b>SQL Server</b></td><td>Veritabanı</td><td>İlişkisel model bu domaine tam oturuyor (departman→çalışan→izin); .NET ile en olgun entegrasyon.</td></tr>
+    <tr><td><b>Refit</b></td><td>WebUI</td><td>API sözleşmesi C# arayüzü olarak yazılır, istemci kodunu kütüphane üretir; elle HttpClient/JSON kodu yok.</td></tr>
+    <tr><td><b>JWT + Cookie</b></td><td>API + WebUI</td><td>İki farklı güven sınırı, iki farklı mekanizma; token tarayıcıya hiç inmez.</td></tr>
+    <tr><td><b>BCrypt</b></td><td>Infrastructure</td><td>Parola için kasıtlı olarak <i>yavaş</i> ve salt'lı hash — brute-force'u ekonomik olmaktan çıkarır.</td></tr>
+    <tr><td><b>xUnit</b></td><td>Tests</td><td>İş kurallarını veritabanı olmadan, milisaniyeler içinde doğrulamak.</td></tr>
+  </table>
+
+  <h2>3. Bir isteğin baştan sona yolculuğu</h2>
+  <p>
+    "Çalışan izin talebi oluşturuyor" senaryosunun tam yolu. Bu diyagramı ezberlemek,
+    mimariyle ilgili soruların yarısını tek başına cevaplar:
+  </p>
+
+  <div class="sema">TARAYICI
+   │  POST /LeaveRequests/Create   <span class="vurgu">(form gönderimi, cookie ile)</span>
+   ▼
+<span class="vurgu">WebUI</span> — LeaveRequestsController
+   │  1. Cookie doğrulanır → kullanıcı kimliği belli olur
+   │  2. ViewModel → API request modeline çevrilir
+   │  3. ILeaveRequestApi.CreateAsync(...)     <span class="vurgu">← Refit arayüzü</span>
+   ▼
+BearerTokenHandler  <span class="vurgu">(DelegatingHandler)</span>
+   │  Cookie ticket'ının içindeki JWT okunur
+   │  "Authorization: Bearer &lt;token&gt;" başlığı eklenir
+   ▼  ─────────────  HTTP  ─────────────
+<span class="vurgu">API</span> — Middleware boru hattı
+   │  UseExceptionHandler → UseBaseResponseStatusCodes
+   │  UseAuthentication  <span class="vurgu">"sen kimsin?"  (JWT imzası doğrulanır)</span>
+   │  UseAuthorization   <span class="vurgu">"yetkin var mı?" (fallback policy)</span>
+   ▼
+LeaveRequestsController.Create
+   │  Kullanıcı Id'si <span class="vurgu">JWT claim'inden</span> okunur — gövdeden ASLA
+   │  CreateLeaveRequestCommand üretilir → _mediator.Send(command)
+   ▼
+<span class="vurgu">MediatR boru hattı</span>
+   │  ValidationBehavior  → CreateLeaveRequestCommandValidator
+   │     tarih sırası? enum geçerli? hastalıksa rapor var mı?
+   │     HATA → ValidationException → 400 + BaseResponse.Fail
+   ▼
+CreateLeaveRequestCommandHandler  <span class="vurgu">← İŞ KURALLARI</span>
+   │  1. Hesap hangi çalışana/stajyere ait?
+   │  2. Kayıt aktif mi?
+   │  3. Tarih başka talebiyle çakışıyor mu?
+   │  4. Yıllık izin bakiyesi yetiyor mu?
+   │  5. Hastalık izni ise → yönetici aşamasını atla, İK'ya düşür
+   ▼
+ILeaveRequestRepository.AddAsync     <span class="vurgu">← arayüz (Application)</span>
+   ▼
+LeaveRequestRepository               <span class="vurgu">← Dapper (Infrastructure)</span>
+   │  INSERT INTO LeaveRequests ... SELECT SCOPE_IDENTITY()
+   ▼
+SQL SERVER
+   │
+   ◄── yeni Id ──► BaseResponse&lt;int&gt;.Success(id) ──► JSON ──► Refit
+                                                          ▼
+                                          WebUI: IsSuccess mi? → Redirect / hata göster</div>
+
+  <div class="kutu kanit">
+    <div class="kutu-baslik">Bu diyagramdan çıkarılacak üç savunma cümlesi</div>
+    <ul>
+      <li><b>Yetki hiçbir zaman istemciye güvenmez.</b> Kullanıcı kimliği imzalı JWT claim'inden okunur; istek gövdesinden alınsaydı herkes "ben başkasıyım" diyebilirdi.</li>
+      <li><b>Input kontrolü ile iş kuralı ayrı yerlerde.</b> Veritabanına bakmayan kurallar Validator'da, bakanlar Handler'da.</li>
+      <li><b>Her katman bir sonrakini yalnızca arayüz üzerinden tanır.</b> Handler, Dapper'ı da SQL Server'ı da bilmez.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ══════════════════ BÖLÜM 1 ══════════════════ -->
+<section class="bolum">
+  <div class="bolum-head">
+    <div class="bolum-no">Bölüm 1</div>
+    <h1>Clean Architecture ve Katman Ayrımı</h1>
+    <p class="lead">Ana soru: Neden beş ayrı proje? Hepsini tek projede klasörlere ayırsan
+    aynı şey olmaz mıydı?</p>
+  </div>
+
+  <h2>1. Ne yaptık</h2>
+  <p>Beş proje ve aralarında <b>tek yönlü</b> bir referans grafiği var:</p>
+
+  <div class="sema">Domain  ◄──  Application  ◄──  Infrastructure
+                  ▲                  ▲
+                  └───── API ────────┘
+                          ⋮  <span class="vurgu">HTTP — proje referansı YOK</span>
+                        WebUI</div>
+
+  <p>Bunun kanıtı bir dokümanda değil, <code>.csproj</code> dosyalarında:</p>
+  <ul>
+    <li><span class="dosya">HRManagement.Domain.csproj</span> — <b>tek bir NuGet paketi bile yok.</b> Ne MediatR, ne Dapper, ne ASP.NET. Saf C#.</li>
+    <li><span class="dosya">HRManagement.Application.csproj</span> — yalnızca Domain'e referans + MediatR/FluentValidation.</li>
+    <li><span class="dosya">HRManagement.Infrastructure.csproj</span> — Dapper, SqlClient, BCrypt burada toplanmış.</li>
+    <li><span class="dosya">HRManagement.WebUI.csproj</span> — <b>hiçbir iş katmanına referans vermiyor</b>, sadece Refit.</li>
+  </ul>
+
+  <p>Asıl kritik nokta şu ters çevirme:</p>
+  <pre><span class="yorum">// Application/Interfaces/IEmployeeRepository.cs  → arayüz burada TANIMLANIR</span>
+public interface IEmployeeRepository
+{
+    Task&lt;Employee?&gt; GetByUserIdAsync(int userId);
+    ...
+}
+
+<span class="yorum">// Infrastructure/Persistence/EmployeeRepository.cs → burada UYGULANIR</span>
+public class EmployeeRepository : IEmployeeRepository { ... }   <span class="yorum">// Dapper + SQL</span></pre>
+
+  <div class="kutu anahtar">
+    <div class="kutu-baslik">Dependency Inversion — SOLID'in "D"si, tek cümlede</div>
+    <p>
+      <b>Arayüzün sahibi, onu kullanan taraftır — uygulayan taraf değil.</b>
+      Application "bana çalışan getirebilen bir şey lazım" der; o şeyin SQL mi, dosya mı,
+      HTTP mi olduğunu bilmez. Bağımlılık oku böylece veritabanından <i>uzağa</i>,
+      iş kurallarına <i>doğru</i> akar.
+    </p>
+  </div>
+
+  <h2>2. Hangi problemi çözüyor</h2>
+  <p>Tek bir problem: <b>iş kurallarının, onları çalıştıran teknolojiden bağımsız yaşaması.</b></p>
+  <p>Somut örnek — yıllık izin bakiyesi kuralı:</p>
+  <pre>kullanılan + talep  ≤  hak edilen + bir sonraki yılın hakkı</pre>
+  <p>
+    Bu bir <b>şirket politikası</b>; SQL Server'la, HTTP'yle, Razor'la hiçbir ilgisi yok.
+    Ayrı bir katmanda durduğu için bugün SQL Server'ı PostgreSQL yapsan, MVC'yi React'e
+    çevirsen bu dosya <b>değişmez</b>. Kuralın ömrü, teknolojinin ömründen uzundur —
+    mimarinin bütün amacı bu asimetriyi kabul etmek.
+  </p>
+
+  <h2>3. Alternatifleri ve neden onlar değil</h2>
+  <table>
+    <tr><th style="width:26%">Alternatif</th><th style="width:32%">Nasıl olurdu</th><th>Neden seçilmedi</th></tr>
+    <tr>
+      <td><b>Tek proje, klasörlerle ayrım</b></td>
+      <td><code>Controllers/</code>, <code>Services/</code>, <code>Data/</code> klasörleri, hepsi tek <code>.csproj</code></td>
+      <td>Klasör sınırını <b>derleyici zorlamaz</b>. Bir controller'ın içine <code>new SqlConnection(...)</code> yazmanı hiçbir şey engellemez. Yorgun bir cuma günü kural delinir ve kimse fark etmez.</td>
+    </tr>
+    <tr>
+      <td><b>Klasik N-Tier (UI → BLL → DAL)</b></td>
+      <td>DAL en altta, iş katmanı ona referans verir</td>
+      <td>Bağımlılık oku <b>veritabanına doğru</b> akar. İş katmanı DAL'ı, dolayısıyla EF/ADO.NET'i bilir. Clean Architecture'ın tek yapısal farkı bu oku ters çevirip merkeze iş kurallarını koyması.</td>
+    </tr>
+    <tr>
+      <td><b>Vertical Slice Architecture</b></td>
+      <td>Katman yok; her özellik kendi handler + SQL + endpoint'ini tek klasörde tutar</td>
+      <td>Meşru bir alternatif ve daha az boilerplate üretirdi. Ama katman disiplinini öğrenmek projenin amaçlarındandı; ayrıca paylaşılan kurallar (izin hakkı, görünürlük) birden çok dilime kopyalanma riski taşırdı.</td>
+    </tr>
+    <tr>
+      <td><b>Mikroservisler</b></td>
+      <td>İzin servisi, çalışan servisi, stajyer servisi ayrı ayrı</td>
+      <td>Tek ekip, tek veritabanı, ~10 tablo. Dağıtık sistemin bedeli (ağ hataları, dağıtık transaction, ayrı deploy hattı) kazancından kat kat büyük olurdu.</td>
+    </tr>
+  </table>
+
+  <h2>4. Kullanmasaydık ne olurdu</h2>
+  <p>İzin bakiyesi kuralını controller'ın içine yazdığımızı düşünelim:</p>
+  <pre class="kotu">[HttpPost]
+public async Task&lt;IActionResult&gt; Create(CreateLeaveRequest request)
+{
+    using var conn = new SqlConnection(_config.GetConnectionString("Default"));
+    var used = await conn.QuerySingleAsync&lt;int&gt;("SELECT SUM(WorkingDays) ...");
+    if (used + requested &gt; accrued + nextGrant) return BadRequest(...);
+    ...
+}</pre>
+
+  <p>Dört somut sonuç:</p>
+  <ol>
+    <li>
+      <b>Test etmek neredeyse imkânsız olur.</b> "Bir yılını doldurmamış çalışan yıllık
+      izin alamaz" kuralını doğrulamak için ayakta bir SQL Server, seed verisi ve HTTP
+      isteği gerekirdi. Şu an ilgili testler veritabanına hiç dokunmadan, milisaniyelerde
+      çalışıyor.
+    </li>
+    <li>
+      <b>Kural çoğalır ve ayrışır.</b> Aynı kontrol mobil API'de, toplu içe aktarma
+      ekranında, admin panelinde yeniden yazılır. Üçü zamanla birbirinden ayrışır ve
+      hangisinin doğru olduğu bilinmez hâle gelir.
+    </li>
+    <li>
+      <b>Kural görünmez olur.</b> "Şirketin izin politikası nedir?" sorusunun cevabı
+      400 satırlık controller'ların içine dağılır. Şimdi cevap tek yerde:
+      <span class="dosya">Application/Services/LeaveEntitlement.cs</span>.
+    </li>
+    <li>
+      <b>Teknoloji değişimi = yeniden yazım.</b> Dapper'ı EF Core'a çevirmek, iş
+      kurallarını da baştan yazmak demek olurdu.
+    </li>
+  </ol>
+
+  <div class="kutu kanit">
+    <div class="kutu-baslik">Mimarinin iddiasının kanıtı</div>
+    <p>
+      <span class="dosya">tests/HRManagement.Application.Tests.csproj</span> yalnızca
+      <b>Application</b>'a referans veriyor — Infrastructure'a değil. Yani iş kuralları
+      gerçekten veritabanı olmadan test edilebiliyor. Mimari "iyi olur" diye iddia
+      edilen bir şey değil, çalışan bir test projesiyle ispatlanmış durumda.
+    </p>
+  </div>
+
+  <h2>5. Bedeli — dürüst kısım</h2>
+  <div class="kutu bedel">
+    <div class="kutu-baslik">Bunları savunmada kendin söylersen güçlü görünürsün</div>
+    <ul>
+      <li><b>Boilerplate.</b> "Departman ekle" gibi basit bir CRUD için 4 dosya (Command, Handler, Validator, Repository metodu). Tek katmanlı bir projede bu tek metot olurdu.</li>
+      <li><b>Aynı verinin çoklu temsili.</b> Bir çalışan verisi dört ayrı şekilde yaşıyor: <code>Domain/Entities/Employee</code> → <code>Application/dto/Employee</code> → <code>API/Models/Employees</code> → <code>WebUI/Models/Api/Employees</code>. Bilinçli bir ödün (Bölüm 5), ama bedeli elle senkron tutmak.</li>
+      <li><b>Öğrenme eğrisi.</b> Projeye yeni katılan biri "bu kod nerede?" sorusunu cevaplamak için önce mimariyi öğrenmek zorunda.</li>
+      <li><b>Küçük projede israf olurdu.</b> 3 tablolu bir uygulamada bu yapı gereksiz ağırlık yaratırdı. Bu proje (10 tablo, 5 rol, iki aşamalı onay akışı, rol bazlı görünürlük kuralları) eşiği net biçimde geçiyor.</li>
+    </ul>
+  </div>
+
+  <h2>6. Gelmesi muhtemel sorular</h2>
+  <div class="qa">
+    <div class="s">Katman kuralını nasıl garanti ediyorsun? Doküman yazmak yetmez.</div>
+    <div class="c">Doküman değil, <b>derleyici</b> garanti ediyor. WebUI'nin <code>.csproj</code>'unda Application referansı yok; bir controller'da <code>using HRManagement.Application</code> yazsam proje derlenmez. Mimari kural, build hatası olarak somutlaşıyor.</div>
+  </div>
+  <div class="qa">
+    <div class="s">Domain katmanı neden bomboş, sadece entity var?</div>
+    <div class="c">"Boş" olması özellik. Hiçbir NuGet paketi almıyor — hiçbir framework'e bağımlı değil. Uygulamanın en uzun ömürlü, en az değişen parçası orası. (Anemik model eleştirisi ayrı ve gerçek bir tartışma; Bölüm 9'da ele alınıyor.)</div>
+  </div>
+  <div class="qa">
+    <div class="s">Application, Infrastructure'ı hiç bilmiyorsa somut repository'yi kim veriyor?</div>
+    <div class="c"><b>Composition root</b> — <span class="dosya">API/Program.cs</span>. Uygulamanın tek noktasında, çalışma anında <code>IEmployeeRepository → EmployeeRepository</code> eşlemesi yapılıyor. Derleme zamanında Application hâlâ hiçbir şey bilmiyor; bağlantı runtime'da DI konteyneri tarafından kuruluyor.</div>
+  </div>
+  <div class="qa">
+    <div class="s">Bu Clean Architecture mi, Onion mu, Hexagonal mi?</div>
+    <div class="c">Üçü de aynı ilkenin farklı isimleri: <b>bağımlılıklar içeri akar, iş kuralları merkezdedir.</b> Hexagonal "port ve adaptör", Onion "iç içe halkalar" metaforunu kullanır; bizimki isimlendirme olarak Clean Architecture.</div>
+  </div>
+  <div class="qa">
+    <div class="s">Bu mimariyi savunmayacağın bir durum var mı?</div>
+    <div class="c">Var. Tek ekranlı bir CRUD aracı, ömrü birkaç aylık bir iç araç ya da prototip yazıyorsam bu yapı sadece yavaşlatır. Clean Architecture'ın getirisi <b>zamanla</b> ödenir; ömrü kısa olan projede o zaman hiç gelmez.</div>
+  </div>
+</section>
+
+<!-- ══════════════════ BÖLÜM 2 ══════════════════ -->
+<section class="bolum">
+  <div class="bolum-head">
+    <div class="bolum-no">Bölüm 2</div>
+    <h1>CQRS ve MediatR</h1>
+    <p class="lead">Ana soru: <code>IEmployeeService</code> gibi normal bir servis sınıfı
+    yazsan olmaz mıydı? Araya mediator koymanın kazancı ne?</p>
+  </div>
+
+  <h2>1. Ne yaptık</h2>
+  <p>Her use-case, kendi klasöründe üç dosyadan oluşuyor:</p>
+  <pre>Application/Features/LeaveRequests/Commands/CreateLeaveRequest/
+   ├── CreateLeaveRequestCommand.cs           <span class="yorum">// istek — sealed record</span>
+   ├── CreateLeaveRequestCommandHandler.cs    <span class="yorum">// iş kuralları — sealed class</span>
+   └── CreateLeaveRequestCommandValidator.cs  <span class="yorum">// input kontrolü</span></pre>
+
+  <pre>public sealed record CreateLeaveRequestCommand(
+    int RequesterUserId, LeaveType Type, DateTime StartDate,
+    DateTime EndDate, string? Description, string? MedicalReport) : IRequest&lt;int&gt;;
+
+public sealed class CreateLeaveRequestCommandHandler
+    : IRequestHandler&lt;CreateLeaveRequestCommand, int&gt; { ... }</pre>
+
+  <p>Controller ise use-case'lerin hiçbirini tanımıyor; yalnızca <code>IMediator</code>'ı tanıyor:</p>
+  <pre>public LeaveRequestsController(IMediator mediator) { _mediator = mediator; }
+
+[HttpGet("pending-approvals")]
+public async Task&lt;IActionResult&gt; GetPendingApprovals()
+{
+    var items = await _mediator.Send(new GetPendingApprovalsQuery(CurrentUserId()));
+    ...
+}</pre>
+
+  <p>Kayıt tek yerde ve otomatik:</p>
+  <pre>services.AddMediatR(cfg =&gt;
+{
+    cfg.RegisterServicesFromAssembly(assembly);   <span class="yorum">// tüm handler'lar otomatik bulunur</span>
+    cfg.AddOpenBehavior(typeof(ValidationBehavior&lt;,&gt;));  <span class="yorum">// ortak boru hattı halkası</span>
+});</pre>
+
+  <h2>2. Hangi problemi çözüyor</h2>
+  <h3>a) Servis sınıflarının şişmesini engeller</h3>
+  <p>
+    Klasik yaklaşımda <code>LeaveRequestService</code> zamanla 800 satıra çıkar: oluştur,
+    onayla, reddet, listele, detay, bekleyenler... Hepsi aynı sınıfta, hepsi aynı
+    constructor'da yedi bağımlılık taşır. Burada her operasyon <b>kendi sınıfı</b> —
+    yalnızca ihtiyacı olan üç repository'yi enjekte ediyor. Tek Sorumluluk İlkesi
+    (SOLID'in "S"si) sınıf seviyesinde gerçekten uygulanıyor.
+  </p>
+
+  <h3>b) Cross-cutting concern'leri tek yerde toplar</h3>
+  <p>
+    Asıl kazanç <b>pipeline behavior</b>. Her mesaj handler'a ulaşmadan önce
+    <code>ValidationBehavior</code>'dan geçiyor. Yarın "her komutu logla" ya da
+    "her komutu transaction'a sar" istersek, 26 handler'a dokunmadan tek bir sınıf
+    ekliyoruz.
+  </p>
+
+  <div class="sema">Send(command)
+    │
+    ├─► ValidationBehavior      <span class="vurgu">← şu an var</span>
+    │      ├─► (LoggingBehavior)      <span class="vurgu">← eklenebilir, handler'lar değişmez</span>
+    │      │      ├─► (TransactionBehavior)
+    │      │      │      └─► HANDLER  <span class="vurgu">← asıl iş</span></div>
+
+  <h3>c) CQRS: okuma ile yazmayı ayırır</h3>
+  <p>
+    <b>Command</b> sistemde değişiklik yapar, <b>Query</b> yan etkisizdir. Klasör yapısı
+    bu ayrımı fiziksel hâle getiriyor. Faydası: bir sorunun "acaba bu bir şeyi değiştiriyor
+    mu?" cevabı klasör adından okunuyor; ayrıca okuma tarafı entity'ye sadık kalmak zorunda
+    değil, doğrudan ekranın istediği DTO'yu üretebiliyor.
+  </p>
+
+  <div class="kutu uyari">
+    <div class="kutu-baslik">Dikkat — bu "tam CQRS" değil, bilerek</div>
+    <p>
+      Literatürdeki tam CQRS'te okuma ve yazma <b>ayrı veritabanları</b> kullanır ve
+      aralarında event'lerle senkronizasyon olur. Bizde tek veritabanı var; ayrım
+      yalnızca <b>kod düzeyinde</b>. "CQRS kullandın mı?" sorusuna doğru cevap:
+      <i>"Kod seviyesinde evet, ayrı okuma modeli/veritabanı anlamında hayır — bu ölçekte
+      eventual consistency'nin bedeli gereksizdi."</i> Bu ayrımı bilmek, ezber cevaptan
+      ayırt edilmeni sağlar.
+    </p>
+  </div>
+
+  <h2>3. Alternatifleri ve neden onlar değil</h2>
+  <table>
+    <tr><th style="width:26%">Alternatif</th><th style="width:34%">Artısı</th><th>Neden bu proje için değil</th></tr>
+    <tr>
+      <td><b>Servis sınıfı</b><br><code>IEmployeeService</code></td>
+      <td>Basit, dolaylılık yok; "Go to definition" doğrudan çalışır; yeni gelen anında anlar.</td>
+      <td>Cross-cutting'i her metoda elle eklemek gerekir. Sınıflar zamanla şişer. Controller 5-6 servis enjekte etmeye başlar.</td>
+    </tr>
+    <tr>
+      <td><b>Kendi mediator'ını yazmak</b></td>
+      <td>~50 satır; dış bağımlılık ve lisans riski yok.</td>
+      <td>Behavior zincirini, generic çözümlemeyi ve <code>void</code>/<code>Notification</code> senaryolarını doğru yazmak göründüğünden zor; hata payı yüksek.</td>
+    </tr>
+    <tr>
+      <td><b>Wolverine / Brighter</b></td>
+      <td>MediatR'ın açık kaynak alternatifleri; mesajlaşma/outbox gibi ek yetenekler.</td>
+      <td>Ekosistem tanınırlığı ve dokümantasyon MediatR kadar geniş değil; öğrenme projesinde en yaygın olanı öğrenmek daha değerli.</td>
+    </tr>
+    <tr>
+      <td><b>Minimal API + endpoint filter</b></td>
+      <td>Daha az dosya; ASP.NET Core'un yerleşik filtreleriyle cross-cutting mümkün.</td>
+      <td>Cross-cutting yalnızca HTTP sınırında çalışır — iş katmanı çağrıldığında (ör. arka plan işi) kurallar devrede olmaz.</td>
+    </tr>
+  </table>
+
+  <h2>4. Kullanmasaydık ne olurdu</h2>
+  <p>
+    En somut kayıp <code>ValidationBehavior</code>. Onsuz, 26 handler'ın her birinin ilk
+    satırlarında şu blok tekrar ederdi:
+  </p>
+  <pre class="kotu">var result = await _validator.ValidateAsync(request, cancellationToken);
+if (!result.IsValid) throw new ValidationException(result.Errors);</pre>
+  <p>
+    Bunu <b>bir handler'da yazmayı unutmak</b> derleme hatası vermez, test de kolayca
+    yakalamaz — sadece o uç sessizce doğrulamasız kalır. Yani unutulan bir satır, doğrudan
+    bir güvenlik/veri bütünlüğü açığına dönüşür. Behavior yaklaşımında unutmak
+    <b>mümkün değil</b>: kural boru hattında, handler'ın haberi bile yok.
+  </p>
+
+  <h2>5. Bedeli</h2>
+  <div class="kutu bedel">
+    <div class="kutu-baslik">Dürüst maliyet listesi</div>
+    <ul>
+      <li><b>IDE navigasyonu zayıflar.</b> <code>_mediator.Send(new XCommand())</code> satırında "Go to definition" seni handler'a götürmez — eşleme çalışma anında yapılır. Handler'ı isimle aramak gerekir.</li>
+      <li><b>Dolaylılık.</b> Yeni gelen biri "bu kod nereden çağrılıyor?" sorusunu sorar. Küçük ekipte bu gerçek bir sürtünme.</li>
+      <li><b>Dosya sayısı patlar.</b> Her use-case için 3 dosya; projede onlarca klasör.</li>
+      <li><b>Performans (ihmal edilebilir ama var).</b> Her istekte reflection tabanlı handler çözümlemesi ve behavior zinciri. Web uygulaması ölçeğinde ölçülemez, ama "bedeli sıfır" demek doğru olmaz.</li>
+    </ul>
+  </div>
+
+  <div class="kutu uyari">
+    <div class="kutu-baslik">Lisans riski — bu cevabı mutlaka hazır tut</div>
+    <p>
+      MediatR <b>12.5.0</b> sürümünde sabitlenmiş durumda. Sebebi teknik değil, hukuki:
+      kütüphane <b>13. sürümden itibaren ticari lisansa</b> geçti. Projede sürüm bilinçli
+      olarak dondurulmuş ve bu karar <span class="dosya">CLAUDE.md</span>'ye yazılmış.
+    </p>
+    <p style="margin-top:2mm">
+      <b>Buradan çıkan genel ders:</b> bir bağımlılık seçerken yalnızca bugünkü
+      yeteneklerine değil, <b>lisans geleceğine ve bakım modeline</b> de bakmak gerekir.
+      Savunmada bunu kendiliğinden söylemek, teknoloji seçimini sadece "popüler olduğu için"
+      yapmadığını gösterir.
+    </p>
+  </div>
+
+  <h2>6. Gelmesi muhtemel sorular</h2>
+  <div class="qa">
+    <div class="s">Mediator deseni tam olarak nedir?</div>
+    <div class="c">Birbiriyle konuşması gereken nesnelerin <b>doğrudan birbirini tanımak yerine</b> ortak bir aracı üzerinden haberleşmesi. Burada controller, hangi sınıfın isteği karşılayacağını bilmez; sadece "şu mesajı gönder" der. Bağlantı sayısı N×N'den N'e düşer.</div>
+  </div>
+  <div class="qa">
+    <div class="s">Command neden <code>record</code>, handler neden <code>class</code>?</div>
+    <div class="c">Mesaj bir kez oluşturulup boru hattı boyunca <b>değişmeden</b> taşınır — <code>record</code> değişmezliği ve değer eşitliğini ücretsiz verir (testlerde <code>Assert.Equal</code> doğrudan çalışır, otomatik <code>ToString()</code> loglamada işe yarar). Handler ise bağımlılık taşıyan, davranışı olan bir nesne; orada <code>class</code> doğru araç.</div>
+  </div>
+  <div class="qa">
+    <div class="s"><code>CancellationToken</code>'ı neden her yere taşıyorsun?</div>
+    <div class="c">Kullanıcı sayfayı kapattığında ya da istek zaman aşımına uğradığında, arkada çalışan sorgunun devam etmesinin anlamı yok. Token repository'ye kadar iletilirse veritabanı çağrısı da iptal edilebilir. Hiçbir katmanda yutulmaması bilinçli bir kural.</div>
+  </div>
+  <div class="qa">
+    <div class="s">MediatR olmasaydı aynı faydayı nasıl alırdın?</div>
+    <div class="c">DI konteynerinin <b>decorator</b> desteğiyle. <code>IEmployeeService</code>'i saran bir <code>ValidatingEmployeeService</code> yazılabilir. Aynı sonucu verir ama her servis arayüzü için ayrı decorator yazmak gerekir; MediatR'da tek generic behavior tüm mesajları kapsar.</div>
+  </div>
+</section>
+
+<!-- ══════════════════ BÖLÜM 3 ══════════════════ -->
+<section class="bolum">
+  <div class="bolum-head">
+    <div class="bolum-no">Bölüm 3</div>
+    <h1>FluentValidation ve Pipeline Behavior</h1>
+    <p class="lead">Ana soru: Validation'ı neden handler'ın içine yazmadın? Ve zaten
+    .NET'te <code>[Required]</code> attribute'ları varken neden ayrı bir kütüphane?</p>
+  </div>
+
+  <h2>1. Ne yaptık</h2>
+  <p>Her komutun yanında bir validator sınıfı duruyor ve boru hattı onu otomatik çalıştırıyor:</p>
+  <pre>public sealed class CreateLeaveRequestCommandValidator
+    : AbstractValidator&lt;CreateLeaveRequestCommand&gt;
+{
+    public CreateLeaveRequestCommandValidator()
+    {
+        RuleFor(c =&gt; c.Type)
+            .IsInEnum().WithMessage("Geçerli bir izin türü seçilmelidir.");
+
+        <span class="yorum">// Çapraz alan kuralı: iki alan birbirine göre denetleniyor</span>
+        RuleFor(c =&gt; c.EndDate)
+            .GreaterThanOrEqualTo(c =&gt; c.StartDate)
+            .WithMessage("Başlangıç tarihi bitiş tarihinden sonra olamaz.");
+
+        <span class="yorum">// KOŞULLU kural: yalnızca hastalık izninde rapor zorunlu</span>
+        RuleFor(c =&gt; c.MedicalReport)
+            .NotEmpty().When(c =&gt; c.Type == LeaveType.Sick)
+            .WithMessage("Hastalık izni için rapor bilgisi zorunludur.");
+    }
+}</pre>
+
+  <h2>2. Hangi problemi çözüyor — asıl mesele "ayrım"</h2>
+  <p>
+    Bu bölümün en değerli cevabı validation kütüphanesinin kendisi değil,
+    <b>iki tür kuralın birbirinden ayrılması</b>:
+  </p>
+
+  <table>
+    <tr><th style="width:22%"></th><th style="width:39%">Input Validation → Validator</th><th>İş Kuralı → Handler</th></tr>
+    <tr>
+      <td><b>Tanımı</b></td>
+      <td>Gelen veri <i>kendi içinde</i> geçerli mi?</td>
+      <td>Bu işlem, sistemin <i>mevcut durumuna</i> göre yapılabilir mi?</td>
+    </tr>
+    <tr>
+      <td><b>Ayırt edici test</b></td>
+      <td>Veritabanına bakmadan cevaplanabilir</td>
+      <td>Cevaplamak için veritabanına bakmak gerekir</td>
+    </tr>
+    <tr>
+      <td><b>Projeden örnek</b></td>
+      <td>Bitiş ≥ başlangıç; izin türü geçerli bir enum; açıklama ≤ 500 karakter; hastalık izninde rapor dolu</td>
+      <td>Yıllık izin bakiyesi yetiyor mu; tarihler başka bir talebiyle çakışıyor mu; çalışan kaydı aktif mi; staj süresi dolmuş mu</td>
+    </tr>
+    <tr>
+      <td><b>Değişme sıklığı</b></td>
+      <td>Nadir — form değişirse değişir</td>
+      <td>Sık — şirket politikası değişirse değişir</td>
+    </tr>
+  </table>
+
+  <div class="kutu anahtar">
+    <div class="kutu-baslik">Savunmada altın cümle</div>
+    <p>
+      <i>"Validation'ı nereye koyarsın?"</i> sorusunun en iyi cevabı "Validator'a" değil,
+      şudur: <b>"İkiye ayırırım. Veritabanına bakmadan cevaplanabilen her şey input
+      validation'dır ve boru hattında çalışır; sistemin durumuna bakan her şey iş kuralıdır
+      ve handler'da kalır. İkisini karıştırmak, iş kurallarını framework'e bağımlı hâle
+      getirir."</b>
+    </p>
+  </div>
+
+  <h2>3. Neden DataAnnotations değil</h2>
+  <table>
+    <tr><th style="width:30%">Konu</th><th style="width:35%">DataAnnotations</th><th>FluentValidation</th></tr>
+    <tr><td><b>Koşullu kural</b><br><span class="kucuk">"Sadece hastalık izninde zorunlu"</span></td><td>Attribute ile ifade edilemez; özel attribute yazmak gerekir</td><td><code>.When(...)</code> ile tek satır</td></tr>
+    <tr><td><b>Çapraz alan kuralı</b><br><span class="kucuk">"Bitiş ≥ başlangıç"</span></td><td><code>IValidatableObject</code> implement etmek gerekir — model kirlenir</td><td><code>GreaterThanOrEqualTo(c =&gt; c.StartDate)</code></td></tr>
+    <tr><td><b>Kuralın yeri</b></td><td>Modelin <b>üstünde</b> — mesaj sınıfı validation framework'üne bağlanır</td><td>Ayrı sınıfta — mesaj temiz kalır</td></tr>
+    <tr><td><b>Test edilebilirlik</b></td><td>Attribute'ları izole test etmek zahmetli</td><td>Validator ayrı bir sınıf; doğrudan <code>new</code>'lenip test edilir</td></tr>
+    <tr><td><b>Hata mesajı kontrolü</b></td><td>Sınırlı, kültüre bağlı sürprizler</td><td>Her kural için açık <code>.WithMessage(...)</code></td></tr>
+  </table>
+  <p class="kucuk">
+    Projede validator'lar için ayrı testler var
+    (<span class="dosya">Validators/CreateLeaveRequestCommandValidatorTests.cs</span>) —
+    yukarıdaki "test edilebilirlik" iddiasının somut karşılığı bu.
+  </p>
+
+  <h2>4. Kullanmasaydık ne olurdu</h2>
+  <p>Handler şöyle görünürdü — input kontrolü ile iş kuralı iç içe geçmiş hâlde:</p>
+  <pre class="kotu">public async Task&lt;int&gt; Handle(CreateLeaveRequestCommand r, CancellationToken ct)
+{
+    if (r.EndDate &lt; r.StartDate) throw new Exception("Tarih hatalı");
+    if (!Enum.IsDefined(r.Type))  throw new Exception("Tür hatalı");
+    if (r.Description?.Length &gt; 500) throw new Exception("Çok uzun");
+    if (r.Type == LeaveType.Sick &amp;&amp; string.IsNullOrEmpty(r.MedicalReport)) ...
+    <span class="yorum">// ... 15 satır daha, sonra nihayet asıl iş başlıyor</span>
+}</pre>
+  <p>Üç sonuç:</p>
+  <ul>
+    <li><b>Asıl iş kuralları gürültü altında kaybolur.</b> Handler'ı okuyan kişi, izin politikasını görmek için 15 satır kontrol kodunu atlamak zorunda kalır.</li>
+    <li><b>Hata mesajları tutarsızlaşır.</b> Her handler kendi mesaj biçimini uydurur; istemci tek tip parse edemez.</li>
+    <li><b>Tek tek hata yerine ilk hatada durulur.</b> FluentValidation tüm alanları toplayıp <i>hepsini birden</i> döndürebilir; elle yazılan <code>if</code> zinciri ilk hatada kesilir ve kullanıcı formu 4 kez göndermek zorunda kalır.</li>
+  </ul>
+
+  <h2>5. Bedeli</h2>
+  <div class="kutu bedel">
+    <div class="kutu-baslik">Dürüst maliyet</div>
+    <ul>
+      <li><b>Ekstra bağımlılık ve dosya.</b> Her komut için bir validator sınıfı daha.</li>
+      <li><b>Kural iki yerde yaşıyor.</b> WebUI tarafında da form doğrulaması var (UX için — kullanıcı sunucuya gitmeden hatayı görsün). Bu kasıtlı bir tekrar, ama senkron tutma yükü gerçek. <b>Otorite her zaman sunucudur;</b> istemci tarafı yalnızca kullanıcı deneyimi içindir.</li>
+      <li><b>Sessiz atlama riski.</b> Bir komut için validator yazmayı unutursan boru hattı sessizce geçer (<code>if (!_validators.Any()) return await next(...)</code>). Bu bilinçli bir tasarım — basit query'ler validator istemez — ama "yazmayı unuttum" ile "gerekmiyor" durumları dışarıdan aynı görünür.</li>
+    </ul>
+  </div>
+
+  <h2>6. Açık tartışma: Exception mı, Result mı?</h2>
+  <p>
+    Projede iş kuralı reddi <b>exception fırlatarak</b> bildiriliyor
+    (<code>DataAnnotations.ValidationException</code>), global handler bunu 400'e çeviriyor.
+    Proje rehberi (<span class="dosya">CLAUDE.md</span>) ise <code>Result</code> deseni
+    öngörüyor — kodda böyle bir tip <b>yok</b>. Mentörün bu farkı sorması ihtimaline karşı
+    iki tarafı da bilmek gerekiyor:
+  </p>
+  <table>
+    <tr><th style="width:50%">Exception yaklaşımı (mevcut)</th><th>Result yaklaşımı (rehberdeki hedef)</th></tr>
+    <tr>
+      <td>
+        <b>+</b> Handler kodu akıcı kalır; hata yolu iç içe <code>if</code> üretmez<br>
+        <b>+</b> Tek noktada (global handler) tutarlı biçimde 400'e çevrilir<br>
+        <b>−</b> "Beklenen" bir durum için exception kullanmak tartışmalıdır<br>
+        <b>−</b> Derleyici seni hatayı ele almaya <i>zorlamaz</i>; unutulabilir<br>
+        <b>−</b> Exception fırlatmanın ölçülebilir bir maliyeti vardır
+      </td>
+      <td>
+        <b>+</b> Hata, dönüş tipinin parçasıdır — derleyici ele almaya zorlar<br>
+        <b>+</b> "Kural reddi" ile "beklenmeyen çökme" tip düzeyinde ayrışır<br>
+        <b>+</b> Performans maliyeti yok<br>
+        <b>−</b> Her katmanda <code>Result</code>'ı taşımak ve açmak boilerplate üretir<br>
+        <b>−</b> Boru hattı ve controller tarafında ek eşleme kodu gerekir
+      </td>
+    </tr>
+  </table>
+  <p>
+    Savunmada söylenecek dürüst cümle: <i>"Şu an exception kullanıyoruz; global handler
+    sayesinde dışarıya tutarlı bir sözleşme veriyor. Result'a geçmek daha doğru olurdu
+    çünkü hata yolunu derleyici denetlerdi — projenin bilinen teknik borçlarından biri."</i>
+  </p>
+
+  <h2>7. Gelmesi muhtemel sorular</h2>
+  <div class="qa">
+    <div class="s">Validation'ı istemcide yapsan yetmez mi?</div>
+    <div class="c">Asla. İstemci tarafı doğrulama yalnızca <b>kullanıcı deneyimi</b> içindir; tarayıcı geliştirici konsolundan ya da doğrudan HTTP isteğiyle atlatılabilir. Otorite her zaman sunucudadır. Aynı ilke rol bazlı menü gizlemede de geçerli: menüyü gizlemek yetki değildir, yetki API'dedir.</div>
+  </div>
+  <div class="qa">
+    <div class="s">Validator hangi anda çalışıyor?</div>
+    <div class="c">Handler'dan <b>önce</b>, MediatR boru hattında. Hata varsa handler hiç çağrılmaz — yani geçersiz veri iş kurallarına hiç ulaşmaz.</div>
+  </div>
+  <div class="qa">
+    <div class="s">Aynı kural hem validator'da hem handler'da olabilir mi?</div>
+    <div class="c">Projede bir örneği var: hastalık izninde rapor zorunluluğu her ikisinde de kontrol ediliyor. Sebep, handler'ın <b>kendi başına da doğru davranması</b>: boru hattı devre dışıyken (ör. doğrudan birim testinde) kural yine de korunur. Savunulabilir bir kemer-askı yaklaşımı, ama bilinçli olduğunu belirtmek gerekir.</div>
+  </div>
+</section>
+
+<!-- ══════════════════ BÖLÜM 4 ══════════════════ -->
+<section class="bolum">
+  <div class="bolum-head">
+    <div class="bolum-no">Bölüm 4</div>
+    <h1>Dapper, SQL Server ve Repository Pattern</h1>
+    <p class="lead">Ana soru: .NET dünyasının standardı EF Core iken neden Dapper?
+    Migration'sız nasıl yaşıyorsun?</p>
+  </div>
+
+  <h2>1. Ne yaptık</h2>
+  <p>Veri erişimi ham SQL + Dapper ile, tek bir bağlantı fabrikası üzerinden:</p>
+  <pre>public class LeaveRequestRepository : ILeaveRequestRepository
+{
+    public async Task&lt;int&gt; AddAsync(LeaveRequest leaveRequest)
+    {
+        const string sql = @"
+            INSERT INTO LeaveRequests (EmployeeId, InternId, Type, StartDate, ...)
+            VALUES (@EmployeeId, @InternId, @Type, @StartDate, ...);
+            SELECT CAST(SCOPE_IDENTITY() AS INT);";
+
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.QuerySingleAsync&lt;int&gt;(sql, leaveRequest);
+    }
+}</pre>
+  <p>
+    Şema değişiklikleri <span class="dosya">db/</span> klasöründe numaralı, <b>idempotent</b>
+    (tekrar çalıştırılabilir) SQL script'leriyle takip ediliyor:
+    <code>01_schema.sql</code> … <code>15_backfill_employee_gender.sql</code>.
+  </p>
+
+  <h2>2. Dapper ne yapar, ne yapmaz</h2>
+  <p>
+    Dapper bir <b>micro-ORM</b>: SQL'i sen yazarsın, o yalnızca sonucu C# nesnesine eşler
+    ve parametreleri güvenli biçimde bağlar. EF Core ise <b>full ORM</b>: SQL'i senin
+    yerine üretir, değişiklikleri takip eder, ilişkileri yönetir.
+  </p>
+  <table>
+    <tr><th style="width:34%">Yetenek</th><th style="width:33%">Dapper (bizim seçim)</th><th>EF Core</th></tr>
+    <tr><td>SQL üretimi</td><td>Sen yazarsın</td><td>LINQ'tan otomatik üretilir</td></tr>
+    <tr><td>Change tracking</td><td>Yok</td><td>Var</td></tr>
+    <tr><td>Migration</td><td>Yok — elle script</td><td><code>dotnet ef migrations</code></td></tr>
+    <tr><td>İlişki gezinme</td><td>Elle JOIN / ayrı sorgu</td><td><code>Include()</code></td></tr>
+    <tr><td>SQL injection koruması</td><td>Var (parametreli sorgu)</td><td>Var</td></tr>
+    <tr><td>Performans</td><td>ADO.NET'e çok yakın</td><td>Genelde daha yavaş (takip + çeviri maliyeti)</td></tr>
+    <tr><td>Öğrenme süresi</td><td>~1 saat</td><td>Haftalar (davranışını gerçekten bilmek için)</td></tr>
+  </table>
+
+  <h2>3. Neden Dapper seçildi</h2>
+  <ol>
+    <li>
+      <b>SQL'i görünür tutmak — öğrenme amacı.</b> Bu bir staj projesi; ORM'in ürettiği
+      sorguyu okumak yerine sorguyu doğrudan yazmak, ilişkisel düşünmeyi öğretir. EF Core
+      ile başlayan çoğu geliştirici, ürettiği SQL'i hiç görmeden yıllar geçirir ve
+      performans sorununda çaresiz kalır.
+    </li>
+    <li>
+      <b>Sürpriz yok.</b> Veritabanına giden sorgu, dosyada yazan sorgunun aynısı. EF Core'da
+      "neden bu sorgu 4 saniye sürdü" sorusu ancak profiler ile cevaplanır.
+    </li>
+    <li>
+      <b>N+1 problemi kazara oluşamaz.</b> EF Core'da lazy loading açıkken bir döngü içinde
+      <code>employee.Department.Name</code> yazmak, 500 çalışan için 500 ek sorgu üretir ve
+      bunu <b>kod okunarak fark etmek zordur</b>. Dapper'da o sorguyu sen yazmak zorunda
+      olduğun için problem görünür hâle gelir.
+    </li>
+    <li>
+      <b>Karmaşık okuma sorguları doğal.</b> Dashboard ve detay ekranları birden çok tabloyu
+      birleştiren, ekrana özel şekiller döndürüyor. Bunlar LINQ'ta zorlanır, SQL'de tek
+      sorgudur.
+    </li>
+  </ol>
+
+  <h2>4. Kullanmasaydık — EF Core seçseydik ne kazanır, ne kaybederdik</h2>
+  <div class="kutu kanit">
+    <div class="kutu-baslik">Kazanırdık</div>
+    <ul>
+      <li><b>Migration altyapısı.</b> Şu an <span class="dosya">db/</span> klasöründe elle yazılan idempotent script'ler var ve "veritabanı hangi sürümde?" sorusunun otomatik cevabı yok.</li>
+      <li><b>Daha az tekrar kod.</b> <code>UpdateAsync</code> metodunda 12 kolon elle yazılıyor; yeni bir alan eklendiğinde INSERT, UPDATE ve SELECT'i ayrı ayrı güncellemek gerekiyor — unutmak sessiz hata üretir.</li>
+      <li><b>Unit of Work ve transaction</b> hazır gelirdi (Bölüm 10'daki eksiklerden biri).</li>
+      <li><b>Concurrency token</b> desteği (aynı kaydı iki kişinin aynı anda güncellemesi).</li>
+    </ul>
+  </div>
+  <div class="kutu bedel">
+    <div class="kutu-baslik">Kaybederdik</div>
+    <ul>
+      <li>SQL görünürlüğü ve öğrenme değeri.</li>
+      <li>Öngörülebilir performans; EF'in davranışını öğrenmek için ayrı bir öğrenme yükü.</li>
+      <li>Domain entity'lerinin saflığı — EF genelde entity'lere navigation property ve konfigürasyon getirir, Domain katmanı EF'e bulaşmaya başlar.</li>
+    </ul>
+  </div>
+
+  <h2>5. Repository Pattern — neden bu projede gerçekten değerli</h2>
+  <p>
+    Repository, bugünlerde sık eleştirilen bir desendir. Eleştirinin özü şudur:
+    <i>"EF Core'un <code>DbContext</code>'i zaten Repository + Unit of Work'tür; üstüne bir
+    katman daha koymak gereksiz soyutlamadır."</i> Bu eleştiri <b>EF Core kullanılan
+    projeler için haklıdır.</b>
+  </p>
+  <p>
+    Ama bizim durumumuzda tersi geçerli: Dapper bir soyutlama sunmaz, ham SQL'dir.
+    Repository olmasaydı SQL metinleri <b>Application katmanının içine sızardı</b> ve
+    Bölüm 1'de kurduğumuz her şey çökerdi. Yani burada repository, mimarinin taşıyıcı
+    kolonlarından biri.
+  </p>
+  <p>İkinci ve ölçülebilir fayda: <b>test edilebilirlik.</b></p>
+  <pre class="iyi"><span class="yorum">// tests/.../ApproveLeaveRequestCommandHandlerTests.cs</span>
+var handler = new ApproveLeaveRequestCommandHandler(
+    new FakeLeaveRequestRepository(leaveRequest),   <span class="yorum">// ← veritabanı yok</span>
+    new FakeEmployeeRepository(ownerEmployee),
+    new FakeUserRepository(users),
+    new LeaveApprovalGuard(...));
+
+await handler.Handle(new ApproveLeaveRequestCommand(42, AdminUserId), CancellationToken.None);
+
+Assert.Equal(LeaveStatus.Approved, repo.Updated!.Status);</pre>
+  <p class="kucuk">
+    Repository arayüzü olmasaydı bu test için ayakta bir SQL Server ve hazırlanmış veri
+    gerekirdi — yani pratikte hiç yazılmazdı.
+  </p>
+
+  <h2>6. Bedeli</h2>
+  <div class="kutu bedel">
+    <div class="kutu-baslik">Dapper'ın bu projede yarattığı somut borçlar</div>
+    <ul>
+      <li>
+        <b><code>SELECT *</code> kullanımı.</b> Bazı sorgular tüm kolonları çekiyor.
+        Kolon eklendiğinde/adı değiştiğinde kod sessizce kırılabilir ve gereksiz veri
+        taşınır. Doğrusu kolonları açıkça listelemek.
+      </li>
+      <li>
+        <b>Şema değişikliği manuel iş çıkarıyor.</b> Yeni bir alan: entity + INSERT +
+        UPDATE + SELECT + SQL script. Beş dokunuş, hepsi elle.
+      </li>
+      <li>
+        <b>Transaction yok.</b> Her repository metodu kendi bağlantısını açıyor. Çok adımlı
+        bir işlemde (ör. hesap talebi onayı: kullanıcı oluştur + çalışan kaydını bağla)
+        ortada hata olursa <b>yarım kalmış durum</b> oluşabilir. Bilinen ve kabul edilmiş
+        bir eksik (Bölüm 10).
+      </li>
+      <li>
+        <b>Sayfalama yok.</b> <code>GetAllAsync</code> tüm kayıtları çekiyor. 200 çalışanda
+        sorun değil, 50.000 çalışanda uygulamayı düşürür.
+      </li>
+    </ul>
+  </div>
+
+  <h2>7. Gelmesi muhtemel sorular</h2>
+  <div class="qa">
+    <div class="s">SQL injection'a karşı ne yapıyorsun?</div>
+    <div class="c">Tüm değerler <b>parametre</b> olarak geçiyor (<code>@Id</code>, <code>@EmployeeId</code>); hiçbir yerde kullanıcı girdisi SQL metnine string birleştirmeyle eklenmiyor. Dapper parametreleri <code>SqlParameter</code>'a çevirir, yani veri asla sorgu metninin parçası olmaz. Bu, ORM kullanmamanın en büyük riskiydi ve doğru şekilde kapatılmış durumda.</div>
+  </div>
+  <div class="qa">
+    <div class="s">Migration olmadan ekipçe nasıl çalışırdınız?</div>
+    <div class="c"><span class="dosya">db/</span> klasörü şemanın tek doğruluk kaynağı ve git'te takip ediliyor. Her değişiklik yeni numaralı bir dosya; <code>05_full_setup.sql</code> ise sıfırdan kurulum için birleşik ve idempotent hâli. Bu, EF migration'ının <b>elle yapılan disiplinli hâli</b> — çalışır ama otomatik değil ve "veritabanı hangi sürümde" sorusunu kendiliğinden cevaplamaz. Ekip büyüseydi bir migration aracı (DbUp, FluentMigrator) eklemek gerekirdi.</div>
+  </div>
+  <div class="qa">
+    <div class="s">Neden ilişkisel veritabanı? NoSQL olmaz mıydı?</div>
+    <div class="c">Domain doğası gereği ilişkisel: departman→birim→çalışan→yönetici zinciri, izin talebi→onaylayan kişi, stajyer→mentor. Sorguların çoğu bu ilişkiler üzerinden birleştirme yapıyor ve tutarlılık (bir talep tam olarak bir çalışana <i>veya</i> bir stajyere ait olmalı) veritabanı kısıtıyla garanti ediliyor. NoSQL bu garantiyi uygulama koduna taşırdı.</div>
+  </div>
+  <div class="qa">
+    <div class="s">İzin bakiyesini neden bir tabloda tutmuyorsun?</div>
+    <div class="c">Bilinçli karar: <b>hesaplanabilen veri saklanmaz.</b> Hak, işe giriş tarihinden kıdem hesaplanarak bulunuyor; kullanılan gün ise onaylanmış + bekleyen taleplerden toplanıyor. Saklansaydı iki kayıt arasında tutarsızlık oluşabilirdi (klasik hata: bakiye tablosu ile talep tablosu birbirini tutmaz). Karşı tarafı da bilmek gerekir: hesaplamak her seferinde sorgu maliyeti demektir; çok büyük veri hacminde saklamak (ve tutarlılığı transaction'la korumak) tercih edilebilir.</div>
+  </div>
+</section>
+
+<!-- ══════════════════ BÖLÜM 5 ══════════════════ -->
+<section class="bolum">
+  <div class="bolum-head">
+    <div class="bolum-no">Bölüm 5</div>
+    <h1>İki Host: API + WebUI, Refit ve BaseResponse</h1>
+    <p class="lead">Ana soru: MVC uygulaması doğrudan Application katmanını çağırsa daha
+    hızlı olmaz mıydı? Araya HTTP koymanın maliyeti neden göze alındı?</p>
+  </div>
+
+  <h2>1. Ne yaptık</h2>
+  <p>
+    İki ayrı çalışan uygulama var ve aralarında <b>proje referansı yok</b>; yalnızca
+    çalışma anında HTTP ile konuşuyorlar.
+  </p>
+  <div class="sema">TARAYICI ──cookie──► <span class="vurgu">WebUI</span> (MVC) ──JWT/HTTP──► <span class="vurgu">API</span> ──► Application ──► SQL
+
+WebUI'nin bildiği tek şey:  Services/IXxxApi arayüzleri (Refit)
+WebUI'nin bilmediği şey:    Application, Domain, Infrastructure, veritabanı</div>
+
+  <h2>2. Neden iki ayrı host</h2>
+  <ol>
+    <li>
+      <b>İş mantığının tek sahibi olsun.</b> Yarın bir mobil uygulama ya da başka bir sistem
+      entegrasyonu gelirse aynı API'yi tüketir. Kurallar ikinci kez yazılmaz.
+    </li>
+    <li>
+      <b>Gerçek dünyayı taklit eder.</b> Kurumsal projelerde backend ve frontend genellikle
+      ayrı ekipler, ayrı deploy hatları. Bu ayrımı öğrenmek stajın hedeflerinden biri.
+    </li>
+    <li>
+      <b>Güvenlik sınırı netleşir.</b> API tek başına ayakta ve kendi başına korunuyor.
+      WebUI'yi tamamen atlayıp API'ye doğrudan istek atsan da yetki kontrolleri aynen çalışır
+      — çünkü otorite WebUI'de değil, API'de.
+    </li>
+  </ol>
+
+  <h2>3. Refit — neden elle HttpClient yazmadık</h2>
+  <p>WebUI'de API sözleşmesi sadece bir C# arayüzü olarak yazılıyor; gerisini Refit üretiyor:</p>
+  <pre>public interface ILeaveRequestApi
+{
+    [Get("/api/leaverequests/{id}/detail")]
+    Task&lt;BaseResponse&lt;LeaveDetailResponse&gt;&gt; GetDetailAsync(int id);
+
+    [Post("/api/leaverequests/{id}/approve")]
+    Task&lt;BaseResponse&lt;int?&gt;&gt; ApproveAsync(int id);
+}</pre>
+  <p>Elle yazılsaydı aynı iki metot için tekrar eden ~15 satırlık kod gerekirdi:</p>
+  <pre class="kotu">var response = await _httpClient.GetAsync($"/api/leaverequests/{id}/detail");
+var json = await response.Content.ReadAsStringAsync();
+var result = JsonSerializer.Deserialize&lt;BaseResponse&lt;LeaveDetailResponse&gt;&gt;(
+    json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+<span class="yorum">// ...status kontrolü, hata yönetimi, header ekleme — her metot için tekrar</span></pre>
+
+  <table>
+    <tr><th style="width:30%">Alternatif</th><th>Değerlendirme</th></tr>
+    <tr><td><b>Elle HttpClient</b></td><td>Bağımlılık yok, tam kontrol; ama her uç için tekrar eden serialize/status kodu ve daha çok hata yüzeyi.</td></tr>
+    <tr><td><b>RestSharp</b></td><td>Benzer iş; Refit'in <i>arayüzden üretim</i> yaklaşımı kadar tip güvenli değil.</td></tr>
+    <tr><td><b>OpenAPI'den istemci üretimi</b><br><span class="kucuk">(NSwag / Kiota)</span></td><td><b>En güçlü alternatif.</b> API'nin <code>swagger.json</code>'ından istemci otomatik üretilirdi; aşağıdaki "elle senkron tutma" problemini kökünden çözerdi. Bedeli: build adımına kod üretimi eklemek ve üretilen kodu yönetmek.</td></tr>
+  </table>
+
+  <h2>4. Paylaşılan Contracts projesi neden yok</h2>
+  <p>
+    Aynı JSON'ın modeli iki yerde duruyor: <span class="dosya">API/Models/…</span> ve
+    <span class="dosya">WebUI/Models/Api/…</span>. Ortak bir <code>Contracts</code> projesi
+    yapılıp iki tarafın da ona referans vermesi mümkündü — <b>bilinçli olarak yapılmadı.</b>
+  </p>
+  <table>
+    <tr><th style="width:50%">Ayrı modeller (mevcut karar)</th><th>Paylaşılan Contracts projesi</th></tr>
+    <tr>
+      <td>
+        <b>+</b> Gerçek gevşek bağlılık: iki taraf bağımsız sürümlenebilir<br>
+        <b>+</b> API'nin iç modeli değişince WebUI derlemesi kırılmaz<br>
+        <b>+</b> İstemci yalnızca ihtiyacı olan alanları modelleyebilir<br>
+        <b>−</b> <b>JSON şeklini elle senkron tutmak gerekir</b><br>
+        <b>−</b> Bir alan adı değişirse hata derlemede değil, <b>çalışma anında</b> çıkar
+      </td>
+      <td>
+        <b>+</b> Tek doğruluk kaynağı; alan adı değişimi derleme hatası verir<br>
+        <b>+</b> Daha az kod<br>
+        <b>−</b> İki uygulama aynı takvimde deploy edilmek zorunda kalır<br>
+        <b>−</b> Ortak proje zamanla "çöp çekmecesi" olur; istemciye ait kaygılar sunucu modeline sızar
+      </td>
+    </tr>
+  </table>
+  <p>
+    Savunmada dürüst cümle: <i>"Bu bir ödün. Gevşek bağlılığı seçtik, bedeli JSON şeklini
+    iki tarafta elle senkron tutmak. Ölçek büyüseydi doğru çözüm Contracts projesi değil,
+    OpenAPI şemasından istemci üretmek olurdu — hem tek kaynak hem gevşek bağlılık."</i>
+  </p>
+
+  <h2>5. BaseResponse zarfı</h2>
+  <pre>public class BaseResponse&lt;T&gt;
+{
+    public bool IsSuccess { get; set; }
+    public string? Message { get; set; }
+    public T? Data { get; set; }
+}</pre>
+  <p>
+    Başarı da hata da <b>aynı şekli</b> döndürüyor. İstemci tek tip deserialize ediyor:
+    önce <code>IsSuccess</code>'e bakıyor, doğruysa <code>Data</code>'yı kullanıyor,
+    değilse <code>Message</code>'ı gösteriyor. Bu yüzden Refit'in exception fırlatma
+    davranışı da kapatılmış — hata bir istisna değil, okunacak bir veri.
+  </p>
+
+  <div class="kutu anahtar">
+    <div class="kutu-baslik">Zarfın "deliksiz" olması — üç mekanizma</div>
+    <p>Bir zarf ancak <b>istisnasız</b> uygulanırsa değerlidir. Üç ayrı kaçak yolu ayrı ayrı kapatılmış:</p>
+    <ol style="margin-bottom:0">
+      <li><b>GlobalExceptionHandler</b> — kod içinde patlayan her exception'ı zarfa çevirir.</li>
+      <li><b>InvalidModelStateResponseFactory</b> — <code>[ApiController]</code>'ın model binding hataları (bozuk JSON) exception üretmez, MVC kısa devre yapıp <i>ProblemDetails</i> döndürür. Fabrika değiştirilmeseydi bu yanıtlar zarfın dışında kalırdı.</li>
+      <li><b>UseBaseResponseStatusCodes</b> — 401/403/404 gibi yanıtlar framework tarafından <b>gövdesiz</b> üretilir; bu middleware olmasaydı istemci boş gövde okuyup "bilinmeyen hata" derdi.</li>
+    </ol>
+  </div>
+  <p class="kucuk">
+    Bu üç maddeyi sayabilmek, "bir sözleşmeyi gerçekten uygulamak ile uygulamış gibi
+    yapmak arasındaki farkı" anladığını gösterir — savunmada en çok puan getiren
+    detaylardan biri.
+  </p>
+
+  <h2>6. Bedeli ve karşı görüş</h2>
+  <div class="kutu bedel">
+    <div class="kutu-baslik">Bilinmesi gereken eleştiri</div>
+    <p>
+      Zarf deseninin yaygın eleştirisi şudur: <i>"HTTP zaten başarı/başarısızlık bildiriyor;
+      <code>IsSuccess</code> alanı bu bilgiyi tekrar ediyor. En kötü hâli ise her şeye
+      200 dönüp gövdede <code>IsSuccess=false</code> demektir — bu, HTTP'yi anlamsızlaştırır
+      ve ara katmanların (proxy, cache, monitoring) hatayı görmesini engeller."</i>
+    </p>
+    <p style="margin-top:2mm">
+      <b>Bizim savunmamız:</b> Bu projede status code <b>doğru</b> kalıyor — doğrulama
+      hatası 400, bulunamadı 404, beklenmeyen 500. Zarf, status code'un yerine geçmiyor;
+      yanına <b>insan tarafından okunabilir tek tip mesaj</b> ekliyor. Yani bilgi tekrarı
+      var ama HTTP semantiği bozulmuyor.
+    </p>
+  </div>
+  <p>Diğer maliyetler:</p>
+  <ul>
+    <li><b>Ağ üzerinden çağrı, in-process çağrıdan yavaştır.</b> Her sayfa yüklemesi bir HTTP gidiş-dönüşü daha yapıyor. Bu ölçekte kabul edilebilir; sonuç sayfa açılışında milisaniyeler.</li>
+    <li><b>İki uygulama = iki deploy, iki konfigürasyon, iki log kaynağı.</b> İşletme yükü artar.</li>
+    <li><b>Hata ayıklama zorlaşır.</b> Bir sorunda WebUI mi API mi hatalı sorusunu ayrıştırmak gerekir.</li>
+  </ul>
+
+  <h2>7. Gelmesi muhtemel sorular</h2>
+  <div class="qa">
+    <div class="s">Neden SPA (React/Angular) veya Blazor değil de sunucuda render edilen MVC?</div>
+    <div class="c">Üç sebep: (1) Ayrı bir JavaScript build zinciri, paket yönetimi ve state yönetimi karmaşası gelmiyor — proje odağı iş mantığında kalıyor. (2) Kimlik doğrulama sunucu tarafında cookie ile çok daha güvenli kurulabiliyor (token tarayıcıya hiç inmiyor — Bölüm 6). (3) Ekranlar form ağırlıklı ve gerçek zamanlı etkileşim gerektirmiyor; SPA'nın getirisi bu ekranlarda düşük kalırdı.</div>
+  </div>
+  <div class="qa">
+    <div class="s">WebUI'de de rol kontrolü var; bu yetki kontrolü değil mi?</div>
+    <div class="c">Hayır, <b>yalnızca kullanıcı deneyimi</b>. WebUI'de menü gizlemek ve buton saklamak kullanıcıyı yapamayacağı işe yönlendirmemek içindir. Gerçek yetki API'de: her uç <code>[Authorize]</code> ile korunuyor ve içerik ayrıca kişiye göre süzülüyor. WebUI tamamen atlansa bile güvenlik aynı kalır.</div>
+  </div>
+  <div class="qa">
+    <div class="s">Neden CORS yapılandırması yok?</div>
+    <div class="c">Gerekmiyor. API çağrıları <b>tarayıcıdan değil, WebUI sunucusundan</b> yapılıyor. CORS bir tarayıcı güvenlik mekanizmasıdır; sunucudan sunucuya isteklerde devreye girmez. Bu, mimarinin yan faydası: bir güvenlik yapılandırması daha az.</div>
+  </div>
+</section>
+
+<!-- ══════════════════ BÖLÜM 6 ══════════════════ -->
+<section class="bolum">
+  <div class="bolum-head">
+    <div class="bolum-no">Bölüm 6</div>
+    <h1>Kimlik Doğrulama: JWT + Cookie</h1>
+    <p class="lead">Ana soru: Neden iki farklı mekanizma birden? Bir tanesi yetmez miydi?</p>
+  </div>
+
+  <h2>1. Ne yaptık — iki güven sınırı, iki mekanizma</h2>
+  <div class="sema">┌─────────┐   <span class="vurgu">COOKIE</span>    ┌─────────┐    <span class="vurgu">JWT</span>     ┌─────────┐
+│ TARAYICI│ ──────────► │  WebUI  │ ──────────► │   API   │
+└─────────┘  HttpOnly   └─────────┘  Bearer     └─────────┘
+                          │
+                          └─ Token cookie ticket'ının İÇİNDE, sunucuda durur
+                             Tarayıcıya asla verilmez, JS okuyamaz</div>
+
+  <p>Akış şöyle işliyor:</p>
+  <ol>
+    <li>Kullanıcı WebUI'de giriş formunu doldurur.</li>
+    <li>WebUI, API'nin login ucuna gider; API parolayı BCrypt ile doğrular ve <b>JWT üretir</b>.</li>
+    <li>WebUI bu token'ı <b>cookie ticket'ının içine</b> koyar ve tarayıcıya sadece HttpOnly cookie'yi yollar.</li>
+    <li>Sonraki her API çağrısında <code>BearerTokenHandler</code> token'ı ticket'tan okuyup <code>Authorization: Bearer …</code> başlığına ekler.</li>
+  </ol>
+  <pre>protected override async Task&lt;HttpResponseMessage&gt; SendAsync(...)
+{
+    var token = await httpContext.GetTokenAsync("access_token");
+    if (!string.IsNullOrWhiteSpace(token))
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+    return await base.SendAsync(request, cancellationToken);
+}</pre>
+
+  <div class="kutu anahtar">
+    <div class="kutu-baslik">Neden ikisi birden — tek cümlelik cevap</div>
+    <p>
+      Çünkü <b>iki farklı güven sınırı</b> var ve her birinin doğru aracı farklı.
+      Tarayıcı güvenilmez bir ortamdır: orada cookie kullanılır, çünkü HttpOnly ile
+      JavaScript'ten korunabilir. API ise durum tutmayan (stateless) bir servistir:
+      orada JWT kullanılır, çünkü her istek kendi kimliğini imzalı olarak taşır ve
+      sunucunun oturum saklamasına gerek kalmaz.
+    </p>
+  </div>
+
+  <h2>2. Token neden localStorage'a konmadı</h2>
+  <p>
+    Bu, savunmada en sık sorulan güvenlik sorusudur ve cevabı nettir:
+  </p>
+  <table>
+    <tr><th style="width:34%">Yaklaşım</th><th>XSS durumunda ne olur</th></tr>
+    <tr><td><b>localStorage'da token</b></td><td>Sayfaya enjekte edilen tek satır JavaScript token'ı okuyup saldırganın sunucusuna gönderebilir. <b>Hesap tamamen ele geçer</b> ve token süresi dolana kadar iptal edilemez.</td></tr>
+    <tr><td><b>HttpOnly cookie</b> (bizim seçim)</td><td>JavaScript cookie'yi <b>okuyamaz</b>. Saldırgan kullanıcı adına istek yaptırabilir ama kimlik bilgisini <b>çalamaz</b> — yani zarar oturumla sınırlı kalır, kalıcı olmaz.</td></tr>
+  </table>
+  <p>
+    Bizde durum bir kat daha iyi: token yalnızca cookie'de değil, <b>cookie'nin şifrelenmiş
+    sunucu tarafı ticket'ının içinde</b>. Yani tarayıcıya inen değer token'ın kendisi bile
+    değil.
+  </p>
+  <p class="kucuk">
+    Cookie'nin kendi riski CSRF'tir; bunun karşılığı ASP.NET Core MVC'nin form
+    gönderimlerinde ürettiği antiforgery token'ı ve <code>SameSite=Lax</code> ayarıdır.
+    "Cookie seçtim, dolayısıyla CSRF'i düşünmem gerekti" diyebilmek, konuyu ezberden değil
+    anlayarak bildiğini gösterir.
+  </p>
+
+  <h2>3. "Kilitli doğan" uçlar — fallback policy</h2>
+  <pre>services.AddAuthorization(options =&gt;
+{
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+});</pre>
+  <p>
+    Bu üç satır, üzerinde <code>[Authorize]</code> <b>yazmayan</b> her endpoint'i de kimlik
+    doğrulaması ister hâle getiriyor. Açık kalması gereken uçlar (login) bilinçli olarak
+    <code>[AllowAnonymous]</code> alıyor.
+  </p>
+  <div class="kutu anahtar">
+    <div class="kutu-baslik">Neden bu, tersinden daha güvenli</div>
+    <p>
+      Tersi yaklaşımda (her uca tek tek <code>[Authorize]</code> yazmak) bir gün biri
+      yazmayı unutur. Unutulan uç <b>sessizce herkese açık kalır</b> — ne derleyici uyarır,
+      ne test yakalar, çünkü uç "çalışıyor" görünür. Varsayılanı <i>kapalı</i> yapmak,
+      unutmanın sonucunu "açıkta kalan uç" yerine "erişilemeyen uç"a çevirir. İlki sessiz
+      bir güvenlik açığı, ikincisi hemen fark edilen bir hata. <b>Güvenlikte doğru
+      varsayılan, gürültülü başarısızlıktır.</b>
+    </p>
+  </div>
+
+  <h2>4. JWT doğrulama parametreleri — her biri ne işe yarıyor</h2>
+  <table>
+    <tr><th style="width:34%">Parametre</th><th>Kapatılırsa ne olur</th></tr>
+    <tr><td><code>ValidateIssuerSigningKey</code></td><td><b>En kritik olanı.</b> İmza doğrulanmazsa herkes kendine <code>Role: Admin</code> yazan bir token uydurabilir. Sistem tamamen çöker.</td></tr>
+    <tr><td><code>ValidateIssuer</code> / <code>ValidateAudience</code></td><td>Aynı imzalama anahtarını paylaşan <b>başka</b> bir sistemin token'ı burada da geçerli olur.</td></tr>
+    <tr><td><code>ValidateLifetime</code></td><td>Süresi dolmuş token sonsuza kadar geçerli kalır.</td></tr>
+    <tr><td><code>ClockSkew = TimeSpan.Zero</code></td><td>Varsayılan 5 dakikadır (sunucu saatleri kayabilir diye tolerans). Sıfırlanmasa "2 saatlik token" pratikte 2 saat 5 dakika yaşardı — öğrenme projesinde süreyi net görmek için sıfırlandı.</td></tr>
+  </table>
+
+  <h2>5. Parola: neden BCrypt</h2>
+  <pre>public string Hash(string password)  =&gt; BCrypt.Net.BCrypt.HashPassword(password);
+public bool Verify(string p, string h) =&gt; BCrypt.Net.BCrypt.Verify(p, h);</pre>
+  <table>
+    <tr><th style="width:28%">Yaklaşım</th><th>Değerlendirme</th></tr>
+    <tr><td><b>Düz metin</b></td><td>Veritabanı sızarsa tüm parolalar açığa çıkar. Kabul edilemez.</td></tr>
+    <tr><td><b>MD5 / SHA-256</b></td><td>Bu algoritmalar <b>hızlı olmak</b> için tasarlandı — parola için tam olarak yanlış özellik. Modern bir GPU saniyede milyarlarca SHA-256 deneyebilir. Ayrıca salt yoksa rainbow table saldırısı çalışır.</td></tr>
+    <tr><td><b>BCrypt</b> (bizim seçim)</td><td>Kasıtlı olarak <b>yavaş</b>; <i>work factor</i> ile yavaşlık ayarlanabilir (donanım hızlandıkça artırılır). Salt'ı otomatik üretip hash'in içine gömer, yani her kullanıcının aynı parolası bile farklı hash üretir.</td></tr>
+    <tr><td><b>Argon2 / PBKDF2</b></td><td>Argon2 bugün teorik olarak en güçlüsü (belleğe de dirençli). BCrypt, .NET'te en olgun ve yaygın seçenek olduğu ve bu ölçekte fazlasıyla yeterli olduğu için tercih edildi.</td></tr>
+  </table>
+
+  <h2>6. Neden ASP.NET Core Identity kullanılmadı</h2>
+  <p>
+    Identity hazır kullanıcı/rol yönetimi, iki faktörlü doğrulama, hesap kilitleme, parola
+    politikası getirirdi. İki sebeple alınmadı:
+  </p>
+  <ul>
+    <li><b>EF Core'a bağlı</b> gelir — Dapper kararımızla doğrudan çelişirdi (ya da Dapper için özel store yazmak gerekirdi, ki bu Identity'nin kolaylığını yok eder).</li>
+    <li><b>Öğrenme amacı.</b> Token üretimi, claim'ler, imza doğrulama, parola hash'leme hazır kutudan çıksaydı bu kavramların hiçbiri öğrenilmemiş olurdu.</li>
+  </ul>
+  <p class="kucuk">
+    Gerçek bir üretim projesinde tersi doğru olurdu: kimlik doğrulamayı elle yazmak,
+    olgun bir kütüphaneyi kullanmaktan neredeyse her zaman risklidir. Bunu söyleyebilmek,
+    kararın bağlamını anladığını gösterir.
+  </p>
+
+  <h2>7. Bedeli — bilinen zayıflıklar</h2>
+  <div class="kutu bedel">
+    <div class="kutu-baslik">Bu üçünü sorulmadan söylemek çok değerli</div>
+    <ul>
+      <li>
+        <b>Refresh token yok.</b> Token 2 saat sonra ölüyor ve kullanıcı yeniden giriş
+        yapmak zorunda. Refresh token olsaydı kısa ömürlü access token + uzun ömürlü
+        refresh token ile hem güvenlik hem konfor artardı.
+      </li>
+      <li>
+        <b>Token iptali yok.</b> JWT <b>stateless</b>'tır: sunucu onu "geri çağıramaz".
+        Çıkış yapıldığında yalnızca cookie siliniyor; token bir şekilde ele geçirilmişse
+        süresi dolana kadar geçerli kalır. Çözümü: kara liste (blacklist) tutmak — ama bu
+        JWT'nin durumsuzluk avantajını kısmen ortadan kaldırır. <b>Bu bir ödünleşimdir,
+        hata değil.</b>
+      </li>
+      <li>
+        <b>Rol değişikliği gecikmeli yansır.</b> Rol bilgisi token'ın <i>içinde</i> claim
+        olarak taşınıyor. Bir kullanıcının rolü değiştirilirse, elindeki token dolana kadar
+        eski rolüyle işlem yapabilir. Alternatif her istekte veritabanından rol okumaktır —
+        ama o da JWT'yi anlamsızlaştırır.
+      </li>
+    </ul>
+  </div>
+
+  <h2>8. Gelmesi muhtemel sorular</h2>
+  <div class="qa">
+    <div class="s">JWT'nin içinde ne var, güvenli mi?</div>
+    <div class="c">Üç parça: header, payload (claim'ler — kullanıcı Id'si, kullanıcı adı, rol), imza. Payload <b>şifreli değil, sadece Base64</b>'tür; herkes okuyabilir. Güvenliği sağlayan şey gizlilik değil, <b>imza</b>: içeriği değiştiren biri geçerli imza üretemez. Bu yüzden JWT'ye asla parola gibi gizli veri konmaz.</div>
+  </div>
+  <div class="qa">
+    <div class="s">JWT secret'ını nerede tutuyorsun?</div>
+    <div class="c"><b>Sadece API tarafında</b> ve <code>dotnet user-secrets</code> ile — koda ve git'e asla yazılmıyor. Yapılandırma bulunamazsa uygulama sessizce çalışmak yerine ne yapılması gerektiğini söyleyen bir hatayla açılmıyor. Üretimde bu değer environment variable ya da Azure Key Vault gibi bir sırt yöneticisinden gelir.</div>
+  </div>
+  <div class="qa">
+    <div class="s"><code>UseAuthentication</code> ve <code>UseAuthorization</code> sırası neden önemli?</div>
+    <div class="c">Authentication "sen kimsin?" sorusunu cevaplayıp <code>HttpContext.User</code>'ı doldurur; Authorization "bu işe yetkin var mı?" sorusunu <b>o dolu kimlik üzerinden</b> cevaplar. Ters yazılırsa yetki kontrolü daima <b>boş kimlikle</b> çalışır ve her istek reddedilir.</div>
+  </div>
+  <div class="qa">
+    <div class="s">Cookie ömrü neden 2 saat ve <code>SlidingExpiration</code> neden kapalı?</div>
+    <div class="c">Cookie ömrü, API token'ının ömrüyle <b>aynı</b> olsun diye 2 saat. Sliding açık olsaydı cookie kullanıldıkça uzardı ama içindeki JWT uzamazdı — kullanıcı "giriş yapmış" görünüp API'den 401 almaya başlardı. İki mekanizmanın ömrünü eşitlemek bu tutarsızlığı engelliyor.</div>
+  </div>
+</section>
+
+<!-- ══════════════════ BÖLÜM 7 ══════════════════ -->
+<section class="bolum">
+  <div class="bolum-head">
+    <div class="bolum-no">Bölüm 7</div>
+    <h1>Hata Yönetimi ve Cross-Cutting Concerns</h1>
+    <p class="lead">Ana soru: .NET'in RFC standardı <code>ProblemDetails</code> hazır
+    gelirken neden kendi hata formatını yazdın?</p>
+  </div>
+
+  <h2>1. Ne yaptık</h2>
+  <p>Tüm işlenmemiş hatalar tek bir sınıfta yakalanıp aynı zarfa çevriliyor:</p>
+  <pre>public sealed class GlobalExceptionHandler : IExceptionHandler
+{
+    public async ValueTask&lt;bool&gt; TryHandleAsync(HttpContext ctx, Exception ex, ...)
+    {
+        var (status, message) = ex switch
+        {
+            FluentValidation.ValidationException v =&gt;                <span class="yorum">// INPUT hatası</span>
+                (400, string.Join(" ", v.Errors.Select(e =&gt; e.ErrorMessage))),
+
+            DataAnnotations.ValidationException b =&gt;                  <span class="yorum">// İŞ KURALI reddi</span>
+                (400, b.Message),
+
+            _ =&gt; (500, "Beklenmeyen bir hata oluştu.")                <span class="yorum">// geri kalan her şey</span>
+        };
+
+        ctx.Response.StatusCode = status;
+        await ctx.Response.WriteAsJsonAsync(BaseResponse&lt;object&gt;.Fail(message));
+        return true;
+    }
+}</pre>
+
+  <div class="kutu anahtar">
+    <div class="kutu-baslik">İki exception tipinin bilinçli ayrımı</div>
+    <p>
+      Projede iki farklı <code>ValidationException</code> kullanılıyor ve bu kafa karışıklığı
+      değil, <b>kasıtlı bir işaretleme</b>: <code>FluentValidation.ValidationException</code>
+      boru hattından gelen <b>input</b> hatasıdır (birden çok alan hatası taşıyabilir),
+      <code>DataAnnotations.ValidationException</code> ise handler'daki <b>iş kuralı</b>
+      reddidir. İkisi de 400 döner ama kaynağı tip düzeyinde ayırt edilebilir.
+    </p>
+  </div>
+
+  <h2>2. Neden ProblemDetails değil</h2>
+  <p>
+    <code>ProblemDetails</code> (RFC 7807), HTTP hata gövdeleri için standart bir formattır:
+    <code>type</code>, <code>title</code>, <code>status</code>, <code>detail</code> alanları
+    içerir. ASP.NET Core bunu hazır destekler.
+  </p>
+  <table>
+    <tr><th style="width:50%">ProblemDetails</th><th>BaseResponse zarfı (bizim seçim)</th></tr>
+    <tr>
+      <td>
+        <b>+</b> Endüstri standardı; üçüncü taraf istemciler tanır<br>
+        <b>+</b> Framework desteği hazır<br>
+        <b>−</b> Yalnızca <b>hata</b> yanıtlarını kapsar — başarı yanıtı farklı şekildedir<br>
+        <b>−</b> İstemcinin iki ayrı deserialize yolu tutması gerekir
+      </td>
+      <td>
+        <b>+</b> Başarı ve hata <b>aynı şekli</b> döndürür → istemci tek yol<br>
+        <b>+</b> Refit ile birleşince exception yerine <code>IsSuccess</code> kontrolü<br>
+        <b>−</b> Standart değil; dış istemciler için dokümantasyon gerekir<br>
+        <b>−</b> HTTP status ile gövde bilgisini tekrar eder
+      </td>
+    </tr>
+  </table>
+  <p>
+    Karar gerekçesi: bu API'nin <b>tek istemcisi kendi WebUI'miz</b>. Dış dünyaya açılan
+    bir public API olsaydı ProblemDetails doğru seçim olurdu — çünkü orada standarda uymanın
+    değeri, tek tip deserialize kolaylığından büyüktür.
+  </p>
+
+  <h2>3. Kullanmasaydık ne olurdu</h2>
+  <p>Global handler olmasaydı, her controller metodunda şu blok tekrar ederdi:</p>
+  <pre class="kotu">try { ... }
+catch (ValidationException ex) { return BadRequest(BaseResponse&lt;object&gt;.Fail(ex.Message)); }
+catch (Exception) { return StatusCode(500, BaseResponse&lt;object&gt;.Fail("Hata")); }</pre>
+  <p>Sonuçları:</p>
+  <ul>
+    <li><b>Yüzlerce satır tekrar</b> ve her yeni uçta unutma riski.</li>
+    <li><b>Tutarsız mesajlar</b> — her controller kendi metnini uydurur.</li>
+    <li>
+      <b>Bilgi sızıntısı riski.</b> Bir yerde <code>ex.Message</code> doğrudan döndürülürse,
+      istemci veritabanı tablo adlarını, dosya yollarını, bağlantı bilgilerini görebilir.
+      Merkezî handler'da beklenmeyen hatalar bilinçli olarak <b>genel bir mesajla</b>
+      dönüyor: <i>"Beklenmeyen bir hata oluştu."</i>
+    </li>
+  </ul>
+
+  <h2>4. Ayrıntı: neden bazı mesajlar kasıtlı olarak genel</h2>
+  <p>
+    Model binding hatalarında istemciye <i>"İstek gövdesi okunamadı veya geçersiz."</i>
+    dönüyor. Framework'ün ürettiği asıl mesaj şuna benzer:
+    <code>"'}' is an invalid start of a value. BytePositionInLine: 9"</code> —
+    bu metin kullanıcıya hiçbir şey ifade etmez, ama sisteminin iç işleyişi hakkında bilgi verir.
+    <b>Alan bazlı anlamlı doğrulama zaten FluentValidation'da yapılıyor;</b> buraya düşen
+    hatalar teknik ayrıştırma hatalarıdır.
+  </p>
+
+  <h2>5. Bedeli</h2>
+  <div class="kutu bedel">
+    <div class="kutu-baslik">Gerçek eksik: loglama</div>
+    <p>
+      <code>GlobalExceptionHandler</code> hatayı zarfa çevirip <b>500 döndürüyor ama
+      hiçbir yere loglamıyor.</b> Yani üretimde bir hata olduğunda geriye iz kalmaz —
+      "kullanıcı hata aldı" dendiğinde neye bakılacağı belli değildir.
+    </p>
+    <p style="margin-top:2mm">
+      <b>Doğrusu:</b> handler'a <code>ILogger</code> enjekte edip 500'e düşen exception'ı
+      tam yığın izi (stack trace) ile loglamak; ayrıca her isteğe bir korelasyon kimliği
+      (correlation id) verip bu kimliği hem loga hem kullanıcıya gösterilen mesaja koymak.
+      Böylece kullanıcı "şu kodu aldım" der, sen logda tam o isteği bulursun.
+    </p>
+    <p style="margin-top:2mm">
+      Bu eksiği <b>sorulmadan söylemek</b>, savunmada en iyi hamlelerden biridir: hem
+      farkında olduğunu hem çözümünü bildiğini gösterir.
+    </p>
+  </div>
+  <p>Diğer maliyetler:</p>
+  <ul>
+    <li><b>Exception'la akış kontrolü.</b> İş kuralı reddi "istisnai" bir durum değildir; bunun için exception kullanmak tartışmalı bir tercihtir (Bölüm 3'teki Result tartışması).</li>
+    <li><b>Merkezî handler her şeyi 500'e indirger.</b> Farklı hata tipleri için özel davranış gerekirse (ör. 409 Conflict), <code>switch</code> ifadesi zamanla büyür.</li>
+  </ul>
+
+  <h2>6. Cross-cutting concern kavramı — toplu bakış</h2>
+  <p>
+    "Her yerde gereken ama hiçbir yerin asıl işi olmayan" endişelere cross-cutting concern
+    denir. Projede nerede ele alındıklarını bilmek, mimariyi anladığını gösterir:
+  </p>
+  <table>
+    <tr><th style="width:30%">Endişe</th><th style="width:34%">Nerede çözülüyor</th><th>Mekanizma</th></tr>
+    <tr><td>Input doğrulama</td><td>Application</td><td>MediatR <code>ValidationBehavior</code></td></tr>
+    <tr><td>Hata → HTTP yanıtı</td><td>API</td><td><code>GlobalExceptionHandler</code></td></tr>
+    <tr><td>Gövdesiz hata yanıtları</td><td>API</td><td><code>UseBaseResponseStatusCodes</code> middleware</td></tr>
+    <tr><td>Kimlik doğrulama</td><td>API + WebUI</td><td>Middleware (JWT / Cookie)</td></tr>
+    <tr><td>Yetkilendirme varsayılanı</td><td>API + WebUI</td><td>Fallback policy / <code>AuthorizeFilter</code></td></tr>
+    <tr><td>Token ekleme</td><td>WebUI</td><td><code>BearerTokenHandler</code> (DelegatingHandler)</td></tr>
+    <tr><td>Kültür/tarih biçimi</td><td>WebUI</td><td><code>UseRequestLocalization</code></td></tr>
+    <tr><td><b>Loglama</b></td><td><b>— yok —</b></td><td><b>bilinen eksik</b></td></tr>
+    <tr><td><b>Transaction</b></td><td><b>— yok —</b></td><td><b>bilinen eksik</b></td></tr>
+  </table>
+  <p class="kucuk">
+    Bu tablonun güzelliği şu: eksik olan iki satırın çözümü de <b>zaten var olan
+    mekanizmalara bir halka eklemek</b> — loglama için bir <code>LoggingBehavior</code>,
+    transaction için bir <code>TransactionBehavior</code>. Mimari, eksikleri kolay
+    kapatılabilir hâle getirmiş durumda; bu da MediatR tercihinin gecikmeli bir kazancı.
+  </p>
+</section>
+
+<!-- ══════════════════ BÖLÜM 8 ══════════════════ -->
+<section class="bolum">
+  <div class="bolum-head">
+    <div class="bolum-no">Bölüm 8</div>
+    <h1>Test Stratejisi</h1>
+    <p class="lead">Ana soru: Neden sadece Application katmanı test ediliyor? Controller ve
+    repository'ler neden test edilmiyor? Ve neden Moq gibi bir mock kütüphanesi yok?</p>
+  </div>
+
+  <h2>1. Ne yaptık</h2>
+  <p>
+    <span class="dosya">tests/HRManagement.Application.Tests</span> altında xUnit ile
+    yazılmış testler var ve hepsi <b>tek bir katmanı</b> hedefliyor. Test edilen dört tür şey:
+  </p>
+  <table>
+    <tr><th style="width:26%">Tür</th><th style="width:36%">Örnek</th><th>Neden değerli</th></tr>
+    <tr><td><b>Handler'lar</b></td><td><code>ApproveLeaveRequestCommandHandlerTests</code></td><td>İş kurallarının kalbi — durum geçişleri burada doğrulanıyor</td></tr>
+    <tr><td><b>Paylaşılan kural sınıfları</b></td><td><code>EmployeeVisibilityTests</code>, <code>MentorshipGuardTests</code></td><td>"Kim kimi görebilir" gibi güvenlik etkili kurallar</td></tr>
+    <tr><td><b>Validator'lar</b></td><td><code>CreateLeaveRequestCommandValidatorTests</code></td><td>Input kurallarının izole doğrulaması</td></tr>
+    <tr><td><b>Saf hesaplama</b></td><td><code>LeaveEntitlementTests</code></td><td>Bağımlılığı olmayan, matematiksel kurallar — en ucuz ve en değerli testler</td></tr>
+  </table>
+
+  <h2>2. Neden Application katmanı</h2>
+  <p>
+    Test yazarken doğru soru "neyi test edeyim?" değil, <b>"hangi hata bana en pahalıya
+    mal olur?"</b>dur. Cevap net: yanlış hesaplanmış bir izin bakiyesi ya da yanlış kişiye
+    açılmış bir çalışan detayı. İkisi de Application katmanında.
+  </p>
+  <ul>
+    <li><b>Controller test etmek çoğunlukla framework'ü test etmektir.</b> Controller'lar bilinçli olarak ince: request'i command'a çevir, gönder, sonucu response'a çevir. Burada test edilecek mantık neredeyse yok.</li>
+    <li><b>Repository test etmek gerçek veritabanı ister.</b> Değerli ama pahalı; aşağıda ayrıca ele alınıyor.</li>
+    <li><b>Domain'de davranış yok</b> (Bölüm 9), yani test edilecek bir şey de yok.</li>
+  </ul>
+
+  <h2>3. Neden mock kütüphanesi yok — elle yazılmış Fake'ler</h2>
+  <p>
+    Projede <code>Moq</code> ya da <code>NSubstitute</code> yerine elle yazılmış sahte
+    sınıflar var: <code>FakeLeaveRequestRepository</code>, <code>FakeUserRepository</code>,
+    <code>FakeEmployeeRepository</code>.
+  </p>
+  <table>
+    <tr><th style="width:50%">Mock kütüphanesi (Moq/NSubstitute)</th><th>Elle Fake sınıflar (bizim seçim)</th></tr>
+    <tr>
+      <td>
+        <b>+</b> Tek satırda sahte nesne<br>
+        <b>+</b> Çağrı doğrulaması (<code>Verify</code>) hazır<br>
+        <b>−</b> Testler kurulum koduyla dolar, okunurluğu düşer<br>
+        <b>−</b> Ekstra bağımlılık (Moq'un geçmişteki <i>SponsorLink</i> tartışması, bir test kütüphanesinin bile tedarik zinciri riski taşıyabildiğini gösterdi)
+      </td>
+      <td>
+        <b>+</b> Test kodu düz C#; okunurluğu yüksek<br>
+        <b>+</b> Fake'ler testler arasında yeniden kullanılıyor<br>
+        <b>+</b> Sahte davranış gerçekçi olabilir (ör. bellek içi sözlük)<br>
+        <b>−</b> Her arayüz için elle sınıf yazmak gerekir<br>
+        <b>−</b> Arayüze metot eklenince tüm fake'ler güncellenmeli
+      </td>
+    </tr>
+  </table>
+
+  <h2>4. Testler dokümantasyon olarak</h2>
+  <p>Test isimleri Türkçe ve cümle hâlinde yazılmış:</p>
+  <pre class="iyi">[Fact]
+public async Task HR_calisaninin_talebi_yonetici_onayiyla_dogrudan_onaylanir()
+{
+    var (handler, repo) = CreateHandler(ownerRole: Role.HR);
+
+    await handler.Handle(new ApproveLeaveRequestCommand(42, AdminUserId), default);
+
+    Assert.Equal(LeaveStatus.Approved, repo.Updated!.Status);   <span class="yorum">// İK aşaması atlandı</span>
+    Assert.Null(repo.Updated.HrApprovedByUserId);               <span class="yorum">// denetim izi: İK onayı YOK</span>
+}</pre>
+  <p>
+    Bunun değeri şu: <b>testler iş kurallarının yaşayan dokümantasyonudur.</b> Bir yıl sonra
+    "İK çalışanının izni neden tek onayla geçiyor?" diye soran biri, dokümana değil bu test
+    dosyasına bakar — ve doküman aksine, test <b>yalan söyleyemez</b>: kural değişirse test
+    kırılır.
+  </p>
+
+  <h2>5. Bedeli — test piramidinin eksik katları</h2>
+  <div class="kutu bedel">
+    <div class="kutu-baslik">Neyi test etmiyoruz</div>
+    <ul>
+      <li>
+        <b>Repository SQL'leri hiç test edilmiyor.</b> Bu en büyük boşluk: yazım hatası olan
+        bir SQL, kolon adı değişikliği ya da yanlış JOIN <b>ancak elle deneyerek</b> ortaya
+        çıkar. Dapper kullandığımız için (SQL'i derleyici denetlemediği için) bu risk EF
+        Core'a göre daha yüksek.
+      </li>
+      <li>
+        <b>Uçtan uca akış test edilmiyor.</b> "Giriş yap → izin talebi oluştur → yönetici
+        onaylasın" zinciri bir bütün olarak hiç doğrulanmıyor. Parçalar tek tek doğru olup
+        birleşimleri hatalı olabilir.
+      </li>
+      <li>
+        <b>Yetkilendirme testleri yok.</b> <code>[Authorize(Roles = "HR,Admin")]</code>
+        etiketlerinin doğru uçlarda olduğunu doğrulayan bir test bulunmuyor. Bu etiketlerden
+        birinin yanlışlıkla silinmesi sessiz bir güvenlik açığı yaratır.
+      </li>
+    </ul>
+  </div>
+  <p><b>Çözümü ne olurdu:</b></p>
+  <ul>
+    <li><b>Integration test</b> — <code>WebApplicationFactory</code> ile API'yi bellek içinde ayağa kaldırıp gerçek HTTP istekleri atmak; yetki etiketlerini de bu şekilde test etmek.</li>
+    <li><b>Testcontainers</b> ya da LocalDB ile her test çalışmasında geçici bir SQL Server ayağa kaldırıp repository'leri gerçek veritabanına karşı doğrulamak.</li>
+  </ul>
+
+  <h2>6. Gelmesi muhtemel sorular</h2>
+  <div class="qa">
+    <div class="s">Test kapsamı (coverage) yüzde kaç?</div>
+    <div class="c">Ölçülmedi — ve dürüst cevap şu: <b>yüzde tek başına anlamlı bir hedef değil.</b> %90 kapsam, kritik kuralların test edilmediği bir projede de elde edilebilir (getter/setter'ları test ederek). Buradaki strateji kapsamı değil <b>riski</b> hedefliyor: en pahalı hatalar (izin hakkı, görünürlük kuralları) test edilmiş durumda. Yine de kapsam ölçümü eklemek faydalı olurdu; proje <code>coverlet</code> paketini zaten içeriyor.</div>
+  </div>
+  <div class="qa">
+    <div class="s">Unit test ile integration test farkı nedir?</div>
+    <div class="c"><b>Unit test</b> tek bir birimi (sınıf/metot) izole eder; bağımlılıkları sahte nesnelerle değiştirir, hızlıdır (milisaniye), hata yerini kesin gösterir. <b>Integration test</b> birden çok bileşeni gerçek hâlleriyle birlikte çalıştırır (gerçek veritabanı, gerçek HTTP); yavaştır ama "parçalar birleşince çalışıyor mu" sorusunu cevaplar. Sağlıklı bir projede ikisi de bulunur — bu projede yalnızca ilki var.</div>
+  </div>
+  <div class="qa">
+    <div class="s">TDD uyguladın mı?</div>
+    <div class="c">Hayır; testler kural netleştikten sonra yazıldı. TDD'nin (önce test, sonra kod) faydası tasarımı test edilebilirliğe zorlamasıdır — ama bu proje mimari sayesinde zaten test edilebilir çıktı. Öğrenme aşamasında kuralı önce anlayıp sonra sabitlemek daha verimliydi.</div>
+  </div>
+</section>
+
+<!-- ══════════════════ BÖLÜM 9 ══════════════════ -->
+<section class="bolum">
+  <div class="bolum-head">
+    <div class="bolum-no">Bölüm 9</div>
+    <h1>Domain Modeli ve İş Kurallarının Yeri</h1>
+    <p class="lead">Ana soru: Entity'lerin içinde hiç davranış yok, sadece property var.
+    Bu "anemik domain model" değil mi — bir anti-pattern sayılmıyor mu?</p>
+  </div>
+
+  <h2>1. Ne yaptık</h2>
+  <p>Domain entity'leri saf veri taşıyıcıları:</p>
+  <pre>public class Employee
+{
+    public int Id { get; set; }
+    public string FirstName { get; set; } = string.Empty;
+    public DateTime HireDate { get; set; }
+    public int? ManagerId { get; set; }       <span class="yorum">// null = en tepedeki kişi</span>
+    public int? AnnualLeaveDays { get; set; } <span class="yorum">// null = kıdemden hesapla</span>
+    public bool IsActive { get; set; } = true;
+    ...
+}</pre>
+  <p>İş kuralları ise Application katmanında, iki yerde yaşıyor:</p>
+  <ul>
+    <li><b>Handler'ın içinde</b> — o use-case'e özgü kurallar.</li>
+    <li><b>Paylaşılan kural sınıflarında</b> — birden çok use-case'in kullandığı kurallar: <code>LeaveApprovalGuard</code>, <code>EmployeeVisibility</code>, <code>MentorshipGuard</code>, <code>UnitManagerResolver</code>, <code>LeaveEntitlement</code>.</li>
+  </ul>
+
+  <h2>2. "Anemik model" eleştirisi ve cevabı</h2>
+  <p>
+    Domain-Driven Design savunucuları için ideal şudur: davranış, veriyle <b>aynı yerde</b>
+    olmalı. Yani:
+  </p>
+  <pre>leaveRequest.Approve(approverId);   <span class="yorum">// entity kendi durumunu korur</span>
+<span class="yorum">// yerine bizde:</span>
+handler.Handle(new ApproveLeaveRequestCommand(id, approverId));</pre>
+  <p>Bu eleştiri teorik olarak haklı. Bizim gerekçelerimiz:</p>
+  <ol>
+    <li>
+      <b>Dapper doğrudan entity'ye eşliyor.</b> Dapper'ın çalışabilmesi için parametresiz
+      kurucu ve yazılabilir property'ler gerekiyor. Zengin (rich) bir domain modelinde
+      property'ler <code>private set</code> olurdu ve ayrı bir "persistence model" katmanı
+      yazmak gerekirdi — proje ölçeğinde net bir kayıp.
+    </li>
+    <li>
+      <b>Kuralların çoğu tek bir entity'ye sığmıyor.</b> "Bu kişi bu izni onaylayabilir mi?"
+      sorusu; talebi, talep sahibini, onaylayanın rolünü ve yönetici zincirini birlikte
+      bilmeyi gerektiriyor. DDD'de bunun adı zaten <b>domain service</b>'tir — ve bizim
+      <code>LeaveApprovalGuard</code> sınıfımız tam olarak odur. Yani kurallar dağınık
+      değil; sadece entity'nin içinde değil.
+    </li>
+    <li>
+      <b>Kurallar test edilebilir durumda.</b> Anemik modelin asıl zararı kuralların
+      controller'lara ve servislere dağılıp izlenemez hâle gelmesidir. Burada her kural
+      adı olan bir sınıfta ve testi var — eleştirinin işaret ettiği <b>zarar oluşmamış</b>.
+    </li>
+  </ol>
+
+  <div class="kutu anahtar">
+    <div class="kutu-baslik">Savunmada söylenecek olgun cümle</div>
+    <p>
+      <i>"Evet, entity'lerimiz anemik. Bunu bilerek yaptık: Dapper'la zengin domain modeli
+      ek bir eşleme katmanı gerektirirdi. Anemik modelin asıl riski kuralların dağılmasıdır;
+      biz o riski kuralları adlandırılmış, test edilmiş domain service sınıflarında toplayarak
+      kapattık. Proje büyür ve kurallar tek entity etrafında yoğunlaşırsa, zengin modele
+      geçmek Application katmanının dışını hiç etkilemez."</i>
+    </p>
+  </div>
+
+  <h2>3. Enum kullanımı</h2>
+  <p>
+    Roller, izin türleri, izin durumları, kıdem seviyeleri enum olarak tanımlı ve
+    veritabanında <code>int</code> olarak saklanıyor:
+  </p>
+  <pre>public enum Role { Admin = 1, HR = 2, Manager = 3, Employee = 4, Intern = 5 }</pre>
+  <table>
+    <tr><th style="width:50%">Enum (bizim seçim)</th><th>Lookup tablosu</th></tr>
+    <tr>
+      <td>
+        <b>+</b> Derleme zamanı güvenliği; yazım hatası imkânsız<br>
+        <b>+</b> Kod okunur: <code>LeaveStatus.PendingHr</code><br>
+        <b>+</b> <code>switch</code> ifadelerinde eksik durum uyarısı alınır<br>
+        <b>−</b> Veritabanında anlamı yok — rapor yazan biri "2"nin ne olduğunu bilemez<br>
+        <b>−</b> Yeni değer eklemek <b>kod değişikliği + deploy</b> gerektirir
+      </td>
+      <td>
+        <b>+</b> Veritabanı kendi kendini açıklar; JOIN ile isim gelir<br>
+        <b>+</b> Yeni değer eklemek veri işidir, deploy gerekmez<br>
+        <b>−</b> Kodda sihirli sayılar ya da ek sabitler oluşur<br>
+        <b>−</b> Her sorguya JOIN eklenir
+      </td>
+    </tr>
+  </table>
+  <p>
+    Karar gerekçesi: bu değerler <b>iş mantığının parçası</b>, veri değil. Yeni bir izin
+    durumu eklemek zaten kod değişikliği gerektirir (o durumda ne olacağını kod bilmeli).
+    Enum, "bu liste kod tarafından bilinmek zorunda" gerçeğini dürüstçe ifade ediyor.
+  </p>
+
+  <h2>4. Projeye özgü tasarım kararları</h2>
+
+  <h3>a) Rol, yetkinin tamamı değil</h3>
+  <p>
+    Rol (<code>Admin</code>, <code>HR</code>, <code>Manager</code> …) kaba bir kapıdır;
+    asıl yetki <b>ilişkiden</b> gelir. Bir yönetici herkesin değil, yalnızca
+    <code>ManagerId</code> zinciriyle kendisine bağlı çalışanların izinlerini görür; bir
+    mentor yalnızca kendi stajyerini görür. Bu yüzden API'de rol etiketi (<code>[Authorize]</code>)
+    <b>ile</b> Application'daki ilişki kontrolü (<code>EmployeeVisibility</code>,
+    <code>MentorshipGuard</code>) birlikte çalışıyor.
+  </p>
+  <p class="kucuk">
+    Bu, savunmada öne çıkarılacak bir olgunluk göstergesi: çoğu öğrenci projesinde yetki
+    yalnızca rol kontrolüdür ve "yönetici tüm çalışanları görür" gibi gerçek dışı bir
+    modelle sonuçlanır.
+  </p>
+
+  <h3>b) Hesaplanabilen veri saklanmaz — ama istisnası var</h3>
+  <table>
+    <tr><th style="width:34%">Veri</th><th style="width:20%">Saklanıyor mu</th><th>Neden</th></tr>
+    <tr><td>Yıllık izin hakkı</td><td><b>Hayır</b></td><td>İşe giriş tarihinden hesaplanıyor. Saklansaydı kıdem ilerledikçe güncellenmesi gerekir, unutulursa tutarsızlık oluşurdu.</td></tr>
+    <tr><td>Kullanılan izin günü</td><td><b>Hayır</b></td><td>Onaylı + bekleyen taleplerden toplanıyor. Tek doğruluk kaynağı taleplerin kendisi.</td></tr>
+    <tr><td>Talebin iş günü sayısı</td><td><b>Evet</b></td><td>Çünkü girdileri (başlangıç/bitiş tarihi) talep oluşturulduktan sonra <b>değişmiyor</b>. Değişmeyen bir girdiden hesaplanan değeri saklamak tutarsızlık riski yaratmaz — sadece tekrar hesaplamayı önler.</td></tr>
+  </table>
+  <p class="kucuk">
+    Bu ayrımı açıklayabilmek, "denormalizasyon ne zaman doğrudur" sorusunun cevabını
+    bildiğini gösterir: <b>girdileri değişebilen türetilmiş veri saklanmaz.</b>
+  </p>
+
+  <h3>c) Tarihler UTC saklanıyor</h3>
+  <p>
+    Veritabanında <code>SYSUTCDATETIME()</code> kullanılıyor, gösterim anında yerel saate
+    çevriliyor. Sebep: sunucunun saat dilimi değişirse ya da uygulama başka bir bölgeye
+    taşınırsa, saklanmış karşılaştırmalar bozulmasın. Yerel saatle saklamak, yaz saati
+    geçişlerinde tekrar eden/atlanan saatler yüzünden sinsi hatalar üretir.
+  </p>
+
+  <h3>d) <code>UpdatedAt</code> hiç güncellenmediyse <code>null</code> bırakılıyor</h3>
+  <p>
+    <code>CreatedAt</code> ile aynı değere set etmek "bu kayıt hiç değişmedi" bilgisini yok
+    ederdi. Küçük ama düşünülmüş bir karar — denetim izi (audit trail) mantığının parçası.
+  </p>
+
+  <h2>5. Gelmesi muhtemel sorular</h2>
+  <div class="qa">
+    <div class="s">Domain katmanında hiç iş kuralı yoksa neden var?</div>
+    <div class="c">Ortak dili (ubiquitous language) taşıyor: <code>Employee</code>, <code>LeaveRequest</code>, <code>SeniorityLevel</code>, <code>LeaveStatus</code> — sistemin kavram sözlüğü orada. Ayrıca hiçbir pakete bağımlı olmadığı için hem Application hem Infrastructure ona güvenle bağlanabiliyor. Bugün ince, ama <b>doğru yerde duran</b> bir katman: kurallar zenginleşirse taşınacağı yer belli.</div>
+  </div>
+  <div class="qa">
+    <div class="s">Bir çalışanın yöneticisi kendisi olabilir mi? Döngü oluşabilir mi?</div>
+    <div class="c">Bu, <code>ManagerId</code> gibi kendine referans veren alanların klasik riski ve veritabanı kısıtıyla tam olarak engellenemez. Projede yönetici atama kuralları Application'da denetleniyor (<code>ManagerAssignmentTests</code> bunu test ediyor). Bu tip yapısal kuralların <b>tek yerde ve testli</b> olması, tam olarak katmanlı mimariden beklenen fayda.</div>
+  </div>
+  <div class="qa">
+    <div class="s">İzin talebi hem çalışana hem stajyere ait olabilir mi?</div>
+    <div class="c">Hayır — <code>EmployeeId</code> veya <code>InternId</code>'den <b>tam olarak biri</b> dolu olmak zorunda ve bunu veritabanı kısıtı (<code>CK_LeaveRequests_Requester</code>) garanti ediyor. Kritik bütünlük kurallarını yalnızca uygulama koduna bırakmayıp veritabanı seviyesinde de zorlamak bilinçli bir tercih: uygulamada bir hata olsa bile veri bozulamaz.</div>
+  </div>
+</section>
+
+<!-- ══════════════════ BÖLÜM 10 ══════════════════ -->
+<section class="bolum">
+  <div class="bolum-head">
+    <div class="bolum-no">Bölüm 10</div>
+    <h1>Zayıf Noktalar ve Bilinçli Ödünler</h1>
+    <p class="lead">Savunmadaki en tehlikeli soru: <i>"Bu projenin zayıf yanı nedir?"</i>
+    Cevabın "yok" olursa ya projeyi tanımıyorsundur ya da dürüst değilsindir. Aşağıdaki
+    tablo hazır cevabındır.</p>
+  </div>
+
+  <div class="kutu anahtar">
+    <div class="kutu-baslik">Bu bölümü nasıl kullanmalısın</div>
+    <p>
+      Eksikleri <b>sorulmadan</b> söylemek zayıflık değil, güç göstergesidir. Formül şu:
+      <b>"Şu eksik — şu sebeple şimdilik kabul ettik — üretime çıkarken şöyle kapatılır."</b>
+      Bu üç parçalı cevap, bir eksiği bir mühendislik kararına dönüştürür.
+    </p>
+  </div>
+
+  <h2>1. Teknik borç tablosu</h2>
+  <table>
+    <tr><th style="width:24%">Eksik</th><th style="width:36%">Neden şimdilik kabul edildi</th><th>Üretimde çözümü</th></tr>
+    <tr>
+      <td><b>Transaction / Unit of Work yok</b></td>
+      <td>Her repository metodu kendi bağlantısını açıyor. Çok adımlı işlemlerde (hesap talebi onayı: kullanıcı oluştur + kaydı bağla) yarım kalmış durum oluşabilir.</td>
+      <td>MediatR'a bir <code>TransactionBehavior</code> eklemek; komutları tek bir <code>TransactionScope</code> içinde çalıştırmak.</td>
+    </tr>
+    <tr>
+      <td><b>Loglama yok</b></td>
+      <td>500 hataları hiçbir yere yazılmıyor; üretimde bir sorunun izini sürmek imkânsız olurdu.</td>
+      <td><code>GlobalExceptionHandler</code>'a <code>ILogger</code>; ayrıca <code>LoggingBehavior</code> ile her komutun giriş/çıkışı ve korelasyon kimliği.</td>
+    </tr>
+    <tr>
+      <td><b>Refresh token yok</b></td>
+      <td>2 saat sonra yeniden giriş gerekiyor. Öğrenme projesinde kabul edilebilir sürtünme.</td>
+      <td>Kısa ömürlü access token + veritabanında saklanan, iptal edilebilir refresh token.</td>
+    </tr>
+    <tr>
+      <td><b>Sayfalama yok</b></td>
+      <td>Listeler tüm kayıtları çekiyor. Mevcut veri hacminde sorun çıkarmıyor.</td>
+      <td><code>OFFSET / FETCH NEXT</code> ile sunucu tarafı sayfalama; query'lere <code>Page</code>/<code>PageSize</code> parametreleri.</td>
+    </tr>
+    <tr>
+      <td><b>Integration test yok</b></td>
+      <td>Birim testler en riskli kuralları kapsıyor; altyapı testi zaman almıştı.</td>
+      <td><code>WebApplicationFactory</code> ile uçtan uca testler; repository'ler için Testcontainers/LocalDB.</td>
+    </tr>
+    <tr>
+      <td><b><code>SELECT *</code> kullanımı</b></td>
+      <td>Yazması hızlı; şema değişimi henüz sorun çıkarmadı.</td>
+      <td>Kolonları açıkça listelemek — hem daha az veri hem şema değişikliğine dayanıklılık.</td>
+    </tr>
+    <tr>
+      <td><b>Eşzamanlılık kontrolü yok</b></td>
+      <td>İki kişi aynı talebi aynı anda onaylarsa son yazan kazanır (lost update).</td>
+      <td><code>rowversion</code> kolonu ile iyimser kilitleme; <code>WHERE RowVersion = @expected</code>.</td>
+    </tr>
+    <tr>
+      <td><b>Rate limiting yok</b></td>
+      <td>İç ağda çalışan bir uygulama; kaba kuvvet riski düşük değerlendirildi.</td>
+      <td>ASP.NET Core'un yerleşik <code>RateLimiter</code>'ı, özellikle login ucunda.</td>
+    </tr>
+    <tr>
+      <td><b>Genel audit log yok</b></td>
+      <td>İzin onay izi (kim, ne zaman onayladı) tutuluyor ama "kim hangi kaydı değiştirdi" genel izi yok.</td>
+      <td>Değişiklik tablosu ya da temporal tables; alternatif olarak <code>AuditBehavior</code>.</td>
+    </tr>
+    <tr>
+      <td><b>DTO çoğaltması</b></td>
+      <td>Contracts projesi bilinçli olarak yok (Bölüm 5); bedeli elle senkron tutmak.</td>
+      <td>OpenAPI şemasından istemci kodu üretimi (NSwag/Kiota).</td>
+    </tr>
+    <tr>
+      <td><b>Önbellekleme (cache) yok</b></td>
+      <td>Departman/birim listeleri gibi neredeyse hiç değişmeyen veriler her istekte sorgulanıyor.</td>
+      <td><code>IMemoryCache</code> ya da dağıtık cache; değişince invalidasyon.</td>
+    </tr>
+    <tr>
+      <td><b><code>Result</code> yerine exception</b></td>
+      <td>Global handler tutarlı sonuç veriyor; akış okunur kalıyor.</td>
+      <td><code>Result&lt;T&gt;</code> tipi; hata yolunun derleyici tarafından denetlenmesi (Bölüm 3).</td>
+    </tr>
+  </table>
+
+  <h2>2. Bilinçli ödünler — "eksik" değil, "karar"</h2>
+  <p>
+    Aşağıdakiler yukarıdakilerden farklı: bunlar düzeltilecek borç değil, <b>bilerek verilmiş
+    kararlar</b>. Aradaki farkı ifade edebilmek önemli.
+  </p>
+  <div class="kart-liste">
+    <div class="kart">
+      <b>Paylaşılan Contracts projesi yok</b>
+      Kazanç: WebUI ve API bağımsız evrilebilir. Bedel: JSON şeklini iki tarafta elle
+      senkron tutmak. <i>Gevşek bağlılık için ödenen bilinçli fiyat.</i>
+    </div>
+    <div class="kart">
+      <b>EF Core yerine Dapper</b>
+      Kazanç: SQL görünür, davranış öngörülebilir, öğrenme değeri yüksek. Bedel: migration ve
+      change tracking elle. <i>Öğrenme projesinde doğru; büyük ekipli üründe tartışmalı.</i>
+    </div>
+    <div class="kart">
+      <b>ProblemDetails yerine BaseResponse</b>
+      Kazanç: başarı ve hata tek şekil, istemcide tek deserialize yolu. Bedel: standart dışı.
+      <i>Tek istemcili API'de doğru; public API'de yanlış olurdu.</i>
+    </div>
+    <div class="kart">
+      <b>ASP.NET Identity yerine elle auth</b>
+      Kazanç: JWT, claim, hash kavramlarının gerçekten öğrenilmesi. Bedel: 2FA/lockout gibi
+      hazır özelliklerin yokluğu. <i>Staj bağlamında doğru; üretimde olgun kütüphane tercih edilir.</i>
+    </div>
+    <div class="kart">
+      <b>MediatR 12.5'te sabitleme</b>
+      Sebep teknik değil hukuki: 13+ ticari lisans. <i>Bağımlılık seçiminde lisans geleceğini
+      de hesaba katmak gerektiğinin somut örneği.</i>
+    </div>
+    <div class="kart">
+      <b>SPA yerine sunucuda render edilen MVC</b>
+      Kazanç: ayrı JS build zinciri yok, token tarayıcıya hiç inmiyor. Bedel: zengin
+      etkileşimli ekranlar için sınırlı. <i>Form ağırlıklı İK ekranlarına uygun.</i>
+    </div>
+  </div>
+
+  <h2>3. Kapanış: bu projeden öğrenilenler</h2>
+  <ol>
+    <li><b>Mimari, kodun nereye yazılacağını söyleyen bir haritadır.</b> Değeri "güzel görünmek" değil, altı ay sonra bir kuralı nerede bulacağını bilmektir.</li>
+    <li><b>Her teknoloji bir ödünleşimdir.</b> "En iyi" araç yoktur; bağlamına en uygun olan vardır. Dapper küçük ekipte ve öğrenme projesinde doğru, 50 kişilik ekipte muhtemelen değil.</li>
+    <li><b>Güvenlikte doğru varsayılan kapalıdır.</b> Fallback policy örneği: unutmanın sonucu "açıkta kalan uç" değil, "erişilemeyen uç" olmalı.</li>
+    <li><b>Tekrarlanan her kural bir gün ayrışır.</b> Bu yüzden kurallar tek yerde: <code>LeaveEntitlement</code>, <code>EmployeeVisibility</code>, <code>MentorshipGuard</code>.</li>
+    <li><b>Test edilemeyen mimari, mimari değildir.</b> Katman ayrımının en somut ispatı, iş kurallarının veritabanı olmadan test edilebilmesidir.</li>
+    <li><b>Eksiği bilmek, eksiği olmamaktan daha değerlidir.</b> Yukarıdaki tablo bu projenin en olgun parçası.</li>
+  </ol>
+</section>
+
+<!-- ══════════════════ EK A ══════════════════ -->
+<section class="bolum">
+  <div class="bolum-head">
+    <div class="bolum-no">Ek A</div>
+    <h1>Hızlı Cevap Kartları</h1>
+    <p class="lead">Savunmadan hemen önce son tekrar için. Her satır, o soruya verilecek
+    ilk cümledir — detay gerekirse ilgili bölüme dönülür.</p>
+  </div>
+
+  <div class="kart-liste">
+    <div class="kart"><b>Neden Clean Architecture?</b>İş kuralları en uzun ömürlü varlıktır; onları teknolojiden bağımsız tutmak için. Kanıtı: iş kuralları veritabanı olmadan test edilebiliyor.</div>
+    <div class="kart"><b>Katman kuralını ne koruyor?</b>Doküman değil, derleyici. WebUI'nin csproj'unda Application referansı yok — ihlal derleme hatası verir.</div>
+    <div class="kart"><b>Neden MediatR?</b>Her use-case tek sınıf olsun ve validation/logging gibi ortak işler 26 handler'a tek tek yazılmak yerine tek boru hattında çalışsın diye.</div>
+    <div class="kart"><b>MediatR neden 12.5'te sabit?</b>13+ sürüm ticari lisansa geçti. Teknik değil hukuki bir karar.</div>
+    <div class="kart"><b>Bu tam CQRS mi?</b>Hayır. Ayrım kod düzeyinde; ayrı okuma veritabanı yok. Bu ölçekte eventual consistency'nin bedeli gereksizdi.</div>
+    <div class="kart"><b>Validation'ı nereye koyarsın?</b>İkiye ayırırım: veritabanına bakmadan cevaplanabilen her şey Validator'da, sistemin durumuna bakan her şey Handler'da.</div>
+    <div class="kart"><b>Neden FluentValidation?</b>Koşullu ("sadece hastalık izninde rapor zorunlu") ve çapraz alan ("bitiş ≥ başlangıç") kuralları attribute'larla ifade edilemez.</div>
+    <div class="kart"><b>Neden Dapper, EF Core değil?</b>SQL görünür kalsın, üretilen sorgu sürpriz olmasın ve N+1 kazara oluşmasın diye. Bedeli: migration ve tekrar kod elle.</div>
+    <div class="kart"><b>SQL injection'a karşı ne var?</b>Tüm değerler parametreli geçiyor; hiçbir yerde kullanıcı girdisi SQL metnine birleştirilmiyor.</div>
+    <div class="kart"><b>Repository neden var?</b>Dapper bir soyutlama sunmaz; repository olmasaydı SQL Application katmanına sızardı. Ayrıca testlerde fake'lenebiliyor.</div>
+    <div class="kart"><b>Neden iki ayrı uygulama?</b>İş mantığının tek sahibi olsun (yarın mobil gelirse aynı API), ve güvenlik sınırı WebUI'de değil API'de olsun diye.</div>
+    <div class="kart"><b>Neden Refit?</b>API sözleşmesi C# arayüzü olarak yazılıyor, istemci kodunu kütüphane üretiyor. Elle HttpClient/JSON kodu yazılmıyor.</div>
+    <div class="kart"><b>Neden Contracts projesi yok?</b>Gerçek gevşek bağlılık için. Bedeli JSON şeklini iki tarafta elle senkron tutmak; ölçek büyürse doğru çözüm OpenAPI'den istemci üretmek.</div>
+    <div class="kart"><b>Neden kendi zarfın, ProblemDetails değil?</b>Başarı ve hata aynı şekli dönsün, istemci tek yol izlesin diye. Public API olsaydı ProblemDetails doğru olurdu.</div>
+    <div class="kart"><b>Zarfın deliksiz olduğunu nasıl garanti ediyorsun?</b>Üç mekanizma: GlobalExceptionHandler, InvalidModelStateResponseFactory, UseBaseResponseStatusCodes.</div>
+    <div class="kart"><b>Neden hem JWT hem cookie?</b>İki farklı güven sınırı var. Tarayıcı güvenilmez ortam → HttpOnly cookie. API stateless servis → imzalı JWT.</div>
+    <div class="kart"><b>Token neden localStorage'da değil?</b>Orada olsaydı tek satır XSS ile çalınabilirdi. HttpOnly cookie'yi JavaScript okuyamaz; üstelik token cookie'nin sunucu tarafı ticket'ının içinde.</div>
+    <div class="kart"><b>Neden CORS yok?</b>API çağrıları tarayıcıdan değil WebUI sunucusundan yapılıyor; CORS bir tarayıcı mekanizmasıdır.</div>
+    <div class="kart"><b>Fallback policy ne işe yarıyor?</b>Uçlar kilitli doğuyor. Tersinde bir gün biri [Authorize] yazmayı unutur ve uç sessizce herkese açık kalır — bunu test de yakalamaz.</div>
+    <div class="kart"><b>Neden BCrypt?</b>MD5/SHA hızlı olmak için tasarlandı; parola için tam ters özellik. BCrypt kasıtlı yavaş, salt'ı otomatik ve work factor ayarlanabilir.</div>
+    <div class="kart"><b>JWT içeriği gizli mi?</b>Hayır, payload sadece Base64 — herkes okur. Güvenliği imza sağlar. Bu yüzden JWT'ye gizli veri konmaz.</div>
+    <div class="kart"><b>Neden ASP.NET Identity yok?</b>EF Core'a bağlı geliyor (Dapper kararıyla çelişir) ve kavramların öğrenilmesi hedefti. Üretimde tersi doğru olurdu.</div>
+    <div class="kart"><b>Neden sadece Application test ediliyor?</b>En pahalı hatalar orada. Controller test etmek çoğunlukla framework'ü test etmektir.</div>
+    <div class="kart"><b>Neden Moq yok?</b>Elle fake'ler test kodunu düz C# ve okunur tutuyor, bağımlılık eklemiyor. Bedeli her arayüz için sınıf yazmak.</div>
+    <div class="kart"><b>Entity'ler neden anemik?</b>Dapper doğrudan entity'ye eşliyor. Kurallar dağılmadı; adlandırılmış, testli domain service sınıflarında toplandı.</div>
+    <div class="kart"><b>İzin bakiyesi neden saklanmıyor?</b>Girdileri değişebilen türetilmiş veri saklanmaz — saklansaydı iki kayıt arasında tutarsızlık oluşabilirdi.</div>
+    <div class="kart"><b>Yetki sadece rol mü?</b>Hayır. Rol kaba kapı; asıl yetki ilişkiden gelir — yönetici kendi ekibini, mentor kendi stajyerini görür.</div>
+    <div class="kart"><b>Projenin en büyük eksiği ne?</b>Loglama ve transaction yönetimi. İkisi de mevcut mimariye birer MediatR behavior'ı ekleyerek kapatılabilir.</div>
+  </div>
+</section>
+
+<!-- ══════════════════ EK B ══════════════════ -->
+<section class="bolum">
+  <div class="bolum-head">
+    <div class="bolum-no">Ek B</div>
+    <h1>Terimler Sözlüğü</h1>
+    <p class="lead">Savunmada geçmesi muhtemel kavramların net, kısa tanımları. Bir terimi
+    kullanacaksan tanımını da verebilmelisin.</p>
+  </div>
+
+  <dl class="sozluk">
+    <dt>Clean Architecture</dt>
+    <dd>Bağımlılıkların dıştan içe doğru aktığı, iş kurallarının merkezde ve framework'lerden bağımsız olduğu katmanlı mimari yaklaşımı. Onion ve Hexagonal aynı ilkenin farklı adlandırmaları.</dd>
+
+    <dt>Dependency Inversion (DIP)</dt>
+    <dd>Üst seviye modüller alt seviye modüllere değil, ikisi de soyutlamalara bağlı olmalıdır. Pratikte: arayüzün sahibi onu kullanan taraftır. Bizde <code>IEmployeeRepository</code> Application'da tanımlı, Infrastructure'da uygulanır.</dd>
+
+    <dt>Dependency Injection (DI)</dt>
+    <dd>Bir sınıfın ihtiyaç duyduğu nesneleri kendisi oluşturmak yerine dışarıdan (genelde constructor'dan) alması. DIP'i hayata geçiren teknik.</dd>
+
+    <dt>Composition Root</dt>
+    <dd>Tüm bağımlılık eşlemelerinin yapıldığı tek nokta. Bu projede <span class="dosya">API/Program.cs</span>.</dd>
+
+    <dt>CQRS</dt>
+    <dd>Command Query Responsibility Segregation — durumu değiştiren işlemler (Command) ile veri okuyan işlemlerin (Query) ayrılması. Tam hâli ayrı veritabanları kullanır; bu projede ayrım yalnızca kod düzeyindedir.</dd>
+
+    <dt>Mediator deseni</dt>
+    <dd>Nesnelerin birbirini doğrudan tanımak yerine bir aracı üzerinden haberleşmesi. Bağlantı sayısını N×N'den N'e düşürür.</dd>
+
+    <dt>Pipeline Behavior</dt>
+    <dd>MediatR'da bir mesajın handler'a ulaşmadan önce geçtiği ara halka. Cross-cutting concern'leri (validation, loglama, transaction) tek yerde uygulamayı sağlar.</dd>
+
+    <dt>Cross-cutting concern</dt>
+    <dd>Her yerde gereken ama hiçbir modülün asıl işi olmayan endişe: loglama, güvenlik, doğrulama, transaction.</dd>
+
+    <dt>DTO (Data Transfer Object)</dt>
+    <dd>Katmanlar veya sistemler arasında veri taşımak için kullanılan, davranışı olmayan nesne. Domain entity'sinin dış dünyaya sızmasını engeller.</dd>
+
+    <dt>Micro-ORM</dt>
+    <dd>SQL'i senin yazdığın, kütüphanenin yalnızca sonucu nesneye eşlediği veri erişim aracı (Dapper). Full ORM (EF Core) ise SQL'i kendisi üretir.</dd>
+
+    <dt>N+1 problemi</dt>
+    <dd>Bir liste sorgusundan sonra, listedeki her kayıt için ayrı bir sorgu daha atılması. 500 kayıt için 501 sorgu. ORM'lerde lazy loading ile kazara oluşur.</dd>
+
+    <dt>Idempotent</dt>
+    <dd>Birden çok kez çalıştırıldığında sonucu değişmeyen işlem. Projedeki SQL kurulum script'leri bu özelliktedir.</dd>
+
+    <dt>Unit of Work</dt>
+    <dd>Birden çok veri değişikliğini tek bir atomik işlem (transaction) olarak yönetme deseni. Bu projede yok — bilinen eksiklerden.</dd>
+
+    <dt>Anemic Domain Model</dt>
+    <dd>Yalnızca veri taşıyan, davranışı olmayan entity'ler. DDD açısından eleştirilir; asıl riski kuralların dağılmasıdır. Bu projede kurallar domain service sınıflarında toplanarak risk kapatılmıştır.</dd>
+
+    <dt>Domain Service</dt>
+    <dd>Tek bir entity'ye sığmayan, birden çok nesneyi ilgilendiren iş kuralını barındıran sınıf. Örnek: <code>LeaveApprovalGuard</code>, <code>EmployeeVisibility</code>.</dd>
+
+    <dt>Claim</dt>
+    <dd>Bir kimlik hakkında ileri sürülen bilgi parçası (kullanıcı Id'si, rolü). JWT'nin payload'ında taşınır ve imzayla korunur.</dd>
+
+    <dt>Stateless</dt>
+    <dd>Sunucunun istekler arasında oturum bilgisi tutmaması. JWT bunu sağlar; bedeli, üretilmiş bir token'ın geri çağrılamamasıdır.</dd>
+
+    <dt>HttpOnly cookie</dt>
+    <dd>JavaScript'in okuyamadığı cookie. XSS ile kimlik bilgisinin çalınmasını engeller.</dd>
+
+    <dt>XSS / CSRF</dt>
+    <dd><b>XSS:</b> saldırganın sayfaya kendi JavaScript'ini çalıştırması. <b>CSRF:</b> kullanıcının oturumunu kullanarak farkında olmadan istek yaptırılması. İlkine karşı HttpOnly, ikincisine karşı antiforgery token ve SameSite kullanılır.</dd>
+
+    <dt>Salt / Work factor</dt>
+    <dd><b>Salt:</b> her parolaya eklenen rastgele değer; aynı parolaların aynı hash üretmesini engeller. <b>Work factor:</b> hash'lemenin kaç tur süreceği; donanım hızlandıkça artırılır.</dd>
+
+    <dt>Fallback Policy</dt>
+    <dd>Üzerinde açık bir yetkilendirme kuralı bulunmayan endpoint'lere uygulanan varsayılan politika. Bu projede "kimlik doğrulaması zorunlu" olarak ayarlanmıştır.</dd>
+
+    <dt>İyimser kilitleme (Optimistic Concurrency)</dt>
+    <dd>Kaydı kilitlemek yerine, güncelleme anında verinin değişmediğini doğrulama (<code>rowversion</code>). Bu projede yok — bilinen eksiklerden.</dd>
+
+    <dt>Teknik borç</dt>
+    <dd>Bilerek ertelenmiş iyileştirme. Borç olması sorun değil; <b>farkında olunmaması</b> sorundur. Bölüm 10 bu projenin borç defteridir.</dd>
+  </dl>
+</section>
+
+</body>
+</html>

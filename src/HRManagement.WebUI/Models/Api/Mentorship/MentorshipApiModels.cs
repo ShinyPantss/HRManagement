@@ -17,6 +17,16 @@ public class MentoredInternDetailResponse
     public DateTime EndDate { get; set; }
     public string DepartmentName { get; set; } = string.Empty;
 
+    // Mentorun adı — HR/Admin salt-okur bakarken sorumluyu görür.
+    public string? MentorFullName { get; set; }
+    public int? MentorEmployeeId { get; set; }   // profil linki için
+
+    public string? UnitName { get; set; }
+
+    // Türetilmiş yönetici: birimin (yoksa departmanın) en kıdemli yöneticisi.
+    public string? ManagerFullName { get; set; }
+    public int? ManagerEmployeeId { get; set; }  // profil linki için
+
     public List<InternTaskResponse> Tasks { get; set; } = [];
     public List<InternNoteResponse> Notes { get; set; } = [];
 }

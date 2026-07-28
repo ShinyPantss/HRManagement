@@ -21,11 +21,16 @@ public class EmployeeDetailDto
     public string? Phone { get; set; }
     public DateTime BirthDate { get; set; }
     public DateTime HireDate { get; set; }
+    public int? Gender { get; set; }       // Gender enum'ının sayısal karşılığı (1=Erkek, 2=Kadın)
     public int? Seniority { get; set; }   // SeniorityLevel enum'ının sayısal karşılığı
     public bool IsActive { get; set; }
 
     public int DepartmentId { get; set; }
     public string DepartmentName { get; set; } = string.Empty;
+
+    /// <summary>Departmanın alt kırılımı (Birim); yoksa null. Pozisyon gösterimi bunu önceler.</summary>
+    public int? UnitId { get; set; }
+    public string? UnitName { get; set; }
 
     public int? ManagerId { get; set; }
     public string? ManagerFullName { get; set; }
@@ -35,6 +40,13 @@ public class EmployeeDetailDto
     public int AccruedLeaveDays { get; set; }
     public int UsedLeaveDays { get; set; }
     public int RemainingLeaveDays { get; set; }
+
+    /// <summary>
+    /// İstekçi bu kişinin izin bakiyesini/geçmişini GÖREBİLİR mi? (kendisi, İK/Admin,
+    /// zincir yöneticisi). Ekran, paneli göstereceğini bu bayrağa göre bilir — sayının
+    /// sıfır olup olmamasından TAHMİN ETMEZ (yetkili ama bakiyesi 0 olan gizlenmesin).
+    /// </summary>
+    public bool CanSeeLeave { get; set; }
 
     public List<EmployeeDetailLeaveRequestDto> RecentLeaveRequests { get; set; } = [];
     public List<EmployeeDetailTeamMemberDto> DirectReports { get; set; } = [];

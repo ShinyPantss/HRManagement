@@ -1,18 +1,20 @@
 @{
-    ViewData["Title"] = "Yetkisiz Erişim";
+    ViewData["Title"] = "Yetkiniz yok";
+    ViewData["Subtitle"] = "Bu sayfayı görüntülemek için gerekli role sahip değilsiniz.";
 }
 
-<div class="page-head">
-    <h1>Yetkiniz yok</h1>
-    <p class="text-muted mb-0">Bu sayfayı görüntülemek için gerekli role sahip değilsiniz.</p>
-</div>
-
-<div class="panel mt-3" style="max-width: 560px;">
-    <div class="panel-body">
-        <p class="mb-3">
-            Giriş yapmış durumdasınız, ancak hesabınızın rolü bu bölüme erişim için yeterli değil.
-            Yetki gerektiğini düşünüyorsanız İK ile iletişime geçin.
-        </p>
-        <a asp-controller="Home" asp-action="Index" class="btn btn-primary">Ana sayfaya dön</a>
+<div class="card card-pad-lg narrow">
+    <div style="display: flex; gap: 14px; align-items: flex-start;">
+        <span class="kpi-icon" style="background: var(--warn-bg); color: var(--warn); width: 38px; height: 38px; flex: 0 0 38px; border-radius: var(--r-md);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 8v5M12 16.5h.01" /><circle cx="12" cy="12" r="9" /></svg>
+        </span>
+        <div class="flex-1">
+            <div class="section-title" style="margin-bottom: 6px;">Erişim reddedildi</div>
+            <p class="page-sub" style="margin-bottom: 18px;">
+                Giriş yapmış durumdasınız, ancak hesabınızın rolü bu bölüme erişim için yeterli değil.
+                Yetki gerektiğini düşünüyorsanız İK ile iletişime geçin.
+            </p>
+            <a asp-controller="Home" asp-action="Index" class="btn btn-primary">Ana sayfaya dön</a>
+        </div>
     </div>
 </div>

@@ -12,6 +12,14 @@ public class InternDto
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
     public int? MentorId { get; set; }
+
+    /// <summary>
+    /// Mentorun adı (liste ekranı §5.4 "Mentor bilgileri" ister). Mapping'de
+    /// DOLDURULMAZ — Id→ad çözümü ek sorgu gerektirir, dolduran handler'dır
+    /// (bkz. GetAllInternsQueryHandler). Null = mentor yok ya da doldurulmadı.
+    /// </summary>
+    public string? MentorFullName { get; set; }
+
     public int DepartmentId { get; set; }
     public int? UnitId { get; set; }   // departmanın alt kırılımı (Birim); opsiyonel
     public int? UserId { get; set; }   // giriş hesabı bağı; null = hesabı yok

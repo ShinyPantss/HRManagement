@@ -6,6 +6,7 @@ using HRManagement.Application.Features.Departments.Commands.UpdateDepartment;
 using HRManagement.Application.Features.Departments.Queries.GetAllDepartments;
 using HRManagement.Application.Features.Departments.Queries.GetDepartmentById;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HRManagement.API.Controllers;
@@ -43,6 +44,9 @@ public class DepartmentsController : ControllerBase
         return Ok(BaseResponse<DepartmentResponse>.Success(data));
     }
 
+    // Yazma uçları yalnızca HR/Admin. Okuma (GetAll/GetById) açık kalır: departman
+    // isimleri Ekibim/İzin gibi ekranlarda etiket olarak okunuyor.
+    [Authorize(Roles = "HR,Admin")]
     [HttpPost]
     public async Task<IActionResult> Create(CreateDepartmentRequest request)
     {
@@ -51,6 +55,7 @@ public class DepartmentsController : ControllerBase
             BaseResponse<int>.Success(id, "Departman oluşturuldu."));
     }
 
+    [Authorize(Roles = "HR,Admin")]
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, UpdateDepartmentRequest request)
     {
@@ -58,6 +63,7 @@ public class DepartmentsController : ControllerBase
         return Ok(BaseResponse<int>.Success(id, "Departman güncellendi."));
     }
 
+    [Authorize(Roles = "HR,Admin")]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {

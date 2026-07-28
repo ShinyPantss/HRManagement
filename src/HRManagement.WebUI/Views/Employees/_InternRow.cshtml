@@ -1,0 +1,44 @@
+@using HRManagement.WebUI.Models
+@model HRManagement.WebUI.Models.Api.Interns.InternResponse
+@{
+    // Çalışan listesinde birimlerin altına giren stajyer satırı. Ayrı partial:
+    // yerel fonksiyon içinde tag helper çalışmaz (MVC1006), üstelik satır iki
+    // yerden (grup altı + artakalanlar) çağrılıyor.
+    //
+    // Sözlükleri ViewData'dan MİRASLA okuyoruz: controller bunları ViewBag ile
+    // koyuyor (ViewBag.X == ViewData["X"]), partial da aynı ViewData'yı görüyor.
+    // Ayrıca bir ViewDataDictionary kurup aynı anahtarları Add etmek "duplicate
+    // key" hatası verirdi — anahtar zaten orada.
+    var deptNames = ViewData["DepartmentNames"] as Dictionary<int, string> ?? new();
+    var unitNames = ViewData["UnitNames"] as Dictionary<int, string> ?? new();
+
+    var deptName = deptNames.TryGetValue(Model.DepartmentId, out var dn) ? dn : "—";
+    var unitName = Model.UnitId is int uid && unitNames.TryGetValue(uid, out var un) ? un : "—";
+    var initials = $"{(Model.FirstName.Length > 0 ? char.ToUpperInvariant(Model.FirstName[0]) : '?')}{(Model.LastName.Length > 0 ? char.ToUpperInvariant(Model.LastName[0]) : ' ')}".Trim();
+}
+
+<div class="dt-row intern-row" data-intern="1"
+     data-dept="@Model.DepartmentId"
+     data-unit="@(Model.UnitId?.ToString() ?? "")"
+     data-seniority=""
+     data-status="active"
+     data-search="@($"{Model.FirstName} {Model.LastName} {Model.Email}".ToLowerInvariant())">
+    <div class="person">
+        <span class="avatar av-3">@initials</span>
+        <div class="person-text">
+            <div class="dt-primary">@Model.FirstName @Model.LastName</div>
+            <div class="dt-secondary">@Model.Email</div>
+        </div>
+    </div>
+    <div style="min-width: 0;">
+        <div class="dt-cell" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">@deptName</div>
+        <div class="dt-secondary" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">@unitName</div>
+    </div>
+    <span class="dt-cell-muted">@GradeDisplay.Label(Model.Grade)</span>
+    <span class="dt-cell-muted num">@Model.StartDate.ToString("dd.MM.yyyy")</span>
+    <span><span class="badge badge-sm badge-violet">Stajyer</span></span>
+    <div class="task-actions" style="padding-left: 14px;">
+        <a asp-controller="Mentorship" asp-action="Detail" asp-route-id="@Model.Id" class="btn btn-sm">Detay</a>
+        <a asp-controller="Interns" asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-sm">Düzenle</a>
+    </div>
+</div>

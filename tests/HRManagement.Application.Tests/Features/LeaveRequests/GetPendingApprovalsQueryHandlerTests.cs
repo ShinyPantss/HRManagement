@@ -160,6 +160,8 @@ public class GetPendingApprovalsQueryHandlerTests
         public Task<IEnumerable<PendingApprovalDto>> GetActionableWithNamesAsync() =>
             Task.FromResult<IEnumerable<PendingApprovalDto>>(candidates);
 
+        public Task<IEnumerable<LeaveHistoryDto>> GetAllWithNamesAsync() => throw new NotImplementedException();
+
         public Task<LeaveRequest?> GetByIdAsync(int id) => throw new NotImplementedException();
         public Task<IEnumerable<LeaveRequest>> GetAllAsync() => throw new NotImplementedException();
         public Task<IEnumerable<LeaveRequest>> GetByEmployeeIdAsync(int employeeId) => throw new NotImplementedException();

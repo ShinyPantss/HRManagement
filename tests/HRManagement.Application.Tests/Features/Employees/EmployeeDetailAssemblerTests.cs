@@ -19,6 +19,7 @@ public class EmployeeDetailAssemblerTests
     private const int AdminUserId = 11;
     private const int ManagerUserId = 12;
     private const int OwnerUserId = 13;
+    private const int SiblingUserId = 14;   // aynı yöneticiye bağlı ekip arkadaşı
 
     private static Employee Target => new()
     {
@@ -42,7 +43,8 @@ public class EmployeeDetailAssemblerTests
             [HrUserId] = new() { Id = HrUserId, Username = "hr.uzman", Role = Role.HR, IsActive = true },
             [AdminUserId] = new() { Id = AdminUserId, Username = "admin", Role = Role.Admin, IsActive = true },
             [ManagerUserId] = new() { Id = ManagerUserId, Username = "yonetici", Role = Role.Manager, IsActive = true },
-            [OwnerUserId] = new() { Id = OwnerUserId, Username = "ayse", Role = Role.Employee, IsActive = true }
+            [OwnerUserId] = new() { Id = OwnerUserId, Username = "ayse", Role = Role.Employee, IsActive = true },
+            [SiblingUserId] = new() { Id = SiblingUserId, Username = "mehmet", Role = Role.Employee, IsActive = true }
         };
 
         var leaveRequests = new List<LeaveRequest>
@@ -76,6 +78,7 @@ public class EmployeeDetailAssemblerTests
             new FakeUserRepository(users),
             new FakeEmployeeRepository(),
             new FakeDepartmentRepository(new Department { Id = 1, Name = "IT" }),
+            new FakeUnitRepository(),
             new FakeLeaveRequestRepository(leaveRequests, totalUsedAnnualDays: 5),
             new FakeInternRepository(),
             new FakeEmployeeNoteRepository(notes));
@@ -165,6 +168,29 @@ public class EmployeeDetailAssemblerTests
         Assert.NotNull((await CreateAssembler().BuildAsync(Target, ManagerUserId)).Notes);
     }
 
+    // ── Ekip arkadaşı (genişletilmiş görünürlük): izin ve not GÖREMEZ ────────
+
+    [Fact]
+    public async Task Ekip_arkadasi_izin_verisini_ve_notlari_goremez()
+    {
+        // Kardeş görünürlüğü kişiyi AÇABİLİR yapar ama içeriden izin/not alamaz:
+        // bakiye sıfır/boş kırpılır (WebUI paneli gizler), notlar null gider.
+        var dto = await CreateAssembler().BuildAsync(Target, SiblingUserId);
+
+        Assert.Equal(0, dto.AccruedLeaveDays);
+        Assert.Empty(dto.RecentLeaveRequests);
+        Assert.Null(dto.Notes);
+    }
+
+    [Fact]
+    public async Task Zincir_yoneticisi_izin_verisini_gorur()
+    {
+        // Onay verecek kişi bakiyeyi görmeli — zincir kontrolü fake'te olumlu.
+        var dto = await CreateAssembler().BuildAsync(Target, ManagerUserId);
+
+        Assert.Single(dto.RecentLeaveRequests);
+    }
+
     // ── Bakiye: LeaveEntitlement ile tutarlı ─────────────────────────────────
 
     [Fact]
@@ -201,6 +227,20 @@ public class EmployeeDetailAssemblerTests
         public Task<IEnumerable<Employee>> GetTeamAsync(int managerEmployeeId) =>
             Task.FromResult<IEnumerable<Employee>>([]);
 
+        // Manager istekçi zincir kontrolüne girer: kaydı var ve hedefin zincir
+        // yöneticisi (IsInManagerChain=true). Kardeş istekçinin de kaydı var ama
+        // Employee rolünde olduğu için zincir kontrolüne hiç girmez.
+        public Task<Employee?> GetByUserIdAsync(int userId) =>
+            Task.FromResult<Employee?>(userId switch
+            {
+                ManagerUserId => new Employee { Id = 50, UserId = ManagerUserId },
+                SiblingUserId => new Employee { Id = 51, UserId = SiblingUserId, ManagerId = 50 },
+                _ => null
+            });
+
+        public Task<bool> IsInManagerChainAsync(int managerEmployeeId, int subordinateEmployeeId) =>
+            Task.FromResult(managerEmployeeId == 50);
+
         public Task<IEnumerable<Employee>> GetAllAsync() => throw new NotImplementedException();
         public Task<int> AddAsync(Employee employee) => throw new NotImplementedException();
         public Task UpdateAsync(Employee employee) => throw new NotImplementedException();
@@ -209,9 +249,7 @@ public class EmployeeDetailAssemblerTests
         public Task<bool> ExistsByDepartmentIdAsync(int departmentId) => throw new NotImplementedException();
         public Task<bool> ExistsByUserIdAsync(int userId) => throw new NotImplementedException();
         public Task<bool> ExistsByManagerIdAsync(int managerId) => throw new NotImplementedException();
-        public Task<Employee?> GetByUserIdAsync(int userId) => throw new NotImplementedException();
         public Task<Employee?> GetByEmailAsync(string email) => throw new NotImplementedException();
-        public Task<bool> IsInManagerChainAsync(int managerEmployeeId, int subordinateEmployeeId) => throw new NotImplementedException();
     }
 
     private sealed class FakeDepartmentRepository(Department department) : IDepartmentRepository
@@ -222,6 +260,15 @@ public class EmployeeDetailAssemblerTests
         public Task<int> AddAsync(Department d) => throw new NotImplementedException();
         public Task UpdateAsync(Department d) => throw new NotImplementedException();
         public Task DeleteAsync(int id) => throw new NotImplementedException();
+    }
+
+    // Bu testlerdeki çalışanların UnitId'si yok; GetByIdAsync çağrılmaz, null yeterli.
+    private sealed class FakeUnitRepository : IUnitRepository
+    {
+        public Task<HRManagement.Domain.Entities.Unit?> GetByIdAsync(int id) =>
+            Task.FromResult<HRManagement.Domain.Entities.Unit?>(null);
+        public Task<IEnumerable<HRManagement.Domain.Entities.Unit>> GetAllAsync() =>
+            Task.FromResult<IEnumerable<HRManagement.Domain.Entities.Unit>>([]);
     }
 
     private sealed class FakeLeaveRequestRepository(List<LeaveRequest> requests, int totalUsedAnnualDays)
@@ -242,6 +289,7 @@ public class EmployeeDetailAssemblerTests
         public Task<bool> ExistsByInternIdAsync(int internId) => throw new NotImplementedException();
         public Task<bool> HasOverlapAsync(int? employeeId, int? internId, DateTime startDate, DateTime endDate) => throw new NotImplementedException();
         public Task<IEnumerable<HRManagement.Application.DTOs.PendingApprovalDto>> GetActionableWithNamesAsync() => throw new NotImplementedException();
+        public Task<IEnumerable<HRManagement.Application.DTOs.LeaveHistoryDto>> GetAllWithNamesAsync() => throw new NotImplementedException();
     }
 
     private sealed class FakeEmployeeNoteRepository(List<EmployeeNote> notes) : IEmployeeNoteRepository

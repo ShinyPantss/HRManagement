@@ -17,11 +17,16 @@ public class EmployeeDetailResponse
     public string? Phone { get; set; }
     public DateTime BirthDate { get; set; }
     public DateTime HireDate { get; set; }
+    public int? Gender { get; set; }       // 1=Erkek, 2=Kadın
     public int? Seniority { get; set; }
     public bool IsActive { get; set; }
 
     public int DepartmentId { get; set; }
     public string DepartmentName { get; set; } = string.Empty;
+
+    // Departmanın alt kırılımı (Birim); yoksa null. Pozisyon gösterimi bunu önceler.
+    public int? UnitId { get; set; }
+    public string? UnitName { get; set; }
 
     public int? ManagerId { get; set; }
     public string? ManagerFullName { get; set; }
@@ -37,6 +42,10 @@ public class EmployeeDetailResponse
     // NULL = istekçi notları göremez (kişinin kendisi) → panel hiç çizilmez.
     // Boş liste = görebilir ama henüz not yok.
     public List<EmployeeDetailNoteResponse>? Notes { get; set; }
+
+    // İstekçi izin bakiyesi/geçmişini görebilir mi (kendisi, İK/Admin, zincir yöneticisi).
+    // İzin paneli bu bayrağa göre çizilir — sayının sıfır olmasına bakılmaz.
+    public bool CanSeeLeave { get; set; }
 }
 
 public class EmployeeDetailLeaveRequestResponse

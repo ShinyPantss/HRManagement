@@ -16,10 +16,13 @@ public sealed class EmployeeDetailResponse
         string? phone,
         DateTime birthDate,
         DateTime hireDate,
+        int? gender,
         int? seniority,
         bool isActive,
         int departmentId,
         string departmentName,
+        int? unitId,
+        string? unitName,
         int? managerId,
         string? managerFullName,
         int accruedLeaveDays,
@@ -28,7 +31,8 @@ public sealed class EmployeeDetailResponse
         List<EmployeeDetailLeaveRequestResponse> recentLeaveRequests,
         List<EmployeeDetailTeamMemberResponse> directReports,
         List<EmployeeDetailInternResponse> mentoredInterns,
-        List<EmployeeDetailNoteResponse>? notes)
+        List<EmployeeDetailNoteResponse>? notes,
+        bool canSeeLeave)
     {
         Id = id;
         FirstName = firstName;
@@ -38,10 +42,13 @@ public sealed class EmployeeDetailResponse
         Phone = phone;
         BirthDate = birthDate;
         HireDate = hireDate;
+        Gender = gender;
         Seniority = seniority;
         IsActive = isActive;
         DepartmentId = departmentId;
         DepartmentName = departmentName;
+        UnitId = unitId;
+        UnitName = unitName;
         ManagerId = managerId;
         ManagerFullName = managerFullName;
         AccruedLeaveDays = accruedLeaveDays;
@@ -51,6 +58,7 @@ public sealed class EmployeeDetailResponse
         DirectReports = directReports;
         MentoredInterns = mentoredInterns;
         Notes = notes;
+        CanSeeLeave = canSeeLeave;
     }
 
     public int Id { get; }
@@ -61,10 +69,13 @@ public sealed class EmployeeDetailResponse
     public string? Phone { get; }
     public DateTime BirthDate { get; }
     public DateTime HireDate { get; }
+    public int? Gender { get; }
     public int? Seniority { get; }
     public bool IsActive { get; }
     public int DepartmentId { get; }
     public string DepartmentName { get; }
+    public int? UnitId { get; }
+    public string? UnitName { get; }
     public int? ManagerId { get; }
     public string? ManagerFullName { get; }
     public int AccruedLeaveDays { get; }
@@ -76,6 +87,9 @@ public sealed class EmployeeDetailResponse
 
     /// <summary>NULL = istekçi notları göremez (kişinin kendisi); boş liste = not yok.</summary>
     public List<EmployeeDetailNoteResponse>? Notes { get; }
+
+    /// <summary>İstekçi izin bakiyesi/geçmişini görebilir mi (panel bu bayrağa göre çizilir).</summary>
+    public bool CanSeeLeave { get; }
 }
 
 public sealed class EmployeeDetailLeaveRequestResponse

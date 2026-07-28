@@ -11,12 +11,14 @@ namespace HRManagement.Application.Features.Employees.Shared;
 /// görünmeyen birinin detayına Id yazarak ulaşılamasın).
 ///
 ///   Admin, HR → herkes
-///   Manager   → yalnızca KENDİ EKİBİ (zincir aşağı) + kendisi
-///   Employee  → yalnızca kendisi (§5.1)
+///   Manager   → BİR ÜST yöneticisi + kendisi + KENDİ EKİBİ (zincir aşağı)
+///   Employee  → BİR ÜST yöneticisi + kendisi + EKİP ARKADAŞLARI
+///               (aynı yöneticiye bağlı olanlar; kullanıcı kararı 2026-07-24)
 ///   diğer     → kimse
 ///
-/// Yetki rolden DEĞİL ilişkiden doğar: Role=Manager olmak tek başına yetmez,
-/// kişinin gerçekten o çalışanın zincirinde yukarıda olması gerekir.
+/// Görüş alanı bilinçli olarak SINIRLI: kişi bir üstünü görür ama üstünün
+/// üstünü (örn. GM'yi) GÖREMEZ — organizasyonda zincirleme gezinti yoktur.
+/// Yetki rolden DEĞİL ilişkiden doğar.
 /// </summary>
 public sealed class EmployeeVisibility
 {
@@ -42,13 +44,33 @@ public sealed class EmployeeVisibility
         if (actorEmployee is null)
             return [];   // hesabı bir çalışan kaydına bağlı değil → görecek kimse yok
 
-        if (actor.Role == Role.Manager)
+        var visible = new List<Employee>();
+
+        // Bir üst yönetici (her iki rol için): "Ekibim" ekranının Yöneticim bölümü.
+        if (actorEmployee.ManagerId is int managerId)
         {
-            var team = await _employeeRepository.GetTeamAsync(actorEmployee.Id);
-            return team.Prepend(actorEmployee);   // ekibi + kendisi
+            var manager = await _employeeRepository.GetByIdAsync(managerId);
+            if (manager is not null)
+                visible.Add(manager);
         }
 
-        return [actorEmployee];   // Employee: yalnızca kendisi
+        visible.Add(actorEmployee);
+
+        if (actor.Role == Role.Manager)
+        {
+            // Ekibi: zincir aşağı herkes.
+            visible.AddRange(await _employeeRepository.GetTeamAsync(actorEmployee.Id));
+        }
+        else if (actorEmployee.ManagerId is int sameManagerId)
+        {
+            // Ekip arkadaşları: aynı yöneticiye DOĞRUDAN bağlı olanlar.
+            // GetTeamAsync zinciri komple döner; kardeş = ManagerId'si aynı olanlar.
+            var siblings = (await _employeeRepository.GetTeamAsync(sameManagerId))
+                .Where(e => e.ManagerId == sameManagerId && e.Id != actorEmployee.Id);
+            visible.AddRange(siblings);
+        }
+
+        return visible;
     }
 
     /// <summary>
@@ -70,9 +92,19 @@ public sealed class EmployeeVisibility
             if (actorEmployee.Id == targetEmployeeId)
                 return;   // kendi kaydı
 
+            if (actorEmployee.ManagerId == targetEmployeeId)
+                return;   // bir üst yöneticisi (üstünün üstü BURADAN geçemez)
+
             if (actor.Role == Role.Manager
                 && await _employeeRepository.IsInManagerChainAsync(actorEmployee.Id, targetEmployeeId))
-                return;   // kendi ekibinden biri
+                return;   // kendi ekibinden biri (zincir aşağı)
+
+            if (actor.Role == Role.Employee && actorEmployee.ManagerId is int myManagerId)
+            {
+                var target = await _employeeRepository.GetByIdAsync(targetEmployeeId);
+                if (target?.ManagerId == myManagerId)
+                    return;   // ekip arkadaşı (aynı yöneticiye bağlı)
+            }
         }
 
         throw new ValidationException("Bu çalışanın bilgilerini görüntüleme yetkiniz yok.");

@@ -19,12 +19,18 @@ public class EmployeesController : Controller
     private readonly IEmployeeApi _employeeApi;
     private readonly IDepartmentApi _departmentApi;
     private readonly IUnitApi _unitApi;
+    private readonly IInternApi _internApi;
 
-    public EmployeesController(IEmployeeApi employeeApi, IDepartmentApi departmentApi, IUnitApi unitApi)
+    public EmployeesController(
+        IEmployeeApi employeeApi,
+        IDepartmentApi departmentApi,
+        IUnitApi unitApi,
+        IInternApi internApi)
     {
         _employeeApi = employeeApi;
         _departmentApi = departmentApi;
         _unitApi = unitApi;
+        _internApi = internApi;
     }
 
     public async Task<IActionResult> Index()
@@ -37,11 +43,34 @@ public class EmployeesController : Controller
             return View(new List<EmployeeResponse>());
         }
 
-        // "Pozisyon" = Departman + Kıdem (türetilir). Liste için departman
-        // Id→Ad sözlüğünü hazırlayıp View'a veriyoruz.
+        // "Pozisyon" = (Birim varsa Birim, yoksa Departman) + Kıdem (türetilir).
+        // Liste için departman + birim Id→Ad sözlüklerini hazırlayıp View'a veriyoruz.
         var departments = await _departmentApi.GetAllAsync();
         ViewBag.DepartmentNames = (departments.Data ?? [])
             .ToDictionary(d => d.Id, d => d.Name);
+
+        var units = await _unitApi.GetAllAsync();
+        ViewBag.UnitNames = (units.Data ?? [])
+            .ToDictionary(u => u.Id, u => u.Name);
+        // Birim filtresi departmana göre süzülebilsin diye tam liste de gider.
+        ViewBag.Units = units.Data ?? [];
+
+        if (User.IsInRole("HR") || User.IsInRole("Admin"))
+        {
+            // Stajyer aç/kapa filtresi: açıkken stajyerlar kendi birimlerinin
+            // altında listelenir. Yalnızca HR/Admin — diğer rollerin stajyer
+            // listesine erişimi zaten kapalı.
+            var interns = await _internApi.GetAllAsync();
+            ViewBag.Interns = interns.Data ?? [];
+        }
+        else
+        {
+            // Ekibim görünümü (Manager/Employee): listeyi "Yöneticim" ve "Ekip
+            // Arkadaşlarım" diye bölebilmek için kişinin kendi kaydını öğreniyoruz.
+            var me = await _employeeApi.GetMyProfileAsync();
+            ViewBag.MyEmployeeId = me.Data?.Id;
+            ViewBag.MyManagerId = me.Data?.ManagerId;
+        }
 
         return View(response.Data ?? new List<EmployeeResponse>());
     }
@@ -142,6 +171,7 @@ public class EmployeesController : Controller
             NationalId = form.NationalId,
             Email = form.Email,
             Phone = form.Phone,
+            Gender = form.Gender,
             // ModelState geçerliyse [Required] sayesinde bu alanlar dolu.
             BirthDate = form.BirthDate!.Value,
             HireDate = form.HireDate!.Value,
@@ -185,6 +215,7 @@ public class EmployeesController : Controller
             NationalId = response.Data.NationalId,
             Email = response.Data.Email,
             Phone = response.Data.Phone,
+            Gender = response.Data.Gender,
             BirthDate = response.Data.BirthDate,
             HireDate = response.Data.HireDate,
             DepartmentId = response.Data.DepartmentId,
@@ -218,6 +249,7 @@ public class EmployeesController : Controller
             NationalId = form.NationalId,
             Email = form.Email,
             Phone = form.Phone,
+            Gender = form.Gender,
             BirthDate = form.BirthDate!.Value,
             HireDate = form.HireDate!.Value,
             DepartmentId = form.DepartmentId!.Value,

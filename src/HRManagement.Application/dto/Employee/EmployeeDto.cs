@@ -10,6 +10,7 @@ public class EmployeeDto
     public string? Phone { get; set; }
     public DateTime BirthDate { get; set; }
     public DateTime HireDate { get; set; }
+    public int? Gender { get; set; }   // Gender enum'ının sayısal karşılığı (1=Erkek, 2=Kadın)
     public int DepartmentId { get; set; }
     public int? UnitId { get; set; }   // departmanın alt kırılımı (Birim); opsiyonel
     public int? UserId { get; set; }

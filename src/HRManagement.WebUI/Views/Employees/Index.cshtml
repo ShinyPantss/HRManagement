@@ -2,94 +2,369 @@
 @model IEnumerable<HRManagement.WebUI.Models.Api.Employees.EmployeeResponse>
 @{
     // Manager ve Employee için bu ekran "Ekibim"dir — menü etiketiyle tutarlı.
-    ViewData["Title"] = (User.IsInRole("HR") || User.IsInRole("Admin")) ? "Çalışanlar" : "Ekibim";
+    var canManage = User.IsInRole("HR") || User.IsInRole("Admin");   // düzenleme
+    var canCreate = User.IsInRole("HR");                              // yeni kayıt yalnız İK
+    var canDelete = User.IsInRole("Admin");                           // silme yalnız Admin
+    var isTeamView = !canManage;
+
+    ViewData["Title"] = canManage ? "Çalışanlar" : "Ekibim";
+
     var deptNames = ViewBag.DepartmentNames as Dictionary<int, string> ?? new();
-    string PositionOf(HRManagement.WebUI.Models.Api.Employees.EmployeeResponse e) =>
-        SeniorityDisplay.Position(deptNames.TryGetValue(e.DepartmentId, out var n) ? n : null, e.Seniority);
+    var unitNames = ViewBag.UnitNames as Dictionary<int, string> ?? new();
+    var unitList = ViewBag.Units as List<HRManagement.WebUI.Models.Api.Units.UnitResponse> ?? new();
+    var internList = ViewBag.Interns as List<HRManagement.WebUI.Models.Api.Interns.InternResponse> ?? new();
+
+    // Ekibim görünümü: liste "Yöneticim" ve ekip diye ayrışır; kişinin kendi
+    // kaydı listelenmez (kendisi için Profilim var).
+    var myId = ViewBag.MyEmployeeId as int?;
+    var myManagerId = ViewBag.MyManagerId as int?;
+    var managerRow = isTeamView && myManagerId is int mid ? Model.FirstOrDefault(e => e.Id == mid) : null;
+
+    // HR/Admin: liste departman → birim → kıdem sırasında akar; böylece stajyer
+    // satırları kendi birimlerinin çalışanlarının hemen ALTINA yerleşebilir.
+    var listRows = isTeamView
+        ? Model.Where(e => e.Id != myId && (managerRow is null || e.Id != managerRow.Id)).ToList()
+        : Model.OrderBy(e => e.DepartmentId).ThenBy(e => e.UnitId ?? 0).ThenBy(e => e.Seniority ?? 99).ToList();
+
+    ViewData["Subtitle"] = canManage
+        ? $"{listRows.Count} kayıt · {deptNames.Count} departman · kayıtlar İK tarafından yönetiliyor."
+        : "Bağlı olduğun yönetici ve ekibin.";
+
+    var teamSectionTitle = User.IsInRole("Manager") ? "Ekibim" : "Ekip arkadaşlarım";
+
+    // Stajyerler (departman|birim) anahtarıyla gruplanır; çalışan akışında grup
+    // bittiğinde o grubun stajyerleri araya girer.
+    static string GroupKey(int departmentId, int? unitId) => $"{departmentId}|{unitId?.ToString() ?? ""}";
+    var internsByGroup = internList
+        .GroupBy(i => GroupKey(i.DepartmentId, i.UnitId))
+        .ToDictionary(g => g.Key, g => g.ToList());
+    var renderedInternGroups = new HashSet<string>();
+
+    // Pozisyon = (Birim varsa Birim, yoksa Departman) + Kıdem.
+    string PositionOf(int departmentId, int? unitId, int? seniority)
+    {
+        var scope = unitId is int uid && unitNames.TryGetValue(uid, out var un)
+            ? un
+            : (deptNames.TryGetValue(departmentId, out var dn) ? dn : null);
+        return SeniorityDisplay.Position(scope, seniority);
+    }
+
+    string Init(string first, string last) =>
+        $"{(first.Length > 0 ? char.ToUpperInvariant(first[0]) : '?')}{(last.Length > 0 ? char.ToUpperInvariant(last[0]) : ' ')}".Trim();
+
+    var cols = canManage ? "2fr 1.4fr 1.2fr 1fr .9fr auto" : "2fr 1.4fr 1.2fr 1fr .9fr auto";
 }
 
-@{
-    // Yeni kayıt AÇMAK yalnızca İK'da; Admin dahil kimse açamaz (kullanıcı kararı).
-    var canCreate = User.IsInRole("HR");
-    // Düzenleme HR + Admin'de. Yönetici yalnızca ekibini GÖRÜR.
-    var canManage = User.IsInRole("HR") || User.IsInRole("Admin");
-    // Silme yalnızca Admin'de (HR silemez).
-    var canDelete = User.IsInRole("Admin");
-}
-
-<div class="page-head d-flex align-items-center">
-    <div>
-        <h1>@ViewData["Title"]</h1>
-        <p class="text-muted mb-0">
-            @(canManage ? "Şirketteki tüm çalışanlar." : "Size bağlı ekip üyeleri.")
-        </p>
-    </div>
+@section PageActions {
     @if (canCreate)
     {
-        <a asp-action="Create" class="btn btn-primary ms-auto">Yeni Çalışan</a>
+        <a asp-action="Create" class="btn btn-primary">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+            Çalışan ekle
+        </a>
     }
-</div>
+}
 
-<div class="panel mt-3">
-    <div class="panel-body p-0">
-        <table class="table table-hover align-middle mb-0">
-            <thead>
-                <tr>
-                    <th>Id</th>
-                    <th>Ad</th>
-                    <th>Soyad</th>
-                    <th>E-posta</th>
-                    <th>Pozisyon</th>
-                    <th>Durum</th>
-                    <th class="text-end">İşlemler</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var employee in Model)
-                {
-                    <tr>
-                        <td>@employee.Id</td>
-                        <td>@employee.FirstName</td>
-                        <td>@employee.LastName</td>
-                        <td>@employee.Email</td>
-                        <td>@PositionOf(employee)</td>
-                        <td>
-                            @if (employee.IsActive)
-                            {
-                                <span class="badge text-bg-success">Aktif</span>
-                            }
-                            else
-                            {
-                                <span class="badge text-bg-secondary">Pasif</span>
-                            }
-                        </td>
-                        <td class="text-end">
-                            @* Listede görünen herkesin detayı açılabilir — görünürlük zaten API'de daraltıldı. *@
-                            <a asp-action="Details" asp-route-id="@employee.Id" class="btn btn-sm btn-outline-primary">Detay</a>
-                            @if (canManage)
-                            {
-                                <a asp-action="Edit" asp-route-id="@employee.Id" class="btn btn-sm btn-outline-secondary">Düzenle</a>
-                            }
-                            @if (canDelete)
-                            {
-                                <form asp-action="Delete" asp-route-id="@employee.Id" method="post" class="d-inline"
-                                      onsubmit="return confirm('Bu çalışanı silmek istediğinize emin misiniz? Hesabı pasife alınır, izin/hesap talepleri silinir.');">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">Sil</button>
-                                </form>
-                            }
-                        </td>
-                    </tr>
-                }
-                @if (!Model.Any())
-                {
-                    <tr>
-                        <td colspan="7" class="text-center text-muted py-4">
-                            @(canManage ? "Henüz çalışan kaydı yok." : "Size bağlı bir ekip üyesi bulunmuyor.")
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+@* ── Yöneticim: ekipten ayrı, tek kişilik kart ─────────────────────── *@
+@if (isTeamView && managerRow is not null)
+{
+    <a class="card card-pad card-link" asp-action="Details" asp-route-id="@managerRow.Id">
+        <div class="row-center" style="gap: 14px; flex-wrap: nowrap;">
+            <span class="avatar avatar-md av-1">@Init(managerRow.FirstName, managerRow.LastName)</span>
+            <div class="flex-1">
+                <div class="row-tight" style="margin-bottom: 3px;">
+                    <span style="font-size: 14.5px; font-weight: 700; letter-spacing: -.2px;">@managerRow.FirstName @managerRow.LastName</span>
+                    <span class="badge badge-sm badge-brand">Yöneticim</span>
+                </div>
+                <div class="dt-secondary">@PositionOf(managerRow.DepartmentId, managerRow.UnitId, managerRow.Seniority) · @managerRow.Email</div>
+            </div>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b6bbc4" stroke-width="2.2" stroke-linecap="round"><path d="m9 6 6 6-6 6" /></svg>
+        </div>
+    </a>
+}
+
+@* ── Filtreler yalnızca İK/Admin'in "Çalışanlar" görünümünde.
+     "Ekibim"de liste zaten avuç içi kadar (yönetici + ekip); departman/birim/
+     kıdem süzmesi orada gürültüden başka bir şey değil. Arama üst bardaki
+     kutudan herkese açık kalır — o görünümde süzmeyi site.js devralır. ── *@
+@if (canManage)
+{
+<section class="card filters" data-page-filter>
+    <div class="field">
+        <span class="field-label">Departman</span>
+        <select id="fDept" class="select">
+            <option value="">Tümü</option>
+            @foreach (var d in deptNames.OrderBy(x => x.Value))
+            {
+                <option value="@d.Key">@d.Value</option>
+            }
+        </select>
     </div>
+
+    <div class="field">
+        <span class="field-label">Birim</span>
+        @* Seçenekler departman seçimine göre JS ile süzülür (data-department). *@
+        <select id="fUnit" class="select">
+            <option value="">Tümü</option>
+            @foreach (var u in unitList.OrderBy(x => x.Name))
+            {
+                <option value="@u.Id" data-department="@u.DepartmentId">@u.Name</option>
+            }
+        </select>
+    </div>
+
+    <div class="field" style="flex: 0 0 170px;">
+        <span class="field-label">Kıdem</span>
+        <select id="fSen" class="select">
+            <option value="">Tümü</option>
+            @foreach (var s in SeniorityDisplay.Options())
+            {
+                <option value="@s.Value">@s.Text</option>
+            }
+        </select>
+    </div>
+
+    <div class="field field-narrow">
+        <span class="field-label">Durum</span>
+        <div class="row-tight">
+            <button type="button" class="chip on" data-status="">Tümü</button>
+            <button type="button" class="chip" data-status="active">Aktif</button>
+            <button type="button" class="chip" data-status="passive">Pasif</button>
+        </div>
+    </div>
+
+    @if (canManage && internList.Any())
+    {
+        @* Stajyer aç/kapa: açıkken stajyerler birimlerinin altında listelenir. *@
+        <label class="switch" id="fInternsWrap">
+            <input type="checkbox" id="fInterns" />
+            <span class="switch-track"></span>
+            Stajyerler (@internList.Count)
+        </label>
+    }
+
+    <button type="button" class="chip" id="fClear" hidden>Filtreleri temizle</button>
+</section>
+
+<div class="row-between">
+    <span class="pager-meta" id="rowCount">@listRows.Count kayıt</span>
+    <span class="pager-meta">Ada veya e-postaya göre aramak için üstteki arama alanını kullan</span>
 </div>
+}
+
+<section class="card card-flush">
+    @if (isTeamView)
+    {
+        <div class="card-head">
+            <h2>@teamSectionTitle</h2>
+            <span class="card-head-meta">@listRows.Count kişi</span>
+        </div>
+    }
+
+    <div class="dt" style="--cols: @cols;">
+        <div class="dt-head">
+            <span>Çalışan</span>
+            <span>Departman · Birim</span>
+            <span>Ünvan</span>
+            <span>İşe giriş</span>
+            <span>Durum</span>
+            <span style="padding-left: 14px;">İşlem</span>
+        </div>
+
+        @for (var i = 0; i < listRows.Count; i++)
+        {
+            var e = listRows[i];
+            var deptName = deptNames.TryGetValue(e.DepartmentId, out var dn2) ? dn2 : "—";
+            var unitName = e.UnitId is int uid2 && unitNames.TryGetValue(uid2, out var un2) ? un2 : "—";
+
+            <div class="dt-row"
+                 data-dept="@e.DepartmentId"
+                 data-unit="@(e.UnitId?.ToString() ?? "")"
+                 data-seniority="@e.Seniority"
+                 data-status="@(e.IsActive ? "active" : "passive")"
+                 data-search="@($"{e.FirstName} {e.LastName} {e.Email}".ToLowerInvariant())">
+                <div class="person">
+                    <span class="avatar av-@(i % 6 + 1)">@Init(e.FirstName, e.LastName)</span>
+                    <div class="person-text">
+                        <div class="dt-primary">@e.FirstName @e.LastName</div>
+                        <div class="dt-secondary">@e.Email</div>
+                    </div>
+                </div>
+                <div style="min-width: 0;">
+                    <div class="dt-cell" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">@deptName</div>
+                    <div class="dt-secondary" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">@unitName</div>
+                </div>
+                <span class="dt-cell-muted">@SeniorityDisplay.Label(e.Seniority)</span>
+                <span class="dt-cell-muted num">@e.HireDate.ToString("dd.MM.yyyy")</span>
+                <span>
+                    <span class="badge badge-sm @(e.IsActive ? "badge-ok" : "badge-neutral")">@(e.IsActive ? "Aktif" : "Pasif")</span>
+                </span>
+                <div class="task-actions" style="padding-left: 14px;">
+                    @* Listede görünen herkesin detayı açılabilir — görünürlük zaten API'de daraltıldı. *@
+                    <a asp-action="Details" asp-route-id="@e.Id" class="btn btn-sm">Detay</a>
+                    @if (canManage)
+                    {
+                        <a asp-action="Edit" asp-route-id="@e.Id" class="btn btn-sm">Düzenle</a>
+                    }
+                    @if (canDelete)
+                    {
+                        <form asp-action="Delete" asp-route-id="@e.Id" method="post" style="display: inline;"
+                              data-confirm="@($"{e.FirstName} {e.LastName} silinsin mi? Hesabı pasife alınır, izin ve hesap talepleri silinir.")"
+                              data-confirm-ok="Sil" data-danger>
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-sm btn-danger">Sil</button>
+                        </form>
+                    }
+                </div>
+            </div>
+
+            @* Grup (departman|birim) bitti mi? Bittiyse o birimin stajyerleri
+               hemen buraya girer — "birimin altında" kuralı. *@
+            var groupKey = GroupKey(e.DepartmentId, e.UnitId);
+            var isGroupEnd = i == listRows.Count - 1
+                || GroupKey(listRows[i + 1].DepartmentId, listRows[i + 1].UnitId) != groupKey;
+            var groupInterns = isGroupEnd && internsByGroup.TryGetValue(groupKey, out var gi) && renderedInternGroups.Add(groupKey)
+                ? gi : null;
+
+            @if (groupInterns is not null)
+            {
+                @foreach (var intern in groupInterns)
+                {
+                    @* Sözlükler ViewData'dan miras gelir (controller ViewBag ile koyuyor);
+                       ayrıca geçirmeye gerek yok. *@
+                    <partial name="_InternRow" model="intern" />
+                }
+            }
+        }
+
+        @* Biriminde hiç çalışan olmayan stajyerler listenin sonuna düşer. *@
+        @foreach (var orphan in internsByGroup.Where(g => !renderedInternGroups.Contains(g.Key)))
+        {
+            @foreach (var intern in orphan.Value)
+            {
+                <partial name="_InternRow" model="intern" />
+            }
+        }
+
+        @if (!listRows.Any())
+        {
+            <div class="empty">
+                <div class="empty-title">
+                    @(canManage
+                        ? "Henüz çalışan kaydı yok"
+                        : User.IsInRole("Manager") ? "Sana bağlı ekip üyesi yok" : "Ekip arkadaşın bulunmuyor")
+                </div>
+                <div class="empty-text">
+                    @(canManage ? "Sağ üstteki “Çalışan ekle” ile ilk kaydı açabilirsin." : "Görünürlük yöneticine bağlı ekiple sınırlıdır.")
+                </div>
+            </div>
+        }
+
+        @* Filtre hiçbir satırı bırakmazsa JS bunu gösterir. *@
+        <div class="empty" id="noFilterResults" hidden>
+            <div class="empty-title">Bu filtrelerle kayıt bulunamadı</div>
+            <div class="empty-text">Departman, birim veya kıdem seçimini gevşetmeyi dene.</div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    @* Filtre scripti yalnızca filtre çubuğu render edildiyse anlamlı; "Ekibim"
+       görünümünde aramayı site.js'in genel süzmesi devralır. *@
+    @if (canManage)
+    {
+    <script>
+        // Çalışan listesi filtresi — ANLIK, istemci tarafı (sayfa yenilenmez).
+        // Arama kutusu üst bardadır; bu script onu da okur ([data-page-filter]
+        // işareti sayesinde site.js kendi süzmesini devreye sokmaz).
+        (function () {
+            var search = document.getElementById('globalSearch');
+            var dept = document.getElementById('fDept');
+            var unit = document.getElementById('fUnit');
+            var sen = document.getElementById('fSen');
+            var internsToggle = document.getElementById('fInterns'); // HR/Admin dışına render edilmez
+            var clear = document.getElementById('fClear');
+            var noResults = document.getElementById('noFilterResults');
+            var count = document.getElementById('rowCount');
+            var chips = Array.prototype.slice.call(document.querySelectorAll('.chip[data-status]'));
+            var rows = Array.prototype.slice.call(document.querySelectorAll('.dt-row[data-search]'));
+            if (!rows.length) return;
+
+            var status = '';
+
+            // Birim seçenekleri seçilen departmana göre süzülür (formlardaki kaskadın aynısı).
+            function filterUnitOptions() {
+                if (!unit) return;
+                var d = dept.value;
+                for (var i = 0; i < unit.options.length; i++) {
+                    var opt = unit.options[i];
+                    if (opt.value === '') continue;
+                    var hide = !!d && opt.getAttribute('data-department') !== d;
+                    opt.hidden = hide;
+                    if (hide && opt.selected) unit.value = '';
+                }
+            }
+
+            function apply() {
+                // toLowerCase() bilinçli: data-search sunucuda ToLowerInvariant ile
+                // üretiliyor. toLocaleLowerCase('tr') kullanılsaydı I/İ harflerinde
+                // iki taraf farklı eşlenir ve arama hiç tutmazdı.
+                var q = (search && search.value || '').trim().toLowerCase();
+                var d = dept.value, u = unit ? unit.value : '', s = sen.value;
+                var showInterns = internsToggle ? internsToggle.checked : false;
+                var visible = 0;
+
+                rows.forEach(function (row) {
+                    var ok = true;
+                    // Stajyerler yalnızca anahtar AÇIKKEN listeye girer.
+                    if (row.getAttribute('data-intern') === '1' && !showInterns) ok = false;
+                    if (ok && q && row.getAttribute('data-search').indexOf(q) === -1) ok = false;
+                    if (ok && d && row.getAttribute('data-dept') !== d) ok = false;
+                    if (ok && u && row.getAttribute('data-unit') !== u) ok = false;
+                    if (ok && s && row.getAttribute('data-seniority') !== s) ok = false;
+                    if (ok && status && row.getAttribute('data-status') !== status) ok = false;
+                    row.hidden = !ok;
+                    if (ok) visible++;
+                });
+
+                if (noResults) noResults.hidden = visible !== 0;
+                if (count) count.textContent = visible + ' kayıt';
+
+                var dirty = !!(q || d || u || s || status);
+                if (clear) clear.hidden = !dirty;
+            }
+
+            chips.forEach(function (chip) {
+                chip.addEventListener('click', function () {
+                    chips.forEach(function (c) { c.classList.remove('on'); });
+                    chip.classList.add('on');
+                    status = chip.getAttribute('data-status');
+                    apply();
+                });
+            });
+
+            [search, dept, unit, sen, internsToggle].forEach(function (el) {
+                if (!el) return;
+                el.addEventListener('input', apply);
+                el.addEventListener('change', apply);
+            });
+
+            dept.addEventListener('change', filterUnitOptions);
+
+            if (clear) {
+                clear.addEventListener('click', function () {
+                    if (search) search.value = '';
+                    dept.value = ''; if (unit) unit.value = ''; sen.value = '';
+                    status = '';
+                    chips.forEach(function (c) { c.classList.toggle('on', c.getAttribute('data-status') === ''); });
+                    filterUnitOptions();
+                    apply();
+                });
+            }
+
+            filterUnitOptions();
+            apply();
+        })();
+    </script>
+    }
+}

@@ -1,0 +1,223 @@
+@using HRManagement.WebUI.Models
+@model HRManagement.WebUI.Models.Home.InternHomeViewModel
+@{
+    var p = Model.Profile;
+    ViewData["Title"] = p is null ? "Staj Panelim" : $"Merhaba {p.FirstName}";
+    ViewData["Subtitle"] = "Staj planın, kalan süren ve mentorundan gelen görevler.";
+
+    var today = DateTime.Today;
+    var remainingDays = p is null ? 0 : (p.EndDate.Date - today).Days;
+    var totalDays = p is null ? 1 : Math.Max(1, (p.EndDate.Date - p.StartDate.Date).Days);
+    var elapsed = p is null ? 0 : Math.Clamp((int)Math.Round(100.0 * (today - p.StartDate.Date).Days / totalDays), 0, 100);
+
+    var doneTasks = Model.Tasks.Count(t => t.Status == "Done");
+    var openTasks = Model.Tasks.Count - doneTasks;
+    var overdue = Model.Tasks.Count(t => t.DueDate is DateTime d && d.Date < today && t.Status != "Done");
+    var taskProgress = Model.Tasks.Count == 0
+        ? (p is null || p.TotalTasks == 0 ? 0 : (int)Math.Round(100.0 * p.DoneTasks / p.TotalTasks))
+        : (int)Math.Round(100.0 * doneTasks / Model.Tasks.Count);
+}
+
+@functions {
+    string DateText(DateTime d) => d.ToString("dd.MM.yyyy");
+
+    string Init(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "—";
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2
+            ? $"{char.ToUpperInvariant(parts[0][0])}{char.ToUpperInvariant(parts[^1][0])}"
+            : char.ToUpperInvariant(parts[0][0]).ToString();
+    }
+
+    (string Dot, string Badge, string Text) TaskState(string status) => status switch
+    {
+        "Pending" => ("warn", "badge-warn", "Bekliyor"),
+        "InProgress" => ("info", "badge-violet", "Devam ediyor"),
+        "Done" => ("ok", "badge-ok", "Tamamlandı"),
+        _ => ("", "badge-neutral", status)
+    };
+
+    // Stajyerin izin zinciri mentordan başlar — çalışandan farklı.
+    (string Badge, string Text) LeaveState(string status) => status switch
+    {
+        "Pending" => ("badge-warn", "Mentor onayı"),
+        "PendingHr" => ("badge-info", "İK onayı"),
+        "Approved" => ("badge-ok", "Onaylandı"),
+        "Rejected" => ("badge-danger", "Reddedildi"),
+        _ => ("badge-neutral", status)
+    };
+}
+
+@section PageActions {
+    <a asp-controller="MyTasks" asp-action="Index" class="btn">Görevlerim</a>
+    <a asp-controller="LeaveRequests" asp-action="Create" class="btn btn-primary">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+        İzin talep et
+    </a>
+}
+
+@if (p is null)
+{
+    <div class="card">
+        <div class="empty">
+            <div class="empty-title">Staj kaydın bulunamadı</div>
+            <div class="empty-text">Hesabın bir stajyer kaydına bağlı değil — İK ile iletişime geç.</div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="grid g-wide-right">
+        @* ── Sol: staj süresi + sorumlular ─────────────────────────── *@
+        <div class="stack">
+            <section class="card card-pad">
+                <h2 class="section-title">Staj süresi</h2>
+
+                <div class="row-center" style="gap: 8px; align-items: baseline; margin-bottom: 12px;">
+                    <span style="font-size: 32px; font-weight: 800; letter-spacing: -1.3px; line-height: 1; color: var(--accent);">%@elapsed</span>
+                    <span class="stat-unit">tamamlandı</span>
+                </div>
+
+                <div class="bar bar-lg" style="margin-bottom: 12px;">
+                    <div class="bar-fill @(remainingDays >= 0 && remainingDays <= 30 ? "warn" : "")" style="width: @elapsed%;"></div>
+                </div>
+
+                <div class="page-sub">
+                    Sözleşme: <span class="num">@DateText(p.StartDate) – @DateText(p.EndDate)</span> ·
+                    @(remainingDays < 0 ? "staj sona erdi" : $"{remainingDays} gün kaldı")
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="stack" style="gap: 12px;">
+                    <div class="row-center" style="gap: 11px; flex-wrap: nowrap;">
+                        <span class="avatar avatar-md av-3">@Init(Model.MentorFullName)</span>
+                        <div class="flex-1">
+                            <div class="mini-stat-label" style="margin-bottom: 2px;">MENTORUM</div>
+                            <div class="dt-primary">@(Model.MentorFullName ?? "Henüz atanmadı")</div>
+                        </div>
+                    </div>
+                    @* Yönetici ≠ mentor: birimin (yoksa departmanın) yöneticisi. *@
+                    <div class="row-center" style="gap: 11px; flex-wrap: nowrap;">
+                        <span class="avatar avatar-md av-2">@Init(p.ManagerFullName)</span>
+                        <div class="flex-1">
+                            <div class="mini-stat-label" style="margin-bottom: 2px;">YÖNETİCİM</div>
+                            <div class="dt-primary">@(p.ManagerFullName ?? "—")</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card card-pad">
+                <div class="row-between" style="margin-bottom: 14px;">
+                    <h2 class="section-title" style="margin-bottom: 0;">Görev ilerlemem</h2>
+                    <a class="card-head-link" asp-controller="MyTasks" asp-action="Index">Tümünü gör</a>
+                </div>
+
+                @if (Model.Tasks.Any() || p.TotalTasks > 0)
+                {
+                    <div class="row-center" style="gap: 8px; margin-bottom: 10px; align-items: baseline;">
+                        <span class="stat-value" style="font-size: 26px;">@(Model.Tasks.Any() ? doneTasks : p.DoneTasks)/@(Model.Tasks.Any() ? Model.Tasks.Count : p.TotalTasks)</span>
+                        <span class="stat-unit">görev tamamlandı</span>
+                    </div>
+                    <div class="bar" style="margin-bottom: 12px;"><div class="bar-fill ok" style="width: @taskProgress%;"></div></div>
+
+                    <div class="row-tight">
+                        <span class="badge badge-sm @(openTasks > 0 ? "badge-warn" : "badge-ok")">@openTasks açık</span>
+                        @if (overdue > 0)
+                        {
+                            <span class="badge badge-sm badge-danger">@overdue gecikmiş</span>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="empty-text">Henüz görev atanmamış.</div>
+                }
+            </section>
+        </div>
+
+        @* ── Sağ: mentordan gelen görevler + izin talepleri ────────── *@
+        <div class="stack">
+            <section class="card card-flush">
+                <div class="card-head">
+                    <h2>Mentorumdan gelen görevler</h2>
+                    <span class="card-head-meta">@(Model.MentorFullName ?? "mentor atanmadı")</span>
+                </div>
+
+                @if (Model.Tasks.Any())
+                {
+                    @foreach (var task in Model.Tasks.Take(5))
+                    {
+                        var (dot, badge, statusText) = TaskState(task.Status);
+                        var isOverdue = task.DueDate is DateTime d && d.Date < today && task.Status != "Done";
+
+                        <div class="task">
+                            <span class="task-dot @dot"></span>
+                            <div style="min-width: 0;">
+                                <div class="task-title @(task.Status == "Done" ? "done" : "")">@task.Title</div>
+                                <div class="task-meta">
+                                    <span>@DateText(task.CreatedAt) atandı</span>
+                                    @if (task.DueDate is DateTime due)
+                                    {
+                                        <span class="@(isOverdue ? "text-danger-fg fw-700" : "")">
+                                            · termin @DateText(due)@(isOverdue ? " (gecikti)" : "")
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                            <span class="badge badge-sm @badge">@statusText</span>
+                        </div>
+                    }
+
+                    @if (Model.Tasks.Count > 5)
+                    {
+                        <div class="card-foot">@(Model.Tasks.Count - 5) görev daha var — “Görevlerim”den tamamına bakabilirsin.</div>
+                    }
+                }
+                else
+                {
+                    <div class="empty">
+                        <div class="empty-title">Henüz görev yok</div>
+                        <div class="empty-text">Mentorun görev atadığında burada listelenecek.</div>
+                    </div>
+                }
+            </section>
+
+            <section class="card card-flush">
+                <div class="card-head">
+                    <h2>İzin taleplerim</h2>
+                    <a class="card-head-link" asp-controller="LeaveRequests" asp-action="Index">Tümü</a>
+                </div>
+
+                @if (p.RecentLeaveRequests.Any())
+                {
+                    @foreach (var leave in p.RecentLeaveRequests)
+                    {
+                        var (badge, statusText) = LeaveState(leave.Status);
+                        <a class="dt-row" style="--cols: 1fr auto;" asp-controller="LeaveRequests" asp-action="Details" asp-route-id="@leave.Id">
+                            <div>
+                                <div class="dt-primary" style="margin-bottom: 3px;">
+                                    @LeaveDisplay.TypeText(leave.Type) · <span class="num">@DateText(leave.StartDate) – @DateText(leave.EndDate)</span>
+                                </div>
+                                <div class="dt-secondary">@leave.TotalDays iş günü</div>
+                            </div>
+                            <span class="badge badge-sm @badge">@statusText</span>
+                        </a>
+                    }
+                    <div class="card-foot">
+                        Onay akışın: <strong style="color: var(--ink);">Mentorun → İnsan Kaynakları</strong>
+                    </div>
+                }
+                else
+                {
+                    <div class="empty">
+                        <div class="empty-title">Henüz izin talebin yok</div>
+                        <div class="empty-text">Soldaki “İzin Talep Et” kısayolundan oluşturabilirsin.</div>
+                    </div>
+                }
+            </section>
+        </div>
+    </div>
+}

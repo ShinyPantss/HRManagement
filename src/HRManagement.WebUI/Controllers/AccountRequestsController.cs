@@ -3,6 +3,7 @@ using HRManagement.WebUI.Models.Api.AccountRequests;
 using HRManagement.WebUI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace HRManagement.WebUI.Controllers;
 
@@ -72,7 +73,8 @@ public class AccountRequestsController : Controller
             Id = request.Id,
             SubjectName = request.SubjectName,
             SubjectType = request.SubjectType,
-            SuggestedRole = request.SuggestedRole
+            SuggestedRole = request.SuggestedRole,
+            RoleOptions = RoleOptions()
         };
 
         // Şirket standardında otomatik doldur (Admin yine düzenleyebilir):
@@ -116,24 +118,40 @@ public class AccountRequestsController : Controller
     public async Task<IActionResult> Approve(ApproveAccountRequestViewModel form)
     {
         if (!ModelState.IsValid)
+        {
+            form.RoleOptions = RoleOptions();
             return View(form);
+        }
 
         var response = await _accountRequestApi.ApproveAsync(form.Id, new ApproveAccountRequestRequest
         {
             Username = form.Username,
             Email = form.Email,
-            Password = form.Password
+            Password = form.Password,
+            Role = form.Role
         });
 
         if (!response.IsSuccess)
         {
             ModelState.AddModelError(string.Empty, response.Message ?? "İşlem başarısız.");
+            form.RoleOptions = RoleOptions();
             return View(form);
         }
 
         TempData["Success"] = response.Message ?? "Talep onaylandı, hesap açıldı.";
         return RedirectToAction(nameof(Pending));
     }
+
+    // Onayda Admin'in seçebileceği roller. Bu ekran zaten yalnızca Admin'e açık; kıdemden
+    // TÜRETİLEMEYEN roller (İK, Admin) burada elle verilir — ör. İK Müdürü hesabı = HR.
+    // Boş bırakılırsa talebin otomatik türetilmiş rolü kullanılır.
+    private static IEnumerable<SelectListItem> RoleOptions() =>
+    [
+        new SelectListItem("İK (HR)", "2"),
+        new SelectListItem("Yönetici", "3"),
+        new SelectListItem("Çalışan", "4"),
+        new SelectListItem("Admin", "1")
+    ];
 
     // ── Admin: reddet ────────────────────────────────────────────────────
     [HttpPost]

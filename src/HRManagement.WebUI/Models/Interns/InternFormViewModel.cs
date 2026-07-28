@@ -34,9 +34,12 @@ public class InternFormViewModel
     [Display(Name = "Bölüm")]
     public string Major { get; set; } = string.Empty;
 
-    [Range(1, 8, ErrorMessage = "Sınıf 1-8 arasında olmalıdır.")]
+    // Nullable: dropdown'da "Seçiniz…" boş kalırsa 0'a (Hazırlık!) düşmeden
+    // [Required]'a takılsın — tarih/departman alanlarıyla aynı gerekçe.
+    [Required(ErrorMessage = "Sınıf seçimi zorunludur.")]
+    [Range(0, 4, ErrorMessage = "Sınıf, Hazırlık ile 4. sınıf arasında olmalıdır.")]
     [Display(Name = "Sınıf")]
-    public int Grade { get; set; }
+    public int? Grade { get; set; }
 
     [Required(ErrorMessage = "Başlangıç tarihi zorunludur.")]
     [DisplayFormat(DataFormatString = "{0:dd.MM.yyyy}", ApplyFormatInEditMode = true)]
@@ -49,7 +52,7 @@ public class InternFormViewModel
     public DateTime? EndDate { get; set; }
 
     // Mentor opsiyonel — stajyere henüz mentor atanmamış olabilir.
-    [Display(Name = "Mentor Id (opsiyonel)")]
+    [Display(Name = "Mentor (opsiyonel)")]
     public int? MentorId { get; set; }
 
     [Required(ErrorMessage = "Departman seçimi zorunludur.")]
@@ -72,4 +75,10 @@ public class InternFormViewModel
 
     /// <summary>Birim adayları (tümü); JS seçilen departmana göre süzer.</summary>
     public IEnumerable<UnitOption> UnitCandidates { get; set; } = [];
+
+    /// <summary>
+    /// Mentor adayları (tüm aktif çalışanlar); JS seçilen departman+birime göre
+    /// süzer. Controller her form gösteriminde doldurur.
+    /// </summary>
+    public IEnumerable<MentorOption> MentorCandidates { get; set; } = [];
 }

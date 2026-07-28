@@ -1,3 +1,4 @@
+using HRManagement.Domain.Enums;
 using MediatR;
 
 namespace HRManagement.Application.Features.AccountRequests.Commands.ApproveAccountRequest;
@@ -6,12 +7,14 @@ namespace HRManagement.Application.Features.AccountRequests.Commands.ApproveAcco
 /// Bekleyen bir hesap talebini onaylar: hesabı açar, kişiye bağlar, talebi kapatır.
 /// Yalnızca Admin. ApproverUserId claim'den gelir. Şifre BURADA belirlenir (talepte tutulmaz).
 ///
-/// Rol SEÇİLMEZ: talebin rolü kullanılır — o rol de kişinin kıdeminden/türünden
-/// türetilmiştir (bkz. AccountRoleResolver). Onayda rol override YOK.
+/// Role OPSİYONEL override: verilmezse (null) talebin türetilmiş rolü kullanılır.
+/// Kıdemden TÜRETİLEMEYEN roller (İK, Admin) için Admin burada elle seçer —
+/// ör. İK Müdürü hesabı = HR (izin onayında yöneticilik zaten org zincirinden gelir).
 /// </summary>
 public sealed record ApproveAccountRequestCommand(
     int Id,
     int ApproverUserId,
     string Username,
     string Email,
-    string Password) : IRequest<int>;
+    string Password,
+    Role? Role) : IRequest<int>;

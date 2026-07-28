@@ -13,29 +13,51 @@ public sealed class GetMentoredInternDetailQueryHandler
     private readonly IInternTaskRepository _taskRepository;
     private readonly IInternNoteRepository _noteRepository;
     private readonly IUserRepository _userRepository;
+    private readonly IEmployeeRepository _employeeRepository;
+    private readonly IUnitRepository _unitRepository;
+    private readonly UnitManagerResolver _unitManagerResolver;
 
     public GetMentoredInternDetailQueryHandler(
         MentorshipGuard mentorshipGuard,
         IDepartmentRepository departmentRepository,
         IInternTaskRepository taskRepository,
         IInternNoteRepository noteRepository,
-        IUserRepository userRepository)
+        IUserRepository userRepository,
+        IEmployeeRepository employeeRepository,
+        IUnitRepository unitRepository,
+        UnitManagerResolver unitManagerResolver)
     {
         _mentorshipGuard = mentorshipGuard;
         _departmentRepository = departmentRepository;
         _taskRepository = taskRepository;
         _noteRepository = noteRepository;
         _userRepository = userRepository;
+        _employeeRepository = employeeRepository;
+        _unitRepository = unitRepository;
+        _unitManagerResolver = unitManagerResolver;
     }
 
     public async Task<MentoredInternDetailDto> Handle(GetMentoredInternDetailQuery request, CancellationToken cancellationToken)
     {
-        // Yetki veriden önce: mentor değilse içerik hiç yüklenmez.
-        var intern = await _mentorshipGuard.EnsureMentorAsync(request.InternId, request.RequesterUserId);
+        // Yetki veriden önce: mentor VEYA HR/Admin değilse içerik hiç yüklenmez.
+        // (HR/Admin salt-okur gözlemler; görev/not ekleme yazma handler'larında mentor-only kalır.)
+        var intern = await _mentorshipGuard.EnsureCanViewAsync(request.InternId, request.RequesterUserId);
 
         var department = await _departmentRepository.GetByIdAsync(intern.DepartmentId);
         var tasks = await _taskRepository.GetByInternIdAsync(intern.Id);
         var notes = await _noteRepository.GetByInternIdAsync(intern.Id);
+
+        // Mentor adı — özellikle HR/Admin salt-okur bakarken sorumluyu göstermek için.
+        var mentor = intern.MentorId is int mentorId
+            ? await _employeeRepository.GetByIdAsync(mentorId)
+            : null;
+
+        var unit = intern.UnitId is int unitId
+            ? await _unitRepository.GetByIdAsync(unitId)
+            : null;
+
+        // Yönetici mentor'dan AYRI: birim/departman hiyerarşisinden türetilir.
+        var unitManager = await _unitManagerResolver.ResolveAsync(intern.DepartmentId, intern.UnitId);
 
         return new MentoredInternDetailDto
         {
@@ -49,6 +71,11 @@ public sealed class GetMentoredInternDetailQueryHandler
             StartDate = intern.StartDate,
             EndDate = intern.EndDate,
             DepartmentName = department?.Name ?? string.Empty,
+            MentorFullName = mentor is null ? null : $"{mentor.FirstName} {mentor.LastName}",
+            MentorEmployeeId = mentor?.Id,
+            UnitName = unit?.Name,
+            ManagerFullName = unitManager is null ? null : $"{unitManager.FirstName} {unitManager.LastName}",
+            ManagerEmployeeId = unitManager?.Id,
             Tasks = tasks
                 .OrderByDescending(t => t.CreatedAt)
                 .Select(t => new InternTaskDto
@@ -65,7 +92,7 @@ public sealed class GetMentoredInternDetailQueryHandler
         };
     }
 
-    /// <summary>Not yazarlarının adları (yazar başına tek User sorgusu — mentor değişmiş olabilir).</summary>
+    /// <summary>Not yazarlarının adları (yazar başına tek sorgu — mentor değişmiş olabilir).</summary>
     private async Task<List<InternNoteDto>> BuildNotesAsync(IEnumerable<Domain.Entities.InternNote> notes)
     {
         var authorNames = new Dictionary<int, string>();
@@ -75,8 +102,7 @@ public sealed class GetMentoredInternDetailQueryHandler
         {
             if (!authorNames.TryGetValue(note.AuthorUserId, out var authorName))
             {
-                var author = await _userRepository.GetByIdAsync(note.AuthorUserId);
-                authorName = author?.Username ?? "bilinmiyor";
+                authorName = await ResolveAuthorNameAsync(note.AuthorUserId);
                 authorNames[note.AuthorUserId] = authorName;
             }
 
@@ -90,5 +116,19 @@ public sealed class GetMentoredInternDetailQueryHandler
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Not yazarının GÖRÜNEN adı: hesap bir çalışan kaydına bağlıysa ad-soyad
+    /// ("HPY10534" gibi kullanıcı adı değil); değilse kullanıcı adına düşülür.
+    /// </summary>
+    private async Task<string> ResolveAuthorNameAsync(int authorUserId)
+    {
+        var authorEmployee = await _employeeRepository.GetByUserIdAsync(authorUserId);
+        if (authorEmployee is not null)
+            return $"{authorEmployee.FirstName} {authorEmployee.LastName}";
+
+        var author = await _userRepository.GetByIdAsync(authorUserId);
+        return author?.Username ?? "bilinmiyor";
     }
 }

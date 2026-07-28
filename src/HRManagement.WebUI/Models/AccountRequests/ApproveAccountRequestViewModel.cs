@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace HRManagement.WebUI.Models.AccountRequests;
 
@@ -31,6 +32,10 @@ public class ApproveAccountRequestViewModel
     [Display(Name = "Geçici Şifre")]
     public string Password { get; set; } = string.Empty;
 
-    // Rol onayda SEÇİLMEZ: talebin (kişiden türetilmiş) rolü kullanılır.
-    // SuggestedRole yalnızca üstte bilgi olarak gösterilir.
+    // Rol OPSİYONEL override (yalnızca Admin bu ekrana girer): boşsa talebin türetilmiş
+    // rolü (SuggestedRole) kullanılır. İK/Admin gibi türetilemeyen roller burada verilir.
+    [Display(Name = "Rol (boşsa otomatik atanan kullanılır)")]
+    public int? Role { get; set; }
+
+    public IEnumerable<SelectListItem> RoleOptions { get; set; } = [];
 }

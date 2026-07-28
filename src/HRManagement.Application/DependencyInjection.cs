@@ -38,6 +38,9 @@ public static class DependencyInjection
         // "Bu stajyerin mentoru mu?" kuralı — mentorluk query/command'ları paylaşır.
         services.AddScoped<Features.Interns.Shared.MentorshipGuard>();
 
+        // Stajyerin türetilmiş yöneticisi (birim → departman) — profil ve detay paylaşır.
+        services.AddScoped<Features.Interns.Shared.UnitManagerResolver>();
+
         return services;
     }
 }

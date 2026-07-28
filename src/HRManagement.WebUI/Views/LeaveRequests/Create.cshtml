@@ -1,74 +1,137 @@
 @model HRManagement.WebUI.Models.LeaveRequests.LeaveRequestFormViewModel
 @{
-    ViewData["Title"] = "Yeni İzin Talebi";
+    ViewData["Title"] = "İzin Talebi Oluştur";
+    ViewData["Subtitle"] = "Talep, giriş yaptığın hesap adına açılır ve onay zincirine düşer.";
+    ViewData["Crumb"] = "İzinlerim";
+    ViewData["CrumbUrl"] = Url.Action("Index", "LeaveRequests");
 }
 
-<div class="page-head">
-    <h1>Yeni İzin Talebi</h1>
-    <p class="text-muted mb-0">Talep, giriş yaptığınız hesap adına oluşturulur. İzin türü ve tarih aralığı zorunludur.</p>
-</div>
+<div class="narrow stack">
+    <form asp-action="Create" method="post" novalidate class="stack">
+        <section class="card card-pad-lg">
+            <div asp-validation-summary="ModelOnly"></div>
 
-<div class="panel mt-3" style="max-width: 640px;">
-    <div class="panel-body">
-        <form asp-action="Create" method="post" novalidate>
-            <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
-
-            <div class="mb-3">
-                <label asp-for="Type" class="form-label"></label>
-                <select asp-for="Type" asp-items="Model.TypeOptions" class="form-select"></select>
-                <span asp-validation-for="Type" class="text-danger small"></span>
-            </div>
-
-            <div class="row">
-                <div class="col-sm-6 mb-3">
-                    <label asp-for="StartDate" class="form-label"></label>
-                    <input asp-for="StartDate" type="text" class="form-control" placeholder="gg.aa.yyyy" />
-                    <span asp-validation-for="StartDate" class="text-danger small"></span>
+            @* İzin türü: tasarımdaki gibi çip seçimi. Gerçek değer gizli select'te
+               tutulur — böylece sunucu tarafı model binding aynen çalışır. *@
+            <div class="field" style="margin-bottom: 22px;">
+                <span class="field-label">İzin türü</span>
+                <div class="row-tight" id="typeChips">
+                    @foreach (var option in Model.TypeOptions)
+                    {
+                        <button type="button" class="chip @(option.Value == Model.Type.ToString() ? "on" : "")"
+                                data-type="@option.Value">@option.Text</button>
+                    }
                 </div>
-                <div class="col-sm-6 mb-3">
-                    <label asp-for="EndDate" class="form-label"></label>
-                    <input asp-for="EndDate" type="text" class="form-control" placeholder="gg.aa.yyyy" />
-                    <span asp-validation-for="EndDate" class="text-danger small"></span>
-                </div>
+                <select asp-for="Type" asp-items="Model.TypeOptions" class="select sr-only" tabindex="-1" aria-hidden="true"></select>
+                <span asp-validation-for="Type"></span>
             </div>
 
             @* Rapor alanı: yalnızca Hastalık İzni (Type == 3) seçildiğinde görünür.
-               Sunucu tarafı da bu kuralı doğrular; JS yalnızca UX içindir. *@
-            <div class="mb-3" id="medicalReportGroup">
-                <label asp-for="MedicalReport" class="form-label"></label>
-                <textarea asp-for="MedicalReport" class="form-control" rows="2"
+               Sunucu tarafı da bu kuralı doğrular; buradaki yalnızca UX. *@
+            <div class="field" id="medicalReportGroup" style="margin-bottom: 22px;">
+                <label class="field-label" asp-for="MedicalReport"></label>
+                <textarea asp-for="MedicalReport" class="textarea" rows="2"
                           placeholder="Rapor no / doktor / kurum bilgisi"></textarea>
-                <span asp-validation-for="MedicalReport" class="text-danger small"></span>
+                <span class="field-hint">Hastalık izninde zorunludur.</span>
+                <span asp-validation-for="MedicalReport"></span>
             </div>
 
-            <div class="mb-3">
-                <label asp-for="Description" class="form-label"></label>
-                <textarea asp-for="Description" class="form-control" rows="3"></textarea>
-                <span asp-validation-for="Description" class="text-danger small"></span>
+            <div class="form-grid" style="margin-bottom: 22px;">
+                <div class="field">
+                    <label class="field-label" asp-for="StartDate"></label>
+                    <input asp-for="StartDate" type="date" asp-format="{0:yyyy-MM-dd}" class="input" />
+                    <span asp-validation-for="StartDate"></span>
+                </div>
+                <div class="field">
+                    <label class="field-label" asp-for="EndDate"></label>
+                    <input asp-for="EndDate" type="date" asp-format="{0:yyyy-MM-dd}" class="input" />
+                    <span asp-validation-for="EndDate"></span>
+                </div>
             </div>
 
-            <div class="d-flex gap-2 mt-4">
-                <button type="submit" class="btn btn-primary">Kaydet</button>
-                <a asp-action="Index" class="btn btn-outline-secondary">Vazgeç</a>
+            <div class="field">
+                <label class="field-label" asp-for="Description"></label>
+                <textarea asp-for="Description" class="textarea" rows="3" placeholder="Yöneticine kısa bir not"></textarea>
+                <span asp-validation-for="Description"></span>
             </div>
-        </form>
-    </div>
+        </section>
+
+        @* Seçilen aralığın iş günü sayısı anlık hesaplanır; nihai değeri
+           (ve hak kontrolünü) API belirler. *@
+        <section class="card card-pad-lg">
+            <div class="row-center" style="gap: 30px;">
+                <div>
+                    <div class="mini-stat-label">DÜŞÜLECEK</div>
+                    <div class="mini-stat-value text-accent" id="calcDays">— <span style="font-size: 12px; font-weight: 600; color: var(--muted-4);">iş günü</span></div>
+                </div>
+                <div style="min-width: 0;">
+                    <div class="mini-stat-label">ONAY AKIŞI</div>
+                    <div style="font-size: 13px; font-weight: 650; color: var(--ink-2);">
+                        @(User.IsInRole("Intern") ? "Mentorun → İnsan Kaynakları" : "Yöneticin → İnsan Kaynakları")
+                    </div>
+                </div>
+            </div>
+            <div class="divider"></div>
+            <div class="field-hint">Hafta sonları iş gününe sayılmaz. Bakiye kontrolünü ve nihai gün sayısını API yapar.</div>
+        </section>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-lg">Talebi gönder</button>
+            <a asp-action="Index" class="btn btn-lg">Vazgeç</a>
+        </div>
+    </form>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
-        // Rapor alanını izin türüne göre göster/gizle: 3 = Hastalık İzni.
         (function () {
             var typeSelect = document.getElementById('@Html.IdFor(m => m.Type)');
+            var chips = Array.prototype.slice.call(document.querySelectorAll('#typeChips .chip'));
             var reportGroup = document.getElementById('medicalReportGroup');
-            if (!typeSelect || !reportGroup) return;
+            var start = document.getElementById('@Html.IdFor(m => m.StartDate)');
+            var end = document.getElementById('@Html.IdFor(m => m.EndDate)');
+            var calc = document.getElementById('calcDays');
 
-            function toggle() {
-                reportGroup.style.display = typeSelect.value === '3' ? '' : 'none';
+            // Çipler gizli select'i sürer; sunucu tarafı hiç değişmez.
+            function syncReport() {
+                if (reportGroup) reportGroup.hidden = typeSelect.value !== '3'; // 3 = Hastalık İzni
             }
-            typeSelect.addEventListener('change', toggle);
-            toggle(); // ilk yüklemede mevcut seçime göre ayarla
+
+            chips.forEach(function (chip) {
+                chip.addEventListener('click', function () {
+                    chips.forEach(function (c) { c.classList.remove('on'); });
+                    chip.classList.add('on');
+                    typeSelect.value = chip.getAttribute('data-type');
+                    syncReport();
+                });
+            });
+
+            if (typeSelect) { typeSelect.addEventListener('change', syncReport); syncReport(); }
+
+            // İş günü önizlemesi: hafta sonları düşülür (API'deki kuralın aynısı).
+            function workingDays() {
+                if (!start || !end || !start.value || !end.value) return null;
+                var s = new Date(start.value + 'T00:00:00');
+                var e = new Date(end.value + 'T00:00:00');
+                if (isNaN(s) || isNaN(e) || e < s) return null;
+                var n = 0;
+                for (var d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) {
+                    var wd = d.getDay();
+                    if (wd !== 0 && wd !== 6) n++;
+                }
+                return n;
+            }
+
+            function refresh() {
+                if (!calc) return;
+                var n = workingDays();
+                calc.innerHTML = (n === null ? '—' : n) +
+                    ' <span style="font-size:12px;font-weight:600;color:var(--muted-4);">iş günü</span>';
+            }
+
+            [start, end].forEach(function (el) { if (el) el.addEventListener('change', refresh); });
+            refresh();
         })();
     </script>
 }

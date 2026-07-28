@@ -1,5 +1,6 @@
 using HRManagement.WebUI.Models.Api;
 using HRManagement.WebUI.Models.Api.Interns;
+using HRManagement.WebUI.Models.Api.Mentorship;
 using Refit;
 
 namespace HRManagement.WebUI.Services;
@@ -25,4 +26,15 @@ public interface IInternApi
 
     [Delete("/api/interns/{id}")]
     Task<BaseResponse<int?>> DeleteAsync(int id);
+
+    // "Profilim" (stajyerin kendisi): kimlik token'dan çözülür, id yok.
+    [Get("/api/interns/me")]
+    Task<BaseResponse<MyInternProfileResponse>> GetMyProfileAsync();
+
+    // "Görevlerim" (stajyerin kendisi): kimlik token'dan çözülür, id yok.
+    [Get("/api/interns/my-tasks")]
+    Task<BaseResponse<MyInternTasksResponse>> GetMyTasksAsync();
+
+    [Put("/api/interns/my-tasks/{taskId}/status")]
+    Task<BaseResponse<int?>> UpdateMyTaskStatusAsync(int taskId, [Body] UpdateInternTaskStatusRequest request);
 }

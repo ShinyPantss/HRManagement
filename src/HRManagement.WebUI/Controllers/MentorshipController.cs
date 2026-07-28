@@ -46,20 +46,21 @@ public class MentorshipController : Controller
         return View(response.Data);
     }
 
+    // Görev tek metin alanından girilir (çok satırlı olabilir — Shift+Enter);
+    // ayrı açıklama alanı bilinçli olarak yok (kullanıcı kararı).
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> AddTask(int id, string? title, string? description, DateTime? dueDate)
+    public async Task<IActionResult> AddTask(int id, string? title, DateTime? dueDate)
     {
         if (string.IsNullOrWhiteSpace(title))
         {
-            TempData["Error"] = "Görev başlığı boş olamaz.";
+            TempData["Error"] = "Görev metni boş olamaz.";
         }
         else
         {
             var response = await _mentorshipApi.AddTaskAsync(id, new AddInternTaskRequest
             {
                 Title = title.Trim(),
-                Description = description,
                 DueDate = dueDate
             });
 

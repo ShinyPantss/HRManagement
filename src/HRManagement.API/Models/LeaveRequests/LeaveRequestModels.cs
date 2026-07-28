@@ -53,6 +53,94 @@ public sealed class PendingApprovalResponse
     public string Stage { get; }         // "Yönetici onayı" | "İK onayı"
 }
 
+// "İzin Geçmişi" satırı — HR/Admin TÜM izinleri her durumda gözlemler (salt görüntü).
+public sealed class LeaveHistoryResponse
+{
+    public LeaveHistoryResponse(
+        int id, string subjectName, string subjectType, string type,
+        DateTime startDate, DateTime endDate, int workingDays, string status,
+        string? description, string? rejectionReason, DateTime createdAt)
+    {
+        Id = id;
+        SubjectName = subjectName;
+        SubjectType = subjectType;
+        Type = type;
+        StartDate = startDate;
+        EndDate = endDate;
+        WorkingDays = workingDays;
+        Status = status;
+        Description = description;
+        RejectionReason = rejectionReason;
+        CreatedAt = createdAt;
+    }
+
+    public int Id { get; }
+    public string SubjectName { get; }
+    public string SubjectType { get; }   // Çalışan | Stajyer
+    public string Type { get; }          // izin türü (Annual/Unpaid/Sick)
+    public DateTime StartDate { get; }
+    public DateTime EndDate { get; }
+    public int WorkingDays { get; }
+    public string Status { get; }        // Pending | PendingHr | Approved | Rejected
+    public string? Description { get; }
+    public string? RejectionReason { get; }
+    public DateTime CreatedAt { get; }
+}
+
+// Tek izin talebinin DETAY yanıtı — kişi, tarih/gün, durum + iki aşamalı onayın izi
+// (kim, ne zaman). CanActNow: giriş yapan bu talebi şu an onaylayıp reddedebilir mi.
+public sealed class LeaveDetailResponse
+{
+    public LeaveDetailResponse(
+        int id, string subjectName, string subjectType, string type,
+        DateTime startDate, DateTime endDate, int workingDays, string status,
+        string? description, string? medicalReport, string? rejectionReason, DateTime createdAt,
+        string? managerApprovedByName, DateTime? managerApprovedAt,
+        string? hrApprovedByName, DateTime? hrApprovedAt,
+        string? rejectedByName, DateTime? rejectedAt, bool canActNow)
+    {
+        Id = id;
+        SubjectName = subjectName;
+        SubjectType = subjectType;
+        Type = type;
+        StartDate = startDate;
+        EndDate = endDate;
+        WorkingDays = workingDays;
+        Status = status;
+        Description = description;
+        MedicalReport = medicalReport;
+        RejectionReason = rejectionReason;
+        CreatedAt = createdAt;
+        ManagerApprovedByName = managerApprovedByName;
+        ManagerApprovedAt = managerApprovedAt;
+        HrApprovedByName = hrApprovedByName;
+        HrApprovedAt = hrApprovedAt;
+        RejectedByName = rejectedByName;
+        RejectedAt = rejectedAt;
+        CanActNow = canActNow;
+    }
+
+    public int Id { get; }
+    public string SubjectName { get; }
+    public string SubjectType { get; }   // Çalışan | Stajyer
+    public string Type { get; }          // Annual | Unpaid | Sick
+    public DateTime StartDate { get; }
+    public DateTime EndDate { get; }
+    public int WorkingDays { get; }
+    public string Status { get; }        // Pending | PendingHr | Approved | Rejected
+    public string? Description { get; }
+    public string? MedicalReport { get; }
+    public string? RejectionReason { get; }
+    public DateTime CreatedAt { get; }
+    public string? ManagerApprovedByName { get; }
+    public DateTime? ManagerApprovedAt { get; }
+    public string? HrApprovedByName { get; }
+    public DateTime? HrApprovedAt { get; }
+    public string? RejectedByName { get; }
+    public DateTime? RejectedAt { get; }
+    public bool CanActNow { get; }
+}
+
 // Red gerekçesi opsiyonel.
 public sealed class RejectLeaveRequestRequest
 {

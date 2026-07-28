@@ -1,0 +1,113 @@
+@model HRManagement.WebUI.Models.Api.Interns.MyInternTasksResponse
+@{
+    ViewData["Title"] = "Görevlerim";
+    ViewData["Subtitle"] = Model.MentorFullName is null
+        ? "Henüz bir mentorun atanmadı — görevler mentor atandığında burada görünecek."
+        : $"Mentorun {Model.MentorFullName} tarafından atanan görevler.";
+
+    var doneCount = Model.Tasks.Count(t => t.Status == "Done");
+    var openCount = Model.Tasks.Count - doneCount;
+    var overdue = Model.Tasks.Count(t => t.DueDate is DateTime d && d.Date < DateTime.Today && t.Status != "Done");
+    var progress = Model.Tasks.Count == 0 ? 0 : (int)Math.Round(100.0 * doneCount / Model.Tasks.Count);
+}
+
+@functions {
+    string DateText(DateTime d) => d.ToString("dd.MM.yyyy");
+
+    (string Dot, string Badge, string Text) TaskState(string status) => status switch
+    {
+        "Pending" => ("warn", "badge-warn", "Bekliyor"),
+        "InProgress" => ("info", "badge-violet", "Devam ediyor"),
+        "Done" => ("ok", "badge-ok", "Tamamlandı"),
+        _ => ("", "badge-neutral", status)
+    };
+}
+
+<div class="grid g-3">
+    <div class="stat">
+        <div class="stat-label">AÇIK GÖREV</div>
+        <div class="stat-row"><span class="stat-value @(openCount > 0 ? "text-accent" : "")">@openCount</span><span class="stat-unit">görev</span></div>
+    </div>
+    <div class="stat">
+        <div class="stat-label">TAMAMLANAN</div>
+        <div class="stat-row"><span class="stat-value text-ok">@doneCount</span><span class="stat-unit">/ @Model.Tasks.Count</span></div>
+    </div>
+    <div class="stat">
+        <div class="stat-label">GECİKEN</div>
+        <div class="stat-row"><span class="stat-value @(overdue > 0 ? "text-danger-fg" : "")">@overdue</span><span class="stat-unit">görev</span></div>
+    </div>
+</div>
+
+<section class="card card-flush mid">
+    <div class="card-head">
+        <div class="row-tight">
+            <h2>Görevler</h2>
+            <span class="badge badge-sm badge-neutral">@Model.Tasks.Count</span>
+        </div>
+        @if (Model.Tasks.Any())
+        {
+            <span class="card-head-meta">%@progress tamamlandı</span>
+        }
+    </div>
+
+    @if (Model.Tasks.Any())
+    {
+        <div style="padding: 14px 18px;">
+            <div class="bar"><div class="bar-fill ok" style="width: @progress%;"></div></div>
+        </div>
+
+        @foreach (var task in Model.Tasks)
+        {
+            var (dot, badge, statusText) = TaskState(task.Status);
+            var isOverdue = task.DueDate is DateTime d && d.Date < DateTime.Today && task.Status != "Done";
+
+            <div class="task">
+                <span class="task-dot @dot"></span>
+                <div style="min-width: 0;">
+                    <div class="task-title @(task.Status == "Done" ? "done" : "")" style="font-size: 13.5px; font-weight: 700;">@task.Title</div>
+                    @if (!string.IsNullOrWhiteSpace(task.Description))
+                    {
+                        <div class="task-meta pre-line">@task.Description</div>
+                    }
+                    <div class="task-meta">
+                        <span>@DateText(task.CreatedAt) atandı</span>
+                        @if (task.DueDate is DateTime due)
+                        {
+                            <span class="@(isOverdue ? "text-danger-fg fw-700" : "")">
+                                · termin @DateText(due)@(isOverdue ? " (gecikti)" : "")
+                            </span>
+                        }
+                    </div>
+                </div>
+                <div class="task-actions">
+                    <span class="badge badge-sm @badge">@statusText</span>
+                    @if (task.Status == "Pending")
+                    {
+                        <form asp-action="UpdateStatus" method="post" style="display: inline;">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="taskId" value="@task.Id" />
+                            <input type="hidden" name="status" value="2" />
+                            <button type="submit" class="btn btn-sm">Başladım</button>
+                        </form>
+                    }
+                    @if (task.Status is "Pending" or "InProgress")
+                    {
+                        <form asp-action="UpdateStatus" method="post" style="display: inline;">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="taskId" value="@task.Id" />
+                            <input type="hidden" name="status" value="3" />
+                            <button type="submit" class="btn btn-sm btn-primary">Tamamladım</button>
+                        </form>
+                    }
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="empty">
+            <div class="empty-title">Henüz sana atanmış görev yok</div>
+            <div class="empty-text">Mentorun görev atadığında burada listelenecek.</div>
+        </div>
+    }
+</section>

@@ -1,0 +1,118 @@
+@using HRManagement.WebUI.Models
+@model HRManagement.WebUI.Models.Interns.InternFormViewModel
+@{
+    // Ekleme ve düzenleme AYNI alanları kullanır; tek fark en alttaki hesap
+    // talebi kutusu (yalnızca yeni kayıtta anlamlı).
+    var isCreate = ViewData["IsCreate"] is true;
+}
+
+<div asp-validation-summary="ModelOnly"></div>
+
+@if (!isCreate)
+{
+    <input type="hidden" asp-for="Id" />
+}
+
+<div class="form-grid">
+    <div class="field">
+        <label class="field-label" asp-for="FirstName"></label>
+        <input asp-for="FirstName" class="input" />
+        <span asp-validation-for="FirstName"></span>
+    </div>
+
+    <div class="field">
+        <label class="field-label" asp-for="LastName"></label>
+        <input asp-for="LastName" class="input" />
+        <span asp-validation-for="LastName"></span>
+    </div>
+
+    <div class="field">
+        <label class="field-label" asp-for="Email"></label>
+        <input asp-for="Email" class="input" />
+        <span asp-validation-for="Email"></span>
+    </div>
+
+    <div class="field">
+        <label class="field-label" asp-for="University"></label>
+        <input asp-for="University" class="input" />
+        <span asp-validation-for="University"></span>
+    </div>
+
+    <div class="field">
+        <label class="field-label" asp-for="Major"></label>
+        <input asp-for="Major" class="input" />
+        <span asp-validation-for="Major"></span>
+    </div>
+
+    <div class="field">
+        <label class="field-label" asp-for="Grade"></label>
+        <select asp-for="Grade" asp-items="GradeDisplay.Options()" class="select">
+            <option value="">Seçiniz…</option>
+        </select>
+        <span asp-validation-for="Grade"></span>
+    </div>
+
+    <div class="field">
+        <label class="field-label" asp-for="StartDate"></label>
+        <input asp-for="StartDate" type="date" asp-format="{0:yyyy-MM-dd}" class="input" />
+        <span asp-validation-for="StartDate"></span>
+    </div>
+
+    <div class="field">
+        <label class="field-label" asp-for="EndDate"></label>
+        <input asp-for="EndDate" type="date" asp-format="{0:yyyy-MM-dd}" class="input" />
+        <span asp-validation-for="EndDate"></span>
+    </div>
+
+    @* Kaskad sırası bilinçli: Departman → Birim → Mentor.
+       Her seçim bir sonraki listeyi süzer (_MentorUnitFilter). *@
+    <div class="field">
+        <label class="field-label" asp-for="DepartmentId"></label>
+        <select asp-for="DepartmentId" asp-items="Model.DepartmentOptions" class="select">
+            <option value="">Seçiniz…</option>
+        </select>
+        <span asp-validation-for="DepartmentId"></span>
+    </div>
+
+    <div class="field" id="unitGroup">
+        <label class="field-label" asp-for="UnitId"></label>
+        <select asp-for="UnitId" class="select" data-unit-select>
+            <option value="">Birim yok / seçiniz…</option>
+            @foreach (var u in Model.UnitCandidates)
+            {
+                <option value="@u.Id" data-department="@u.DepartmentId">@u.Name</option>
+            }
+        </select>
+        <span class="field-hint">Seçilen departmana göre süzülür; zorunlu değil.</span>
+        <span asp-validation-for="UnitId"></span>
+    </div>
+
+    <div class="field span-2" style="max-width: calc(50% - 8px);">
+        <label class="field-label" asp-for="MentorId"></label>
+        <select asp-for="MentorId" class="select" data-mentor-select>
+            <option value="">Mentor yok / seçiniz…</option>
+            @foreach (var m in Model.MentorCandidates)
+            {
+                <option value="@m.Id" data-department="@m.DepartmentId" data-unit="@(m.UnitId?.ToString() ?? "")">@m.Name</option>
+            }
+        </select>
+        <span class="field-hint" data-mentor-hint>Seçilen departman ve birime göre süzülür.</span>
+        <span class="field-hint text-warn" data-mentor-empty hidden>Bu birimde mentor adayı yok — birim seçimini boş bırakırsan tüm departman listelenir.</span>
+        <span asp-validation-for="MentorId"></span>
+    </div>
+
+    @if (isCreate)
+    {
+        @* Otomatik hesap talebi: işaretliyse stajyer eklenince Admin'e Pending
+           talep düşer (İK ayrıca talep açmaz). Onayı Admin verir. *@
+        <div class="span-2">
+            <label class="check">
+                <input asp-for="RequestLoginAccount" />
+                <span>
+                    @Html.DisplayNameFor(m => m.RequestLoginAccount)
+                    <span class="field-hint" style="display: block; margin-top: 2px;">Onayı Admin verir; işaretli değilse hesap talebi oluşmaz.</span>
+                </span>
+            </label>
+        </div>
+    }
+</div>

@@ -55,8 +55,9 @@ public sealed class ApproveAccountRequestCommandHandler : IRequestHandler<Approv
             Username = username,
             Email = email,
             PasswordHash = _passwordHasher.Hash(request.Password),
-            // Rol talepten gelir (kişinin kıdeminden/türünden türetilmiş); onayda seçilmez.
-            Role = accountRequest.SuggestedRole,
+            // Rol: Admin onayda override etmediyse (request.Role null) talebin
+            // türetilmiş rolü kullanılır. İK/Admin gibi türetilemeyen roller override ile gelir.
+            Role = request.Role ?? accountRequest.SuggestedRole,
             IsActive = true
         };
 

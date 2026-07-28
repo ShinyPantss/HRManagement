@@ -94,6 +94,7 @@ public class EmployeesController : ControllerBase
         var id = await _mediator.Send(new CreateEmployeeCommand(
             request.FirstName, request.LastName, request.NationalId, request.Email,
             request.Phone, request.BirthDate, request.HireDate,
+            (HRManagement.Domain.Enums.Gender?)request.Gender,
             request.DepartmentId, request.UnitId, request.UserId, request.ManagerId,
             (HRManagement.Domain.Enums.SeniorityLevel?)request.Seniority, request.AnnualLeaveDays,
             CurrentUserId(), request.RequestLoginAccount));
@@ -108,6 +109,7 @@ public class EmployeesController : ControllerBase
         await _mediator.Send(new UpdateEmployeeCommand(
             id, request.FirstName, request.LastName, request.NationalId, request.Email,
             request.Phone, request.BirthDate, request.HireDate,
+            (HRManagement.Domain.Enums.Gender?)request.Gender,
             request.DepartmentId, request.UnitId, request.UserId, request.ManagerId,
             (HRManagement.Domain.Enums.SeniorityLevel?)request.Seniority, request.AnnualLeaveDays,
             request.IsActive));
@@ -129,13 +131,13 @@ public class EmployeesController : ControllerBase
 
     private static EmployeeResponse ToResponse(HRManagement.Application.DTOs.EmployeeDto e) => new(
         e.Id, e.FirstName, e.LastName, e.NationalId, e.Email, e.Phone,
-        e.BirthDate, e.HireDate, e.DepartmentId, e.UnitId,
+        e.BirthDate, e.HireDate, e.Gender, e.DepartmentId, e.UnitId,
         e.UserId, e.ManagerId, e.Seniority, e.AnnualLeaveDays, e.IsActive);
 
     private static EmployeeDetailResponse ToDetailResponse(HRManagement.Application.DTOs.EmployeeDetailDto d) => new(
         d.Id, d.FirstName, d.LastName, d.NationalId, d.Email, d.Phone,
-        d.BirthDate, d.HireDate, d.Seniority, d.IsActive,
-        d.DepartmentId, d.DepartmentName, d.ManagerId, d.ManagerFullName,
+        d.BirthDate, d.HireDate, d.Gender, d.Seniority, d.IsActive,
+        d.DepartmentId, d.DepartmentName, d.UnitId, d.UnitName, d.ManagerId, d.ManagerFullName,
         d.AccruedLeaveDays, d.UsedLeaveDays, d.RemainingLeaveDays,
         d.RecentLeaveRequests.Select(l => new EmployeeDetailLeaveRequestResponse(
             l.Id, l.Type.ToString(), l.StartDate, l.EndDate,
@@ -145,5 +147,6 @@ public class EmployeesController : ControllerBase
         d.MentoredInterns.Select(i => new EmployeeDetailInternResponse(
             i.Id, i.FullName, i.University, i.StartDate, i.EndDate)).ToList(),
         d.Notes?.Select(n => new EmployeeDetailNoteResponse(
-            n.Id, n.AuthorName, n.Content, n.CreatedAt)).ToList());
+            n.Id, n.AuthorName, n.Content, n.CreatedAt)).ToList(),
+        d.CanSeeLeave);
 }

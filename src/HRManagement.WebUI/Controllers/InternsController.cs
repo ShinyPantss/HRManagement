@@ -18,18 +18,25 @@ public class InternsController : Controller
     private readonly IInternApi _internApi;
     private readonly IDepartmentApi _departmentApi;
     private readonly IUnitApi _unitApi;
+    private readonly IEmployeeApi _employeeApi;
 
-    public InternsController(IInternApi internApi, IDepartmentApi departmentApi, IUnitApi unitApi)
+    public InternsController(
+        IInternApi internApi,
+        IDepartmentApi departmentApi,
+        IUnitApi unitApi,
+        IEmployeeApi employeeApi)
     {
         _internApi = internApi;
         _departmentApi = departmentApi;
         _unitApi = unitApi;
+        _employeeApi = employeeApi;
     }
 
     // Stajyer LİSTESİ yönetim ekranıdır: Manager ve Employee göremez (onlar
-    // kendi stajyerlerine Mentorluk'tan ulaşır). Menüde gizli olması yetmez,
-    // URL ile de girilememeli.
-    [Authorize(Roles = "HR,Admin,Intern")]
+    // kendi stajyerlerine Mentorluk'tan ulaşır), stajyerin kendisi de göremez
+    // (kendi ekranları Staj Panelim / Profilim / Görevlerim). Menüde gizli
+    // olması yetmez, URL ile de girilememeli.
+    [Authorize(Roles = "HR,Admin")]
     public async Task<IActionResult> Index()
     {
         var response = await _internApi.GetAllAsync();
@@ -160,7 +167,7 @@ public class InternsController : Controller
         Email = form.Email,
         University = form.University,
         Major = form.Major,
-        Grade = form.Grade,
+        Grade = form.Grade!.Value,
         StartDate = form.StartDate!.Value,
         EndDate = form.EndDate!.Value,
         MentorId = form.MentorId,
@@ -197,6 +204,15 @@ public class InternsController : Controller
         var units = await _unitApi.GetAllAsync();
         form.UnitCandidates = (units.Data ?? [])
             .Select(u => new UnitOption(u.Id, u.Name, u.DepartmentId))
+            .ToList();
+
+        // Mentor adayları = AKTİF çalışanlar (rol fark etmez: Manager da Employee
+        // da mentor olabilir). JS, seçilen departman+birime göre süzer.
+        var employees = await _employeeApi.GetAllAsync();
+        form.MentorCandidates = (employees.Data ?? [])
+            .Where(e => e.IsActive)
+            .OrderBy(e => e.FirstName).ThenBy(e => e.LastName)
+            .Select(e => new MentorOption(e.Id, $"{e.FirstName} {e.LastName}", e.DepartmentId, e.UnitId))
             .ToList();
     }
 }

@@ -1,3 +1,4 @@
+using HRManagement.WebUI.Models;
 using HRManagement.WebUI.Models.Api.LeaveRequests;
 using HRManagement.WebUI.Models.LeaveRequests;
 using HRManagement.WebUI.Services;
@@ -24,30 +25,39 @@ public class LeaveRequestsController : Controller
         _employeeApi = employeeApi;
     }
 
-    public async Task<IActionResult> Index(int? employeeId)
+    public async Task<IActionResult> Index()
     {
-        // Rol kapısı: HR/Admin herkesi tarayabilir (çalışan seçici). Diğer roller
-        // yalnızca KENDİ izinlerini görür — seçici gizlenir, liste kendi kaydına sabitlenir.
+        // Rol kapısı: HR/Admin TÜM izin geçmişini tek listede görür (çalışan seçmeden,
+        // salt gözlem). Diğer roller yalnızca KENDİ izinlerini görür.
         var isBrowser = User.IsInRole("HR") || User.IsInRole("Admin");
+
+        if (isBrowser)
+        {
+            var all = await _leaveRequestApi.GetAllAsync();
+            var browseModel = new LeaveRequestListViewModel { IsAllView = true };
+
+            if (!all.IsSuccess)
+                TempData["Error"] = all.Message ?? "İzin geçmişi alınamadı.";
+            else
+                browseModel.AllRows = all.Data ?? [];
+
+            return View(browseModel);
+        }
 
         var me = await _employeeApi.GetMyProfileAsync();
         var currentEmployeeId = me.IsSuccess ? me.Data?.Id : null;
 
-        var effectiveEmployeeId = isBrowser ? employeeId : currentEmployeeId;
-
         var model = new LeaveRequestListViewModel
         {
-            SelectedEmployeeId = effectiveEmployeeId,
-            CurrentEmployeeId = currentEmployeeId,
-            ShowEmployeePicker = isBrowser,
-            EmployeeOptions = isBrowser ? await GetEmployeeOptionsAsync() : []
+            SelectedEmployeeId = currentEmployeeId,
+            CurrentEmployeeId = currentEmployeeId
         };
 
-        // API'de "tüm talepleri getir" ucu yok: kişi belirlenmeden liste çekilemez.
-        if (effectiveEmployeeId is null)
+        // Çalışan kaydı yoksa (hesap kişiye bağlı değilse) liste boş kalır.
+        if (currentEmployeeId is null)
             return View(model);
 
-        var response = await _leaveRequestApi.GetByEmployeeAsync(effectiveEmployeeId.Value);
+        var response = await _leaveRequestApi.GetByEmployeeAsync(currentEmployeeId.Value);
 
         if (!response.IsSuccess)
         {
@@ -58,6 +68,130 @@ public class LeaveRequestsController : Controller
         model.Requests = response.Data ?? [];
         return View(model);
     }
+
+    // Tek talebin detayı + onay izi. Görüntüleme yetkisini API çözer; yetkisizse
+    // (403/400) kullanıcı listeye döner. İK aşamasındaysa detaydan onay/red yapılabilir.
+    public async Task<IActionResult> Details(int id)
+    {
+        var response = await _leaveRequestApi.GetDetailAsync(id);
+
+        if (!response.IsSuccess || response.Data is null)
+        {
+            TempData["Error"] = response.Message ?? "İzin detayı alınamadı.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        return View(response.Data);
+    }
+
+    /// <summary>
+    /// Ekip izin takvimi (yalnızca yönetici). Önümüzdeki iki hafta boyunca kimin
+    /// izinli olduğunu tek ekranda gösterir.
+    ///
+    /// Veri iki uçtan birleştirilir: görünür ekip /api/employees'ten, her kişinin
+    /// izinleri /api/leaverequests/employee/{id}'den. "Tümünü tek çağrıda ver"
+    /// diyen bir uç YOK (/all yalnızca İK/Admin'e açık), bu yüzden kişi başına
+    /// bir istek atılır — paralel, ve ekip büyükse hiç çizilmez.
+    /// </summary>
+    [Authorize(Roles = "Manager")]
+    public async Task<IActionResult> Calendar()
+    {
+        const int dayCount = 14;
+        const int maxTeamSize = 30;   // üstünde sayfa başına 30+ HTTP isteği olurdu
+
+        var today = DateTime.Today;
+        var model = new TeamCalendarViewModel
+        {
+            StartDate = today,
+            DayCount = dayCount,
+            Days = Enumerable.Range(0, dayCount).Select(i => today.AddDays(i)).ToList()
+        };
+
+        var me = await _employeeApi.GetMyProfileAsync();
+        var myId = me.Data?.Id;
+        var myManagerId = me.Data?.ManagerId;
+
+        var employees = await _employeeApi.GetAllAsync();
+
+        if (!employees.IsSuccess)
+        {
+            TempData["Error"] = employees.Message ?? "Ekip listesi alınamadı.";
+            return View(model);
+        }
+
+        // Görünür liste kişinin BİR ÜST yöneticisini de içerir; onun izinlerini
+        // çekme yetkimiz yok (API zincir-aşağı bakar), o yüzden listeden düşülür.
+        var team = (employees.Data ?? [])
+            .Where(e => e.IsActive && e.Id != myManagerId)
+            .OrderByDescending(e => e.Id == myId)
+            .ThenBy(e => e.Seniority ?? 99)
+            .ThenBy(e => e.FirstName)
+            .ToList();
+
+        model.TeamSize = team.Count;
+
+        if (team.Count > maxTeamSize)
+        {
+            model.TeamTooLarge = true;
+            return View(model);
+        }
+
+        var endDate = today.AddDays(dayCount - 1);
+
+        // Paralel: sıralı atsaydık 20 kişilik ekipte sayfa 20 gidiş-dönüş beklerdi.
+        var fetches = team.Select(async e => (Employee: e, Leaves: await _leaveRequestApi.GetByEmployeeAsync(e.Id)));
+        var results = await Task.WhenAll(fetches);
+
+        foreach (var (employee, leaves) in results)
+        {
+            var row = new TeamCalendarRow
+            {
+                EmployeeId = employee.Id,
+                FullName = $"{employee.FirstName} {employee.LastName}",
+                Initials = Initials(employee.FirstName, employee.LastName),
+                Subtitle = SeniorityDisplay.Label(employee.Seniority),
+                IsSelf = employee.Id == myId
+            };
+
+            // Reddedilenler takvimde yer tutmaz; onaylı ve bekleyenler tutar
+            // (bekleyen izin de planlamada görünmeli).
+            var relevant = (leaves.Data ?? [])
+                .Where(l => l.Status != "Rejected"
+                            && l.StartDate.Date <= endDate
+                            && l.EndDate.Date >= today)
+                .ToList();
+
+            foreach (var day in model.Days)
+            {
+                var hit = relevant.FirstOrDefault(l => l.StartDate.Date <= day && l.EndDate.Date >= day);
+                var isWeekend = day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
+
+                row.Cells.Add(new TeamCalendarCell
+                {
+                    Date = day,
+                    IsWeekend = isWeekend,
+                    IsToday = day == today,
+                    Type = hit?.Type,
+                    Status = hit?.Status
+                });
+
+                if (hit is not null && !isWeekend) row.LeaveDays++;
+            }
+
+            model.Rows.Add(row);
+        }
+
+        // Çakışma: aynı iş gününde 2+ kişi izinli.
+        model.ClashDays = model.Days
+            .Where(d => d.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday))
+            .Where(d => model.Rows.Count(r => r.Cells.Any(c => c.Date == d && c.Type is not null)) >= 2)
+            .ToList();
+
+        return View(model);
+    }
+
+    private static string Initials(string first, string last) =>
+        $"{(first.Length > 0 ? char.ToUpperInvariant(first[0]) : '?')}{(last.Length > 0 ? char.ToUpperInvariant(last[0]) : ' ')}".Trim();
 
     // Giriş yapanın ONAYINI BEKLEYEN talepler — tek listede, çalışan seçmeden.
     [Authorize(Roles = "HR,Manager,Admin")]
@@ -132,9 +266,7 @@ public class LeaveRequestsController : Controller
         else
             TempData["Success"] = response.Message ?? "İzin talebi onaylandı.";
 
-        return returnTo == "Approvals"
-            ? RedirectToAction(nameof(Approvals))
-            : RedirectToAction(nameof(Index), new { employeeId });
+        return RedirectAfterAction(returnTo, id, employeeId);
     }
 
     [HttpPost]
@@ -152,10 +284,18 @@ public class LeaveRequestsController : Controller
         else
             TempData["Success"] = response.Message ?? "İzin talebi reddedildi.";
 
-        return returnTo == "Approvals"
-            ? RedirectToAction(nameof(Approvals))
-            : RedirectToAction(nameof(Index), new { employeeId });
+        return RedirectAfterAction(returnTo, id, employeeId);
     }
+
+    // Onay/Red sonrası nereye dönüleceği: geldiğin ekrana. "Details" ise o talebin
+    // detayına (güncel durumu görürsün), "Approvals" ise Onay Bekleyenler'e, yoksa listeye.
+    private IActionResult RedirectAfterAction(string? returnTo, int id, int employeeId) =>
+        returnTo switch
+        {
+            "Details" => RedirectToAction(nameof(Details), new { id }),
+            "Approvals" => RedirectToAction(nameof(Approvals)),
+            _ => RedirectToAction(nameof(Index), new { employeeId })
+        };
 
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -179,21 +319,6 @@ public class LeaveRequestsController : Controller
     {
         form.TypeOptions = GetTypeOptions();
         return form;
-    }
-
-    private async Task<IEnumerable<SelectListItem>> GetEmployeeOptionsAsync()
-    {
-        var response = await _employeeApi.GetAllAsync();
-
-        if (!response.IsSuccess || response.Data is null)
-        {
-            TempData["Error"] = response.Message ?? "Çalışan listesi alınamadı.";
-            return [];
-        }
-
-        return response.Data
-            .Select(employee => new SelectListItem($"{employee.FirstName} {employee.LastName}", employee.Id.ToString()))
-            .ToList();
     }
 
     // İzin türleri Domain enum'ının sayısal karşılıklarıdır; API bu değerleri bekler.

@@ -1,0 +1,148 @@
+@model HRManagement.WebUI.Models.Employees.EmployeeFormViewModel
+@{
+    // Ekleme ve düzenleme AYNI alanları kullanır; tek fark en alttaki satır
+    // (yeni kayıtta hesap talebi kutusu, düzenlemede aktiflik anahtarı).
+    var isCreate = ViewData["IsCreate"] is true;
+}
+
+<div asp-validation-summary="ModelOnly"></div>
+
+@if (!isCreate)
+{
+    <input type="hidden" asp-for="Id" />
+}
+
+<div class="form-grid">
+    <div class="field">
+        <label class="field-label" asp-for="FirstName"></label>
+        <input asp-for="FirstName" class="input" />
+        <span asp-validation-for="FirstName"></span>
+    </div>
+
+    <div class="field">
+        <label class="field-label" asp-for="LastName"></label>
+        <input asp-for="LastName" class="input" />
+        <span asp-validation-for="LastName"></span>
+    </div>
+
+    <div class="field">
+        <label class="field-label" asp-for="Email"></label>
+        <input asp-for="Email" class="input" />
+        <span asp-validation-for="Email"></span>
+    </div>
+
+    <div class="field">
+        <label class="field-label" asp-for="Phone"></label>
+        <input asp-for="Phone" class="input" />
+        <span asp-validation-for="Phone"></span>
+    </div>
+
+    <div class="field">
+        <label class="field-label" asp-for="NationalId"></label>
+        <input asp-for="NationalId" class="input" />
+        <span asp-validation-for="NationalId"></span>
+    </div>
+
+    <div class="field">
+        <label class="field-label" asp-for="Gender"></label>
+        <select asp-for="Gender" asp-items="Model.GenderOptions" class="select">
+            <option value="">Seçiniz…</option>
+        </select>
+        <span asp-validation-for="Gender"></span>
+    </div>
+
+    <div class="field">
+        <label class="field-label" asp-for="BirthDate"></label>
+        @* type="date" tarayıcı takvimi açar; value ISO (yyyy-MM-dd) ister,
+           asp-format ViewModel'deki dd.MM.yyyy edit formatını bu input için ezer. *@
+        <input asp-for="BirthDate" type="date" asp-format="{0:yyyy-MM-dd}" class="input" />
+        <span asp-validation-for="BirthDate"></span>
+    </div>
+
+    <div class="field">
+        <label class="field-label" asp-for="HireDate"></label>
+        <input asp-for="HireDate" type="date" asp-format="{0:yyyy-MM-dd}" class="input" />
+        <span asp-validation-for="HireDate"></span>
+    </div>
+
+    <div class="field">
+        <label class="field-label" asp-for="DepartmentId"></label>
+        <select asp-for="DepartmentId" asp-items="Model.DepartmentOptions" class="select">
+            <option value="">Seçiniz…</option>
+        </select>
+        <span asp-validation-for="DepartmentId"></span>
+    </div>
+
+    <div class="field">
+        <label class="field-label" asp-for="Seniority"></label>
+        <select asp-for="Seniority" asp-items="Model.SeniorityOptions" class="select">
+            <option value="">Seçiniz…</option>
+        </select>
+        <span asp-validation-for="Seniority"></span>
+    </div>
+
+    <div class="field" id="unitGroup">
+        <label class="field-label" asp-for="UnitId"></label>
+        <select asp-for="UnitId" class="select" data-unit-select>
+            <option value="">Birim yok / seçiniz…</option>
+            @foreach (var u in Model.UnitCandidates)
+            {
+                <option value="@u.Id" data-department="@u.DepartmentId">@u.Name</option>
+            }
+        </select>
+        <span class="field-hint">Seçilen departmana göre süzülür; zorunlu değil.</span>
+        <span asp-validation-for="UnitId"></span>
+    </div>
+
+    <div class="field">
+        <label class="field-label" asp-for="ManagerId"></label>
+        <select asp-for="ManagerId" class="select" data-manager-select>
+            <option value="">Yok (zincirin tepesi)</option>
+            @foreach (var m in Model.ManagerCandidates)
+            {
+                <option value="@m.Id" data-seniority="@m.Seniority" data-department="@m.DepartmentId">@m.Name</option>
+            }
+        </select>
+        <span class="field-hint">Yalnızca Müdür, GMY, GM ve çalışandan kıdemli olanlar listelenir.</span>
+        <span asp-validation-for="ManagerId"></span>
+    </div>
+
+    <div class="field">
+        <label class="field-label" asp-for="UserId"></label>
+        <input asp-for="UserId" type="number" class="input" />
+        <span asp-validation-for="UserId"></span>
+    </div>
+
+    <div class="field">
+        <label class="field-label" asp-for="AnnualLeaveDays"></label>
+        <input asp-for="AnnualLeaveDays" type="number" class="input" />
+        <span class="field-hint">Boş bırakılırsa hak, kıdemden hesaplanır (İş Kanunu md. 53).</span>
+        <span asp-validation-for="AnnualLeaveDays"></span>
+    </div>
+
+    <div class="span-2">
+        @if (isCreate)
+        {
+            @* Otomatik hesap talebi: işaretliyse çalışan eklenince Admin'e Pending
+               talep düşer (İK ayrıca talep açmaz). Yukarıda mevcut bir hesap Id'si
+               yazıldıysa sunucu talebi zaten açmaz. *@
+            <label class="check">
+                <input asp-for="RequestLoginAccount" />
+                <span>
+                    @Html.DisplayNameFor(m => m.RequestLoginAccount)
+                    <span class="field-hint" style="display: block; margin-top: 2px;">Onayı Admin verir; işaretli değilse hesap talebi oluşmaz.</span>
+                </span>
+            </label>
+        }
+        else
+        {
+            <label class="check">
+                <input asp-for="IsActive" />
+                <span>
+                    @Html.DisplayNameFor(m => m.IsActive)
+                    <span class="field-hint" style="display: block; margin-top: 2px;">Pasif kayıtlar listede kalır ama işlem yapamaz.</span>
+                </span>
+            </label>
+        }
+    </div>
+</div>

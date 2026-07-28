@@ -4,6 +4,7 @@ using HRManagement.API.Models.AccountRequests;
 using HRManagement.Application.Features.AccountRequests.Commands.ApproveAccountRequest;
 using HRManagement.Application.Features.AccountRequests.Commands.RejectAccountRequest;
 using HRManagement.Application.Features.AccountRequests.Queries.GetPendingAccountRequests;
+using HRManagement.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -45,7 +46,8 @@ public class AccountRequestsController : ControllerBase
     public async Task<IActionResult> Approve(int id, ApproveAccountRequestRequest request)
     {
         var userId = await _mediator.Send(new ApproveAccountRequestCommand(
-            id, CurrentUserId(), request.Username, request.Email, request.Password));
+            id, CurrentUserId(), request.Username, request.Email, request.Password,
+            request.Role.HasValue ? (Role)request.Role.Value : null));
         return Ok(BaseResponse<int>.Success(userId, "Talep onaylandı, hesap açıldı."));
     }
 

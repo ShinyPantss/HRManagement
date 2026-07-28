@@ -40,6 +40,46 @@ public class RejectLeaveRequestRequest
     public string? Reason { get; set; }
 }
 
+// "İzin Geçmişi" satırı — API'nin LeaveHistoryResponse'uyla aynı şekil.
+public class LeaveHistoryResponse
+{
+    public int Id { get; set; }
+    public string SubjectName { get; set; } = string.Empty;
+    public string SubjectType { get; set; } = string.Empty; // Çalışan | Stajyer
+    public string Type { get; set; } = string.Empty;        // Annual | Unpaid | Sick
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
+    public int WorkingDays { get; set; }
+    public string Status { get; set; } = string.Empty;      // Pending | PendingHr | Approved | Rejected
+    public string? Description { get; set; }
+    public string? RejectionReason { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+// İzin detay yanıtı — API'nin LeaveDetailResponse'uyla aynı şekil.
+public class LeaveDetailResponse
+{
+    public int Id { get; set; }
+    public string SubjectName { get; set; } = string.Empty;
+    public string SubjectType { get; set; } = string.Empty; // Çalışan | Stajyer
+    public string Type { get; set; } = string.Empty;        // Annual | Unpaid | Sick
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
+    public int WorkingDays { get; set; }
+    public string Status { get; set; } = string.Empty;      // Pending | PendingHr | Approved | Rejected
+    public string? Description { get; set; }
+    public string? MedicalReport { get; set; }
+    public string? RejectionReason { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public string? ManagerApprovedByName { get; set; }
+    public DateTime? ManagerApprovedAt { get; set; }
+    public string? HrApprovedByName { get; set; }
+    public DateTime? HrApprovedAt { get; set; }
+    public string? RejectedByName { get; set; }
+    public DateTime? RejectedAt { get; set; }
+    public bool CanActNow { get; set; }
+}
+
 // "Onay Bekleyenler" satırı — API'nin PendingApprovalResponse'uyla aynı şekil.
 public class PendingApprovalResponse
 {

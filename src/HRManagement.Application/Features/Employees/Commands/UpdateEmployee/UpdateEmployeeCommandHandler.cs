@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using HRManagement.Application.Features.AccountRequests.Shared;
 using HRManagement.Application.Features.Units.Shared;
 using HRManagement.Application.Interfaces;
 using HRManagement.Domain.Enums;
@@ -61,11 +62,21 @@ public sealed class UpdateEmployeeCommandHandler : IRequestHandler<UpdateEmploye
         if (request.UserId is int userId && userId != employee.UserId)
             await EnsureUserLinkableAsync(userId);
 
+        // Kıdem değiştiyse ve AYNI hesap bağlı kalıyorsa, hesabın rolünü senkronla.
+        // (Eski kıdemi üzerine yazmadan ÖNCE yapılmalı — employee.Seniority hâlâ eski.)
+        if (employee.UserId is int linkedUserId
+            && request.UserId == employee.UserId
+            && request.Seniority != employee.Seniority)
+        {
+            await SyncLinkedAccountRoleAsync(linkedUserId, employee.Seniority, request.Seniority);
+        }
+
         employee.FirstName = request.FirstName.Trim();
         employee.LastName = request.LastName.Trim();
         employee.NationalId = request.NationalId;
         employee.Email = email;
         employee.Phone = request.Phone;
+        employee.Gender = request.Gender;
         employee.DateOfBirth = request.BirthDate;
         employee.HireDate = request.HireDate;
         employee.DepartmentId = request.DepartmentId;
@@ -79,6 +90,31 @@ public sealed class UpdateEmployeeCommandHandler : IRequestHandler<UpdateEmploye
         await _employeeRepository.UpdateAsync(employee);
 
         return Unit.Value;
+    }
+
+    /// <summary>
+    /// Kıdem değişince bağlı hesabın rolünü türetilen role çeker — AMA yalnızca elle
+    /// override EDİLMEMİŞSE. "Override edilmemiş" ölçütü: mevcut rol, ESKİ kıdemden
+    /// türetilen rolle aynı. Farklıysa (ör. İK Müdürü = HR bilinçli ataması) korunur.
+    /// </summary>
+    private async Task SyncLinkedAccountRoleAsync(
+        int userId, SeniorityLevel? oldSeniority, SeniorityLevel? newSeniority)
+    {
+        var oldRole = AccountRoleResolver.ForEmployee(oldSeniority);
+        var newRole = AccountRoleResolver.ForEmployee(newSeniority);
+
+        // Türetilen rol değişmiyorsa (ör. Uzman → Kıd. Uzman; ikisi de Çalışan) iş yok.
+        if (oldRole == newRole)
+            return;
+
+        var user = await _userRepository.GetByIdAsync(userId);
+
+        // Hesap yoksa ya da rol elle override edilmişse (eski türetilene eşit değil) dokunma.
+        if (user is null || user.Role != oldRole)
+            return;
+
+        user.Role = newRole;
+        await _userRepository.UpdateAsync(user);
     }
 
     private async Task EnsureManagerAssignableAsync(

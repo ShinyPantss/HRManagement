@@ -30,8 +30,9 @@ public sealed class CreateInternCommandValidator : AbstractValidator<CreateInter
         RuleFor(command => command.Major)
             .MaximumLength(100).WithMessage("Bölüm en fazla 100 karakter olabilir.");
 
+        // 0 = Hazırlık (kullanıcı kararı); lisans 1-4. Yüksek sınıflar kaldırıldı.
         RuleFor(command => command.Grade)
-            .InclusiveBetween(1, 8).WithMessage("Sınıf 1-8 arasında olmalıdır.");
+            .InclusiveBetween(0, 4).WithMessage("Sınıf, Hazırlık (0) ile 4 arasında olmalıdır.");
 
         // Tarih sırası kuralı da input validation'dır: karar için veritabanına
         // bakmaya gerek yok, mesajın kendi içinde tutarlılığı.

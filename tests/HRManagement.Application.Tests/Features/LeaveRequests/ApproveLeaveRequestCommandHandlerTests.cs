@@ -100,6 +100,7 @@ public class ApproveLeaveRequestCommandHandlerTests
         public Task<bool> HasOverlapAsync(int? employeeId, int? internId, DateTime startDate, DateTime endDate) => throw new NotImplementedException();
         public Task<int> GetTotalUsedAnnualDaysAsync(int employeeId) => throw new NotImplementedException();
         public Task<IEnumerable<HRManagement.Application.DTOs.PendingApprovalDto>> GetActionableWithNamesAsync() => throw new NotImplementedException();
+        public Task<IEnumerable<HRManagement.Application.DTOs.LeaveHistoryDto>> GetAllWithNamesAsync() => throw new NotImplementedException();
     }
 
     private sealed class FakeUserRepository(Dictionary<int, User> users) : IUserRepository

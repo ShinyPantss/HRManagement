@@ -1,0 +1,154 @@
+@model HRManagement.WebUI.Models.LeaveRequests.TeamCalendarViewModel
+@{
+    ViewData["Title"] = "Ekip İzin Takvimi";
+    ViewData["Subtitle"] = $"{Model.StartDate:dd MMMM} – {Model.StartDate.AddDays(Model.DayCount - 1):dd MMMM} · çakışmalar ve ekip yoğunluğu.";
+
+    var dayNames = new[] { "Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt" };
+    // Sütun şablonu: sabit isim sütunu + gün başına eşit pay.
+    var cols = $"190px repeat({Model.DayCount}, minmax(44px, 1fr))";
+}
+
+@functions {
+    // İzin türünün hücredeki tek harfi + rengi.
+    (string Letter, string Bg, string Fg, string Border) CellStyle(string type, string? status)
+    {
+        var pending = status is "Pending" or "PendingHr";
+
+        return type switch
+        {
+            "Annual" => ("Y", pending ? "var(--accent-tint-2)" : "var(--accent-tint)", "var(--brand)", pending ? "var(--accent-tint)" : "transparent"),
+            "Sick" => ("H", pending ? "var(--danger-soft)" : "var(--danger-bg)", "var(--danger)", pending ? "var(--danger-line)" : "transparent"),
+            "Unpaid" => ("Ü", pending ? "var(--surface-2)" : "var(--surface-3)", "var(--muted)", pending ? "var(--line-2)" : "transparent"),
+            _ => ("•", "var(--surface-3)", "var(--muted)", "transparent")
+        };
+    }
+}
+
+@section PageActions {
+    <a asp-action="Approvals" class="btn">Onay kutusu</a>
+    <a asp-action="Create" class="btn btn-primary">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+        İzin talep et
+    </a>
+}
+
+@if (Model.TeamTooLarge)
+{
+    @* Sessizce kırpmak yerine durumu söylüyoruz: bu ekran kişi başına bir API
+       çağrısı yapıyor, büyük ekipte sayfa ağırlaşır. *@
+    <div class="callout callout-warn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 8v5M12 16.5h.01" /><circle cx="12" cy="12" r="9" /></svg>
+        <div class="callout-text">
+            Yetki alanında <strong>@Model.TeamSize kişi</strong> var. Bu ekran şu an her kişi için
+            ayrı bir istek attığından o büyüklükte takvimi çizmiyoruz — tek sorguda takvim
+            döndüren bir API ucu eklenmeli. O zamana kadar
+            <a asp-action="Approvals">Onay Bekleyenler</a> ekranını kullanabilirsin.
+        </div>
+    </div>
+}
+else if (!Model.Rows.Any())
+{
+    <div class="card">
+        <div class="empty">
+            <div class="empty-title">Görüntülenecek ekip yok</div>
+            <div class="empty-text">Sana bağlı aktif bir çalışan bulunmuyor.</div>
+        </div>
+    </div>
+}
+else
+{
+    @if (Model.ClashDays.Any())
+    {
+        <div class="callout callout-warn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 8v5M12 16.5h.01" /><circle cx="12" cy="12" r="9" /></svg>
+            <div class="callout-text">
+                <strong>@Model.ClashDays.Count günde</strong> ekipten en az iki kişi aynı anda izinli olacak:
+                @string.Join(", ", Model.ClashDays.Take(6).Select(d => d.ToString("d MMMM")))@(Model.ClashDays.Count > 6 ? "…" : "").
+            </div>
+        </div>
+    }
+
+    <section class="card card-pad scroll-x">
+        @* Başlık satırı: gün adı + gün numarası. *@
+        <div style="display: grid; grid-template-columns: @cols; gap: 6px; align-items: end; margin-bottom: 10px; min-width: 760px;">
+            <span class="eyebrow">Çalışan</span>
+            @foreach (var day in Model.Days)
+            {
+                var isWeekend = day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
+                var isToday = day == Model.StartDate;
+                <div style="text-align: center;">
+                    <div style="font-size: 10px; font-weight: 700; letter-spacing: .4px; color: @(isWeekend ? "var(--muted-5)" : "var(--muted-4)");">
+                        @dayNames[(int)day.DayOfWeek]
+                    </div>
+                    <div class="num" style="font-size: 12px; font-weight: @(isToday ? 800 : 650); color: @(isToday ? "var(--accent)" : isWeekend ? "var(--muted-4)" : "var(--ink-2)");">
+                        @day.Day
+                    </div>
+                </div>
+            }
+        </div>
+
+        @foreach (var row in Model.Rows)
+        {
+            <div style="display: grid; grid-template-columns: @cols; gap: 6px; align-items: center; margin-bottom: 6px; min-width: 760px;">
+                <a class="person" style="min-width: 0; color: inherit;" asp-controller="Employees" asp-action="Details" asp-route-id="@row.EmployeeId">
+                    <span class="avatar avatar-sm @(row.IsSelf ? "av-1" : "av-2")">@row.Initials</span>
+                    <div class="person-text">
+                        <div class="dt-primary" style="font-size: 12.5px;">
+                            @row.FullName@(row.IsSelf ? " (sen)" : "")
+                        </div>
+                        <div class="dt-secondary">
+                            @row.Subtitle@(row.LeaveDays > 0 ? $" · {row.LeaveDays} gün izinli" : "")
+                        </div>
+                    </div>
+                </a>
+
+                @foreach (var cell in row.Cells)
+                {
+                    if (cell.Type is null)
+                    {
+                        <div title="@cell.Date.ToString("dd MMMM")"
+                             style="height: 34px; border-radius: var(--r-sm);
+                                    border: 1px solid @(cell.IsToday ? "var(--accent)" : "var(--line)");
+                                    background: @(cell.IsWeekend ? "var(--surface-3)" : "var(--surface)");"></div>
+                    }
+                    else
+                    {
+                        var (letter, bg, fg, border) = CellStyle(cell.Type, cell.Status);
+                        var statusText = cell.Status is "Pending" or "PendingHr" ? " (onay bekliyor)" : "";
+                        <div title="@row.FullName · @cell.Date.ToString("dd MMMM") · @LeaveDisplay.TypeText(cell.Type)@statusText"
+                             style="height: 34px; border-radius: var(--r-sm);
+                                    border: 1px solid @(cell.IsToday ? "var(--accent)" : border);
+                                    background: @bg; color: @fg;
+                                    display: grid; place-items: center;
+                                    font-size: 11px; font-weight: 700;">@letter</div>
+                    }
+                }
+            </div>
+        }
+
+        @* Gösterge *@
+        <div class="row-center" style="gap: 16px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line-3);">
+            <span class="eyebrow">Gösterge</span>
+            <span class="row-tight">
+                <span style="width: 18px; height: 18px; border-radius: 5px; background: var(--accent-tint); color: var(--brand); display: grid; place-items: center; font-size: 10px; font-weight: 700;">Y</span>
+                <span class="field-hint">Yıllık</span>
+            </span>
+            <span class="row-tight">
+                <span style="width: 18px; height: 18px; border-radius: 5px; background: var(--danger-bg); color: var(--danger); display: grid; place-items: center; font-size: 10px; font-weight: 700;">H</span>
+                <span class="field-hint">Hastalık</span>
+            </span>
+            <span class="row-tight">
+                <span style="width: 18px; height: 18px; border-radius: 5px; background: var(--surface-3); color: var(--muted); display: grid; place-items: center; font-size: 10px; font-weight: 700;">Ü</span>
+                <span class="field-hint">Ücretsiz</span>
+            </span>
+            <span class="row-tight">
+                <span style="width: 18px; height: 18px; border-radius: 5px; background: var(--accent-tint-2); border: 1px dashed var(--accent-tint);"></span>
+                <span class="field-hint">Soluk = onay bekliyor</span>
+            </span>
+            <span class="row-tight">
+                <span style="width: 18px; height: 18px; border-radius: 5px; background: var(--surface-3);"></span>
+                <span class="field-hint">Hafta sonu</span>
+            </span>
+        </div>
+    </section>
+}

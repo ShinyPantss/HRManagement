@@ -179,6 +179,56 @@ public class LeaveRequestRepository : ILeaveRequestRepository
         }).ToList();
     }
 
+    public async Task<IEnumerable<LeaveHistoryDto>> GetAllWithNamesAsync()
+    {
+        // TÜM talepler (durum filtresi YOK) + kişi adı/tip. Onay Bekleyenler'in aksine
+        // burada Approved/Rejected de gelir — bu bir GEÇMİŞ/gözlem listesidir.
+        const string sql = @"
+            SELECT lr.Id,
+                   COALESCE(e.FirstName + ' ' + e.LastName, i.FirstName + ' ' + i.LastName) AS SubjectName,
+                   CASE WHEN lr.EmployeeId IS NOT NULL THEN N'Çalışan' ELSE N'Stajyer' END AS SubjectType,
+                   lr.Type, lr.StartDate, lr.EndDate, lr.WorkingDays, lr.Status,
+                   lr.Description, lr.RejectionReason, lr.CreatedAt
+            FROM LeaveRequests lr
+            LEFT JOIN Employees e ON e.Id = lr.EmployeeId
+            LEFT JOIN Interns   i ON i.Id = lr.InternId
+            ORDER BY lr.StartDate DESC";
+
+        using var connection = _connectionFactory.CreateConnection();
+        var rows = await connection.QueryAsync<HistoryRow>(sql);
+
+        return rows.Select(r => new LeaveHistoryDto
+        {
+            Id = r.Id,
+            SubjectName = r.SubjectName,
+            SubjectType = r.SubjectType,
+            TypeName = ((LeaveType)r.Type).ToString(),
+            StartDate = r.StartDate,
+            EndDate = r.EndDate,
+            WorkingDays = r.WorkingDays,
+            Status = (LeaveStatus)r.Status,
+            Description = r.Description,
+            RejectionReason = r.RejectionReason,
+            CreatedAt = r.CreatedAt
+        }).ToList();
+    }
+
+    // Dapper'ın ham satırı map ettiği ara tip (Type/Status int okunur, C#'ta enum'a çevrilir).
+    private sealed class HistoryRow
+    {
+        public int Id { get; set; }
+        public string SubjectName { get; set; } = string.Empty;
+        public string SubjectType { get; set; } = string.Empty;
+        public int Type { get; set; }
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+        public int WorkingDays { get; set; }
+        public int Status { get; set; }
+        public string? Description { get; set; }
+        public string? RejectionReason { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
     // Dapper'ın ham satırı map ettiği ara tip (Type/Status int okunur, C#'ta enum'a çevrilir).
     private sealed class ActionableRow
     {

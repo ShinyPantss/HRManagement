@@ -1,71 +1,124 @@
+@using HRManagement.WebUI.Models
 @model IEnumerable<HRManagement.WebUI.Models.Api.Interns.InternResponse>
 @{
     ViewData["Title"] = "Stajyerler";
-    var canCreate = User.IsInRole("HR");      // yeni kayıt açmak yalnızca İK
-    var canManage = User.IsInRole("HR") || User.IsInRole("Admin");   // düzenleme
-    var canDelete = User.IsInRole("Admin");   // silme yalnızca Admin
+
+    var canCreate = User.IsInRole("HR");                            // yeni kayıt yalnız İK
+    var canManage = User.IsInRole("HR") || User.IsInRole("Admin");  // düzenleme
+    var canDelete = User.IsInRole("Admin");                         // silme yalnız Admin
+
+    var interns = Model.ToList();
+    var today = DateTime.Today;
+    var active = interns.Count(i => i.EndDate.Date >= today);
+    var endingSoon = interns.Where(i => i.EndDate.Date >= today && (i.EndDate.Date - today).Days <= 30).ToList();
+
+    ViewData["Subtitle"] = $"{active} aktif stajyer · toplam {interns.Count} kayıt.";
 }
 
-<div class="page-head d-flex align-items-center">
-    <div>
-        <h1>Stajyerler</h1>
-        <p class="text-muted mb-0">Şirketteki tüm stajyerler.</p>
-    </div>
+@section PageActions {
     @if (canCreate)
     {
-        <a asp-action="Create" class="btn btn-primary ms-auto">Yeni Stajyer</a>
+        <a asp-action="Create" class="btn btn-primary">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+            Stajyer ekle
+        </a>
     }
-</div>
+}
 
-<div class="panel mt-3">
-    <div class="panel-body p-0">
-        <table class="table table-hover align-middle mb-0">
-            <thead>
-                <tr>
-                    <th>Id</th>
-                    <th>Ad</th>
-                    <th>Soyad</th>
-                    <th>Üniversite</th>
-                    <th>Bölüm</th>
-                    <th>Sınıf</th>
-                    <th>Staj Tarihleri</th>
-                    <th class="text-end">İşlemler</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var intern in Model)
-                {
-                    <tr>
-                        <td>@intern.Id</td>
-                        <td>@intern.FirstName</td>
-                        <td>@intern.LastName</td>
-                        <td>@intern.University</td>
-                        <td>@(string.IsNullOrWhiteSpace(intern.Major) ? "—" : intern.Major)</td>
-                        <td>@intern.Grade</td>
-                        <td>@intern.StartDate.ToString("dd.MM.yyyy") – @intern.EndDate.ToString("dd.MM.yyyy")</td>
-                        <td class="text-end">
-                            @if (canManage)
-                            {
-                                <a asp-action="Edit" asp-route-id="@intern.Id" class="btn btn-sm btn-outline-secondary">Düzenle</a>
-                            }
-                            @if (canDelete)
-                            {
-                                <form asp-action="Delete" asp-route-id="@intern.Id" method="post" class="d-inline"
-                                      onsubmit="return confirm('Bu stajyeri silmek istediğinize emin misiniz? Hesabı pasife alınır, izin/hesap talepleri silinir.');">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">Sil</button>
-                                </form>
-                            }
-                        </td>
-                    </tr>
-                }
-                @if (!Model.Any())
-                {
-                    <tr>
-                        <td colspan="8" class="text-center text-muted py-4">Henüz stajyer kaydı yok.</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+@if (endingSoon.Any())
+{
+    <div class="callout callout-warn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color: var(--warn);"><path d="M12 8v5M12 16.5h.01" /><circle cx="12" cy="12" r="9" /></svg>
+        <div class="callout-text">
+            Stajı 30 gün içinde biten @endingSoon.Count kişi var:
+            <strong>@string.Join(", ", endingSoon.Select(i => $"{i.FirstName} {i.LastName} ({i.EndDate:dd MMMM})"))</strong>.
+            Uzatma veya kadro kararı bekleniyor.
+        </div>
     </div>
-</div>
+}
+
+@if (!interns.Any())
+{
+    <div class="card">
+        <div class="empty">
+            <div class="empty-title">Henüz stajyer kaydı yok</div>
+            <div class="empty-text">@(canCreate ? "Sağ üstteki “Stajyer ekle” ile ilk kaydı açabilirsin." : "Kayıtlar İK tarafından açılır.")</div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="grid g-3">
+        @for (var i = 0; i < interns.Count; i++)
+        {
+            var intern = interns[i];
+            var initials = $"{(intern.FirstName.Length > 0 ? char.ToUpperInvariant(intern.FirstName[0]) : '?')}{(intern.LastName.Length > 0 ? char.ToUpperInvariant(intern.LastName[0]) : ' ')}".Trim();
+
+            // Staj ilerlemesi: geçen gün / toplam gün.
+            var totalDays = Math.Max(1, (intern.EndDate.Date - intern.StartDate.Date).Days);
+            var elapsed = Math.Clamp((int)Math.Round(100.0 * (today - intern.StartDate.Date).Days / totalDays), 0, 100);
+            var remaining = (intern.EndDate.Date - today).Days;
+
+            var isFinished = remaining < 0;
+            var isEnding = !isFinished && remaining <= 30;
+            var statusBadge = isFinished ? "badge-neutral" : isEnding ? "badge-warn" : "badge-ok";
+            var statusText = isFinished ? "Staj bitti" : isEnding ? $"{remaining} gün kaldı" : "Devam ediyor";
+            var barTone = isFinished ? "" : isEnding ? "warn" : "";
+
+            <section class="card card-pad" style="display: flex; flex-direction: column; gap: 15px;">
+                <div class="row-center" style="gap: 12px; flex-wrap: nowrap;">
+                    <span class="avatar avatar-md av-@(i % 6 + 1)">@initials</span>
+                    <div class="flex-1">
+                        <div style="font-size: 14.5px; font-weight: 700; letter-spacing: -.2px;">@intern.FirstName @intern.LastName</div>
+                        <div class="dt-secondary">@intern.University</div>
+                    </div>
+                    <span class="badge badge-sm @statusBadge">@statusText</span>
+                </div>
+
+                <div class="kv">
+                    <div class="kv-row" style="padding: 7px 0;">
+                        <span class="kv-key">Bölüm</span>
+                        <span class="kv-val">@(string.IsNullOrWhiteSpace(intern.Major) ? "—" : intern.Major)</span>
+                    </div>
+                    <div class="kv-row" style="padding: 7px 0;">
+                        <span class="kv-key">Sınıf</span>
+                        <span class="kv-val">@GradeDisplay.Label(intern.Grade)</span>
+                    </div>
+                    <div class="kv-row" style="padding: 7px 0;">
+                        <span class="kv-key">Mentor</span>
+                        <span class="kv-val">@(intern.MentorFullName ?? "Atanmadı")</span>
+                    </div>
+                    <div class="kv-row" style="padding: 7px 0;">
+                        <span class="kv-key">Staj dönemi</span>
+                        <span class="kv-val num">@intern.StartDate.ToString("dd.MM.yyyy") – @intern.EndDate.ToString("dd.MM.yyyy")</span>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="bar-caption">
+                        <span>Staj süresi</span><span>%@elapsed</span>
+                    </div>
+                    <div class="bar"><div class="bar-fill @barTone" style="width: @elapsed%;"></div></div>
+                </div>
+
+                <div class="task-actions" style="justify-content: flex-start;">
+                    @if (canManage)
+                    {
+                        @* Detay: profil + görevler + mentor notları (İK/Admin salt görüntü). *@
+                        <a asp-controller="Mentorship" asp-action="Detail" asp-route-id="@intern.Id" class="btn btn-md flex-1">Detay</a>
+                        <a asp-action="Edit" asp-route-id="@intern.Id" class="btn btn-md">Düzenle</a>
+                    }
+                    @if (canDelete)
+                    {
+                        <form asp-action="Delete" asp-route-id="@intern.Id" method="post" style="display: inline;"
+                              data-confirm="@($"{intern.FirstName} {intern.LastName} silinsin mi? Hesabı pasife alınır, izin ve hesap talepleri silinir.")"
+                              data-confirm-ok="Sil" data-danger>
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-md btn-danger">Sil</button>
+                        </form>
+                    }
+                </div>
+            </section>
+        }
+    </div>
+}

@@ -7,9 +7,12 @@ using HRManagement.Application.Features.Interns.Commands.CreateIntern;
 using HRManagement.Application.Features.Interns.Commands.DeleteIntern;
 using HRManagement.Application.Features.Interns.Commands.UpdateIntern;
 using HRManagement.Application.Features.Interns.Commands.UpdateInternTaskStatus;
+using HRManagement.Application.Features.Interns.Commands.UpdateMyInternTaskStatus;
 using HRManagement.Application.Features.Interns.Queries.GetAllInterns;
 using HRManagement.Application.Features.Interns.Queries.GetInternById;
 using HRManagement.Application.Features.Interns.Queries.GetMentoredInternDetail;
+using HRManagement.Application.Features.Interns.Queries.GetMyInternProfile;
+using HRManagement.Application.Features.Interns.Queries.GetMyInternTasks;
 using HRManagement.Application.Features.Interns.Queries.GetMyMentoredInterns;
 using System.Security.Claims;
 using MediatR;
@@ -96,6 +99,46 @@ public class InternsController : ControllerBase
         return Ok(BaseResponse<int>.Success(taskId, "Görev durumu güncellendi."));
     }
 
+    // ── "Görevlerim" uçları (stajyerin kendisi) ──────────────────────────────
+    // Rol Intern'dir ama asıl kural İLİŞKİ: kayıt ve görevler token'dan çözülen
+    // stajyer kaydına aittir — stajyer başkasının görevine dokunamaz.
+
+    // "Profilim" (stajyer): kimlik token'dan çözülür — kişi yalnızca kendi
+    // profilini görebilir. Çalışan tarafındaki /api/employees/me ile simetrik.
+    [Authorize(Roles = "Intern")]
+    [HttpGet("me")]
+    public async Task<IActionResult> GetMyProfile()
+    {
+        var p = await _mediator.Send(new GetMyInternProfileQuery(CurrentUserId()));
+        var data = new MyInternProfileResponse(
+            p.FirstName, p.LastName, p.Email, p.University, p.Major, p.Grade,
+            p.StartDate, p.EndDate, p.DepartmentName, p.UnitName, p.MentorFullName,
+            p.ManagerFullName, p.TotalTasks, p.DoneTasks,
+            p.RecentLeaveRequests.Select(l => new MyInternLeaveRequestResponse(
+                l.Id, l.Type.ToString(), l.StartDate, l.EndDate,
+                l.TotalDays, l.Status.ToString(), l.Description)).ToList());
+        return Ok(BaseResponse<MyInternProfileResponse>.Success(data));
+    }
+
+    [Authorize(Roles = "Intern")]
+    [HttpGet("my-tasks")]
+    public async Task<IActionResult> GetMyTasks()
+    {
+        var result = await _mediator.Send(new GetMyInternTasksQuery(CurrentUserId()));
+        var data = new MyInternTasksResponse(
+            result.MentorFullName,
+            result.Tasks.Select(ToTaskResponse).ToList());
+        return Ok(BaseResponse<MyInternTasksResponse>.Success(data));
+    }
+
+    [Authorize(Roles = "Intern")]
+    [HttpPut("my-tasks/{taskId:int}/status")]
+    public async Task<IActionResult> UpdateMyTaskStatus(int taskId, UpdateInternTaskStatusRequest request)
+    {
+        await _mediator.Send(new UpdateMyInternTaskStatusCommand(taskId, CurrentUserId(), request.Status));
+        return Ok(BaseResponse<int>.Success(taskId, "Görev durumu güncellendi."));
+    }
+
     // Stajyer kaydı AÇMAK yalnızca İK işidir — çalışan tarafıyla aynı kural.
     [Authorize(Roles = "HR")]
     [HttpPost]
@@ -134,17 +177,22 @@ public class InternsController : ControllerBase
 
     private static InternResponse ToResponse(InternDto i) => new(
         i.Id, i.FirstName, i.LastName, i.Email, i.University, i.Major,
-        i.Grade, i.StartDate, i.EndDate, i.MentorId, i.DepartmentId, i.UnitId, i.UserId);
+        i.Grade, i.StartDate, i.EndDate, i.MentorId, i.MentorFullName,
+        i.DepartmentId, i.UnitId, i.UserId);
 
     private static MentoredInternDetailResponse ToMentorshipResponse(MentoredInternDetailDto d) => new(
         d.Id, d.FirstName, d.LastName, d.Email, d.University, d.Major,
-        d.Grade, d.StartDate, d.EndDate, d.DepartmentName,
-        d.Tasks.Select(t => new InternTaskResponse(
-            t.Id, t.Title, t.Description,
-            ((HRManagement.Domain.Enums.InternTaskStatus)t.Status).ToString(),
-            t.DueDate, t.CreatedAt)).ToList(),
+        d.Grade, d.StartDate, d.EndDate, d.DepartmentName, d.MentorFullName,
+        d.MentorEmployeeId, d.UnitName, d.ManagerFullName, d.ManagerEmployeeId,
+        d.Tasks.Select(ToTaskResponse).ToList(),
         d.Notes.Select(n => new InternNoteResponse(
             n.Id, n.AuthorName, n.Content, n.CreatedAt)).ToList());
+
+    // Mentorluk ve "Görevlerim" uçları görevleri AYNI biçimde döndürür.
+    private static InternTaskResponse ToTaskResponse(InternTaskDto t) => new(
+        t.Id, t.Title, t.Description,
+        ((HRManagement.Domain.Enums.InternTaskStatus)t.Status).ToString(),
+        t.DueDate, t.CreatedAt);
 
     /// <summary>Kimlik daima imzalı token'dan okunur, istek gövdesinden asla.</summary>
     private int CurrentUserId() =>

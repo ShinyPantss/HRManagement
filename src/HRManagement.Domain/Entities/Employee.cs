@@ -14,6 +14,12 @@ public class Employee
     public DateTime HireDate { get; set; }
 
     /// <summary>
+    /// Cinsiyet (Erkek=1, Kadın=2). Yeni kayıtlarda zorunlu (Create/Update validator);
+    /// eski kayıtlar için null olabilir — geriye dönük düzenlemede doldurulur.
+    /// </summary>
+    public Gender? Gender { get; set; }
+
+    /// <summary>
     /// Kıdem/ünvan seviyesi (GM, GMY, Müdür...). "Pozisyon" ayrı bir alan olarak
     /// TUTULMAZ; gösterimde Departman + Kıdem'den türetilir ("IT Uzmanı" gibi).
     /// Mevcut kayıtlar için null olabilir.

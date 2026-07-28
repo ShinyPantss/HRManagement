@@ -17,6 +17,11 @@ public sealed class MentoredInternDetailResponse
         DateTime startDate,
         DateTime endDate,
         string departmentName,
+        string? mentorFullName,
+        int? mentorEmployeeId,
+        string? unitName,
+        string? managerFullName,
+        int? managerEmployeeId,
         List<InternTaskResponse> tasks,
         List<InternNoteResponse> notes)
     {
@@ -30,6 +35,11 @@ public sealed class MentoredInternDetailResponse
         StartDate = startDate;
         EndDate = endDate;
         DepartmentName = departmentName;
+        MentorFullName = mentorFullName;
+        MentorEmployeeId = mentorEmployeeId;
+        UnitName = unitName;
+        ManagerFullName = managerFullName;
+        ManagerEmployeeId = managerEmployeeId;
         Tasks = tasks;
         Notes = notes;
     }
@@ -44,6 +54,21 @@ public sealed class MentoredInternDetailResponse
     public DateTime StartDate { get; }
     public DateTime EndDate { get; }
     public string DepartmentName { get; }
+
+    /// <summary>Mentorun adı — HR/Admin salt-okur bakarken sorumluyu görür.</summary>
+    public string? MentorFullName { get; }
+
+    /// <summary>Mentorun çalışan Id'si — profil linki için.</summary>
+    public int? MentorEmployeeId { get; }
+
+    public string? UnitName { get; }
+
+    /// <summary>Türetilmiş yönetici: birimin (yoksa departmanın) en kıdemli yöneticisi.</summary>
+    public string? ManagerFullName { get; }
+
+    /// <summary>Türetilmiş yöneticinin çalışan Id'si — profil linki için.</summary>
+    public int? ManagerEmployeeId { get; }
+
     public List<InternTaskResponse> Tasks { get; }
     public List<InternNoteResponse> Notes { get; }
 }

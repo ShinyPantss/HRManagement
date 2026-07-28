@@ -12,6 +12,7 @@ public sealed record UpdateEmployeeCommand(
     string? Phone,
     DateTime BirthDate,
     DateTime HireDate,
+    Gender? Gender,
     int DepartmentId,
     int? UnitId,
     int? UserId,

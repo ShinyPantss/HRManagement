@@ -33,6 +33,10 @@ public class EmployeeFormViewModel
     [Display(Name = "Telefon (opsiyonel)")]
     public string? Phone { get; set; }
 
+    [Required(ErrorMessage = "Cinsiyet seçimi zorunludur.")]
+    [Display(Name = "Cinsiyet")]
+    public int? Gender { get; set; }
+
     [Required(ErrorMessage = "Doğum tarihi zorunludur.")]
     [DisplayFormat(DataFormatString = "{0:dd.MM.yyyy}", ApplyFormatInEditMode = true)]
     [Display(Name = "Doğum Tarihi")]
@@ -96,6 +100,9 @@ public class EmployeeFormViewModel
 
     /// <summary>Kıdem dropdown'ı (GM … Uzman).</summary>
     public IEnumerable<SelectListItem> SeniorityOptions { get; set; } = SeniorityDisplay.Options();
+
+    /// <summary>Cinsiyet dropdown'ı (Erkek / Kadın).</summary>
+    public IEnumerable<SelectListItem> GenderOptions { get; set; } = GenderDisplay.Options();
 }
 
 /// <summary>

@@ -17,6 +17,7 @@ public class InternResponse
 
     // Mentor atanmamış olabilir.
     public int? MentorId { get; set; }
+    public string? MentorFullName { get; set; }   // liste ekranı için (§5.4)
     public int DepartmentId { get; set; }
     public int? UnitId { get; set; }   // departmanın alt kırılımı (Birim); opsiyonel
     public int? UserId { get; set; }   // giriş hesabı bağı; null = hesabı yok

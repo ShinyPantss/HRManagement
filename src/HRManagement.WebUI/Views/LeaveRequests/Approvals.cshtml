@@ -1,81 +1,112 @@
 @model List<HRManagement.WebUI.Models.Api.LeaveRequests.PendingApprovalResponse>
 @{
     ViewData["Title"] = "Onay Bekleyenler";
-}
+    ViewData["Subtitle"] = Model.Any()
+        ? $"{Model.Count} talep onayını bekliyor — tek tek çalışan seçmene gerek yok."
+        : "Sizin onayınızı bekleyen izin talepleri burada toplanır.";
 
-<div class="page-head">
-    <h1>Onay Bekleyenler</h1>
-    <p class="text-muted mb-0">Sizin onayınızı bekleyen izin talepleri — tek tek çalışan seçmenize gerek yok.</p>
-</div>
+    var totalDays = Model.Sum(r => r.WorkingDays);
+    var managerStage = Model.Count(r => r.Stage == "Yönetici onayı");
+    var hrStage = Model.Count - managerStage;
+}
 
 @if (!Model.Any())
 {
-    <div class="panel mt-3"><div class="panel-body text-muted">Onayınızı bekleyen talep yok.</div></div>
-}
-else
-{
-    <div class="panel mt-3">
-        <div class="panel-body p-0">
-            <table class="table align-middle mb-0">
-                <thead>
-                    <tr>
-                        <th>Kişi</th>
-                        <th>İzin Türü</th>
-                        <th>Başlangıç</th>
-                        <th>Bitiş</th>
-                        <th>Gün</th>
-                        <th>Aşama</th>
-                        <th class="text-end">İşlem</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var r in Model)
-                    {
-                        <tr>
-                            <td>@r.SubjectName <span class="text-muted small">(@r.SubjectType)</span></td>
-                            <td>@r.Type</td>
-                            <td>@r.StartDate.ToString("dd.MM.yyyy")</td>
-                            <td>@r.EndDate.ToString("dd.MM.yyyy")</td>
-                            <td>@r.WorkingDays</td>
-                            <td><span class="badge text-bg-info">@r.Stage</span></td>
-                            <td class="text-end">
-                                <div class="d-flex gap-2 justify-content-end">
-                                    <form asp-action="Approve" method="post" class="d-inline"
-                                          onsubmit="return confirm('Bu izin talebini onaylamak istediğinize emin misiniz?');">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@r.Id" />
-                                        <input type="hidden" name="employeeId" value="0" />
-                                        <input type="hidden" name="returnTo" value="Approvals" />
-                                        <button type="submit" class="btn btn-sm btn-outline-success">Onayla</button>
-                                    </form>
-                                    <form asp-action="Reject" method="post" class="d-inline"
-                                          onsubmit="return izinRedGerekcesiSor(this);">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@r.Id" />
-                                        <input type="hidden" name="employeeId" value="0" />
-                                        <input type="hidden" name="returnTo" value="Approvals" />
-                                        @* Gerekçe submit anında prompt ile doldurulur. *@
-                                        <input type="hidden" name="reason" />
-                                        <button type="submit" class="btn btn-sm btn-outline-warning">Reddet</button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+    <div class="card">
+        <div class="empty">
+            <div class="empty-title">Onay kutun temiz</div>
+            <div class="empty-text">Şu an onayını bekleyen talep yok.</div>
         </div>
     </div>
 }
+else
+{
+    <div class="grid g-3">
+        <div class="stat">
+            <div class="stat-label">BEKLEYEN TALEP</div>
+            <div class="stat-row"><span class="stat-value text-warn">@Model.Count</span><span class="stat-unit">talep</span></div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">TOPLAM GÜN</div>
+            <div class="stat-row"><span class="stat-value">@totalDays</span><span class="stat-unit">iş günü</span></div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">AŞAMA DAĞILIMI</div>
+            <div class="stat-row" style="gap: 12px;">
+                <span class="stat-value" style="font-size: 22px;">@managerStage<span class="stat-unit"> yönetici</span></span>
+                <span class="stat-value" style="font-size: 22px;">@hrStage<span class="stat-unit"> İK</span></span>
+            </div>
+        </div>
+    </div>
 
-@section Scripts {
-    <script>
-        // Reddetme gerekçesini formun gizli alanına yazar; iptal edilirse form gitmez.
-        function izinRedGerekcesiSor(form) {
-            var reason = prompt('Red gerekçesi (opsiyonel):', '');
-            if (reason === null) { return false; }
-            form.elements['reason'].value = reason;
-            return true;
+    <div class="callout">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 8v5M12 16.5h.01" /><circle cx="12" cy="12" r="9" /></svg>
+        <div class="callout-text">
+            Onay zinciri iki aşamalıdır: önce talep sahibinin yöneticisi, sonra İK.
+            Aynı kişi iki aşamayı birden işleyemez — kural API'de zorlanır.
+        </div>
+    </div>
+
+    <div class="stack">
+        @for (var i = 0; i < Model.Count; i++)
+        {
+            var r = Model[i];
+            <section class="card card-pad" style="display: grid; grid-template-columns: minmax(0,1.3fr) minmax(0,1fr) minmax(0,.9fr) auto; gap: 20px; align-items: center;">
+                <div class="person">
+                    <span class="avatar avatar-md av-@(i % 6 + 1)">@Init(r.SubjectName)</span>
+                    <div class="person-text">
+                        <div style="font-size: 14px; font-weight: 700; letter-spacing: -.2px;">@r.SubjectName</div>
+                        <div class="dt-secondary">@r.SubjectType</div>
+                    </div>
+                </div>
+
+                <div class="stack-sm" style="gap: 6px;">
+                    <span class="badge badge-sm @LeaveDisplay.TypeBadge(r.Type)" style="align-self: flex-start;">@LeaveDisplay.TypeText(r.Type)</span>
+                    <span class="dt-cell num">@r.StartDate.ToString("dd.MM.yyyy") – @r.EndDate.ToString("dd.MM.yyyy") · @r.WorkingDays gün</span>
+                </div>
+
+                <div>
+                    <div class="mini-stat-label" style="margin-bottom: 4px;">AŞAMA</div>
+                    <span class="badge badge-sm badge-info">@r.Stage</span>
+                </div>
+
+                <div class="task-actions">
+                    <a asp-action="Details" asp-route-id="@r.Id" class="btn btn-md">Detay</a>
+
+                    <form asp-action="Reject" method="post" style="display: inline;"
+                          data-confirm="@($"{r.SubjectName} adlı kişinin izin talebi reddedilsin mi?")"
+                          data-confirm-ok="Reddet" data-reason data-danger>
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@r.Id" />
+                        <input type="hidden" name="employeeId" value="0" />
+                        <input type="hidden" name="returnTo" value="Approvals" />
+                        @* Gerekçe, onay diyaloğundaki metin kutusundan buraya yazılır. *@
+                        <input type="hidden" name="reason" />
+                        <button type="submit" class="btn btn-md btn-danger">Reddet</button>
+                    </form>
+
+                    <form asp-action="Approve" method="post" style="display: inline;"
+                          data-confirm="@($"{r.SubjectName} adlı kişinin {r.WorkingDays} günlük izni onaylansın mı?")"
+                          data-confirm-ok="Onayla">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@r.Id" />
+                        <input type="hidden" name="employeeId" value="0" />
+                        <input type="hidden" name="returnTo" value="Approvals" />
+                        <button type="submit" class="btn btn-md btn-primary">Onayla</button>
+                    </form>
+                </div>
+            </section>
         }
-    </script>
+    </div>
+}
+
+@functions {
+    string Init(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2
+            ? $"{char.ToUpperInvariant(parts[0][0])}{char.ToUpperInvariant(parts[^1][0])}"
+            : char.ToUpperInvariant(parts[0][0]).ToString();
+    }
 }

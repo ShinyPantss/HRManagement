@@ -114,6 +114,7 @@ CREATE TABLE dbo.Employees
     ManagerId       int           NULL,
     AnnualLeaveDays int           NULL,
     Seniority       int           NULL,   -- 1=GM 2=GMY 3=Müdür 4=MüdürYrd 5=Kıd.Uzman 6=Uzman
+    Gender          int           NULL,   -- 1=Erkek 2=Kadın (zorunluluk uygulama katmanında)
     CreatedAt       datetime2(0)  NOT NULL CONSTRAINT DF_Employees_CreatedAt DEFAULT SYSUTCDATETIME(),
     UpdatedAt       datetime2(0)  NULL,
 
@@ -346,6 +347,9 @@ GO
 IF COL_LENGTH('dbo.Employees', 'Seniority') IS NULL
     ALTER TABLE dbo.Employees ADD Seniority int NULL;
 GO
+IF COL_LENGTH('dbo.Employees', 'Gender') IS NULL
+    ALTER TABLE dbo.Employees ADD Gender int NULL;
+GO
 
 /* --- Position artık türetiliyor (Departman + Kıdem); sütun kaldırılır --- */
 IF COL_LENGTH('dbo.Employees', 'Position') IS NOT NULL
@@ -436,6 +440,12 @@ GO
 IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_Employees_Seniority')
     ALTER TABLE dbo.Employees ADD CONSTRAINT CK_Employees_Seniority
         CHECK (Seniority IS NULL OR Seniority BETWEEN 1 AND 6);
+GO
+
+/* --- Employees.Gender 1..2 (Erkek/Kadın) --- */
+IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_Employees_Gender')
+    ALTER TABLE dbo.Employees ADD CONSTRAINT CK_Employees_Gender
+        CHECK (Gender IS NULL OR Gender BETWEEN 1 AND 2);
 GO
 
 /* --- Employees.ManagerId FK (kendine referans) ---

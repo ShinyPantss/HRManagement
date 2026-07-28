@@ -100,6 +100,7 @@ public sealed class InternResponse
         DateTime startDate,
         DateTime endDate,
         int? mentorId,
+        string? mentorFullName,
         int departmentId,
         int? unitId,
         int? userId)
@@ -114,6 +115,7 @@ public sealed class InternResponse
         StartDate = startDate;
         EndDate = endDate;
         MentorId = mentorId;
+        MentorFullName = mentorFullName;
         DepartmentId = departmentId;
         UnitId = unitId;
         UserId = userId;
@@ -129,6 +131,10 @@ public sealed class InternResponse
     public DateTime StartDate { get; }
     public DateTime EndDate { get; }
     public int? MentorId { get; }
+
+    /// <summary>Mentorun adı (§5.4 liste "Mentor bilgileri"). Null = mentor yok.</summary>
+    public string? MentorFullName { get; }
+
     public int DepartmentId { get; }
     public int? UnitId { get; }
     public int? UserId { get; }

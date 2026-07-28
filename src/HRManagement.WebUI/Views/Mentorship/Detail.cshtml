@@ -1,155 +1,281 @@
+@using HRManagement.WebUI.Models
 @model HRManagement.WebUI.Models.Api.Mentorship.MentoredInternDetailResponse
 @{
-    ViewData["Title"] = "Stajyer Detayı";
     var fullName = $"{Model.FirstName} {Model.LastName}";
+    ViewData["Title"] = fullName;
+
+    // Mentor düzenler; İK/Admin yalnızca gözlemler (görev/not ekleyemez, durum değiştiremez).
+    var canEdit = !User.IsInRole("HR") && !User.IsInRole("Admin");
+
+    ViewData["Subtitle"] = canEdit
+        ? "Görev ata, ilerlemeyi takip et, geri bildirim yaz."
+        : "Profil, görevler ve mentor notları — salt görüntü.";
+
+    ViewData["Crumb"] = canEdit ? "Mentorluk" : "Stajyerler";
+    ViewData["CrumbUrl"] = canEdit ? Url.Action("Index", "Mentorship") : Url.Action("Index", "Interns");
+
+    var initials = $"{(Model.FirstName.Length > 0 ? Model.FirstName[0] : '?')}{(Model.LastName.Length > 0 ? Model.LastName[0] : ' ')}".Trim().ToUpperInvariant();
+
+    var doneCount = Model.Tasks.Count(t => t.Status == "Done");
+    var openCount = Model.Tasks.Count - doneCount;
+    var progress = Model.Tasks.Count == 0 ? 0 : (int)Math.Round(100.0 * doneCount / Model.Tasks.Count);
+
+    var today = DateTime.Today;
+    var remainingDays = (Model.EndDate.Date - today).Days;
+    var totalDays = Math.Max(1, (Model.EndDate.Date - Model.StartDate.Date).Days);
+    var elapsed = Math.Clamp((int)Math.Round(100.0 * (today - Model.StartDate.Date).Days / totalDays), 0, 100);
 }
 
 @functions {
     string DateText(DateTime d) => d.ToString("dd.MM.yyyy");
 
-    (string Badge, string Text) TaskStatusBadge(string status) => status switch
+    // Görev durumu → nokta rengi + rozet.
+    (string Dot, string Badge, string Text) TaskState(string status) => status switch
     {
-        "Pending" => ("text-bg-warning", "Bekliyor"),
-        "InProgress" => ("text-bg-info", "Devam Ediyor"),
-        "Done" => ("text-bg-success", "Tamamlandı"),
-        _ => ("text-bg-secondary", status)
+        "Pending" => ("warn", "badge-warn", "Bekliyor"),
+        "InProgress" => ("info", "badge-violet", "Devam ediyor"),
+        "Done" => ("ok", "badge-ok", "Tamamlandı"),
+        _ => ("", "badge-neutral", status)
     };
+
+    string Init(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2
+            ? $"{char.ToUpperInvariant(parts[0][0])}{char.ToUpperInvariant(parts[^1][0])}"
+            : char.ToUpperInvariant(parts[0][0]).ToString();
+    }
 }
 
-<div class="page-head d-flex align-items-center">
-    <div>
-        <h1>@fullName</h1>
-        <p class="text-muted mb-0">
-            @Model.University@(string.IsNullOrWhiteSpace(Model.Major) ? "" : $" · {Model.Major}") · @Model.Grade. sınıf
-            · @Model.DepartmentName · @DateText(Model.StartDate) – @DateText(Model.EndDate) · @Model.Email
-        </p>
-    </div>
-    <a asp-action="Index" class="btn btn-outline-secondary ms-auto">Listeye Dön</a>
-</div>
+@section PageActions {
+    <a asp-controller="@(canEdit ? "Mentorship" : "Interns")" asp-action="Index" class="btn">Listeye dön</a>
+}
 
-<div class="row mt-3 g-3">
-    @* ── Görevler ────────────────────────────────────────────── *@
-    <div class="col-lg-7">
-        <div class="panel h-100">
-            <div class="panel-body">
-                <h3 class="h6 text-muted text-uppercase">Görevler (@Model.Tasks.Count)</h3>
+@* ── Kimlik kartı ──────────────────────────────────────────────────── *@
+<section class="card card-pad-lg">
+    <div class="row-center" style="gap: 20px;">
+        <span class="avatar avatar-xl av-3">@initials</span>
 
-                <form asp-action="AddTask" asp-route-id="@Model.Id" method="post" class="mb-3">
-                    @Html.AntiForgeryToken()
-                    <div class="row g-2">
-                        <div class="col-md-5">
-                            <input type="text" name="title" class="form-control" maxlength="200"
-                                   placeholder="Görev başlığı" required />
-                        </div>
-                        <div class="col-md-4">
-                            <input type="text" name="description" class="form-control" maxlength="1000"
-                                   placeholder="Açıklama (opsiyonel)" />
-                        </div>
-                        <div class="col-md-2">
-                            <input type="date" name="dueDate" class="form-control" title="Termin (opsiyonel)" />
-                        </div>
-                        <div class="col-md-1 d-grid">
-                            <button type="submit" class="btn btn-outline-primary">Ata</button>
-                        </div>
-                    </div>
-                </form>
+        <div style="min-width: 220px;">
+            <div class="row-tight" style="margin-bottom: 6px;">
+                <h2 style="font-size: 20px; font-weight: 800; letter-spacing: -.5px;">@fullName</h2>
+                <span class="badge badge-sm @(remainingDays < 0 ? "badge-neutral" : remainingDays <= 30 ? "badge-warn" : "badge-ok")">
+                    @(remainingDays < 0 ? "Staj sona erdi" : $"{remainingDays} gün kaldı")
+                </span>
+            </div>
 
-                @if (Model.Tasks.Any())
+            <div class="row-tight" style="margin-bottom: 6px; flex-wrap: wrap;">
+                <span class="badge badge-sm badge-brand">@Model.DepartmentName</span>
+                @if (!string.IsNullOrWhiteSpace(Model.UnitName))
                 {
-                    <table class="table table-sm table-hover align-middle mb-0">
-                        <thead>
-                            <tr>
-                                <th>Görev</th>
-                                <th>Termin</th>
-                                <th>Durum</th>
-                                <th class="text-end">İlerlet</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var task in Model.Tasks)
-                            {
-                                var (badgeClass, statusText) = TaskStatusBadge(task.Status);
-                                <tr>
-                                    <td>
-                                        @task.Title
-                                        @if (!string.IsNullOrWhiteSpace(task.Description))
-                                        {
-                                            <div class="text-muted small">@task.Description</div>
-                                        }
-                                    </td>
-                                    <td>@(task.DueDate is DateTime due ? DateText(due) : "—")</td>
-                                    <td><span class="badge @badgeClass">@statusText</span></td>
-                                    <td class="text-end">
-                                        @* Durum akışı ileri yönlü: Bekliyor → Devam → Tamam. *@
-                                        @if (task.Status == "Pending")
-                                        {
-                                            <form asp-action="UpdateTaskStatus" method="post" class="d-inline">
-                                                @Html.AntiForgeryToken()
-                                                <input type="hidden" name="id" value="@Model.Id" />
-                                                <input type="hidden" name="taskId" value="@task.Id" />
-                                                <input type="hidden" name="status" value="2" />
-                                                <button type="submit" class="btn btn-sm btn-outline-info">Başlat</button>
-                                            </form>
-                                        }
-                                        @if (task.Status is "Pending" or "InProgress")
-                                        {
-                                            <form asp-action="UpdateTaskStatus" method="post" class="d-inline">
-                                                @Html.AntiForgeryToken()
-                                                <input type="hidden" name="id" value="@Model.Id" />
-                                                <input type="hidden" name="taskId" value="@task.Id" />
-                                                <input type="hidden" name="status" value="3" />
-                                                <button type="submit" class="btn btn-sm btn-outline-success">Tamamla</button>
-                                            </form>
-                                        }
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#b6bbc4" stroke-width="2.4" stroke-linecap="round"><path d="m9 6 6 6-6 6" /></svg>
+                    <span class="badge badge-sm badge-neutral">@Model.UnitName</span>
                 }
-                else
-                {
-                    <p class="text-muted mb-0">Henüz görev atanmamış.</p>
-                }
+            </div>
+
+            <div class="page-sub">
+                @Model.University@(string.IsNullOrWhiteSpace(Model.Major) ? "" : $" · {Model.Major}") · @GradeDisplay.Label(Model.Grade) · @Model.Email
+            </div>
+        </div>
+
+        <div class="mini-stats ml-auto">
+            <div>
+                <div class="mini-stat-label">STAJ SÜRESİ</div>
+                <div class="mini-stat-value">%@elapsed</div>
+            </div>
+            <div>
+                <div class="mini-stat-label">GÖREV</div>
+                <div class="mini-stat-value">@doneCount<span style="font-size: 12px; font-weight: 600; color: var(--muted-4);">/@Model.Tasks.Count</span></div>
+            </div>
+            <div>
+                <div class="mini-stat-label">SÖZLEŞME</div>
+                <div class="mini-stat-value num" style="font-size: 14px;">@DateText(Model.StartDate)<br />@DateText(Model.EndDate)</div>
             </div>
         </div>
     </div>
 
-    @* ── Mentor notları ──────────────────────────────────────── *@
-    <div class="col-lg-5">
-        <div class="panel h-100">
-            <div class="panel-body">
-                <h3 class="h6 text-muted text-uppercase">Mentor Notları (@Model.Notes.Count)</h3>
+    <div class="divider"></div>
 
-                <form asp-action="AddNote" asp-route-id="@Model.Id" method="post" class="mb-3">
-                    @Html.AntiForgeryToken()
-                    <div class="d-flex gap-2">
-                        <input type="text" name="content" class="form-control" maxlength="1000"
-                               placeholder="Kısa geri bildirim…" required />
-                        <button type="submit" class="btn btn-outline-primary">Ekle</button>
-                    </div>
-                </form>
-
-                @if (Model.Notes.Any())
+    @* İki ayrı sorumluluk: mentor (staj süreci) + yönetici (birim hiyerarşisi).
+       Id'si olan kişi çalışan profiline gider; yetkisiz tıklamayı API reddeder. *@
+    <div class="grid g-2" style="gap: 14px;">
+        <div class="row-center" style="gap: 12px; flex-wrap: nowrap;">
+            <span class="avatar avatar-md av-3">@(Model.MentorFullName is null ? "—" : Init(Model.MentorFullName))</span>
+            <div class="flex-1">
+                <div class="mini-stat-label" style="margin-bottom: 2px;">MENTOR</div>
+                @if (Model.MentorEmployeeId is int mentorId && Model.MentorFullName is not null)
                 {
-                    <ul class="list-group list-group-flush">
-                        @foreach (var note in Model.Notes)
+                    <a class="dt-primary" asp-controller="Employees" asp-action="Details" asp-route-id="@mentorId">@Model.MentorFullName</a>
+                }
+                else
+                {
+                    <div class="dt-cell-muted">Atanmadı</div>
+                }
+            </div>
+        </div>
+
+        <div class="row-center" style="gap: 12px; flex-wrap: nowrap;">
+            <span class="avatar avatar-md av-2">@(Model.ManagerFullName is null ? "—" : Init(Model.ManagerFullName))</span>
+            <div class="flex-1">
+                <div class="mini-stat-label" style="margin-bottom: 2px;">YÖNETİCİ</div>
+                @if (Model.ManagerEmployeeId is int unitManagerId && Model.ManagerFullName is not null)
+                {
+                    <a class="dt-primary" asp-controller="Employees" asp-action="Details" asp-route-id="@unitManagerId">@Model.ManagerFullName</a>
+                }
+                else
+                {
+                    <div class="dt-cell-muted">—</div>
+                }
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="grid g-wide-left">
+    @* ── Görevler ──────────────────────────────────────────────────── *@
+    <section class="card card-flush">
+        <div class="card-head">
+            <div class="row-tight">
+                <h2>Görevler</h2>
+                <span class="badge badge-sm badge-neutral">@Model.Tasks.Count</span>
+            </div>
+            @if (Model.Tasks.Any())
+            {
+                <span class="card-head-meta">@doneCount tamamlandı · @openCount açık</span>
+            }
+        </div>
+
+        @if (Model.Tasks.Any())
+        {
+            <div style="padding: 14px 18px 0;">
+                <div class="bar-caption"><span>İlerleme</span><span>%@progress</span></div>
+                <div class="bar"><div class="bar-fill ok" style="width: @progress%;"></div></div>
+            </div>
+        }
+
+        @* Görev verme yalnızca mentor'a: TEK metin alanı — Enter atar, Shift+Enter alt satır. *@
+        @if (canEdit)
+        {
+            <form asp-action="AddTask" asp-route-id="@Model.Id" method="post"
+                  style="margin: 14px 18px; padding: 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2);">
+                @Html.AntiForgeryToken()
+                <textarea name="title" class="textarea" rows="2" maxlength="200" required
+                          placeholder="Yeni görev yaz…" data-autosize data-submit-enter
+                          style="min-height: 54px; background: #fff;"></textarea>
+                <div class="row-center" style="margin-top: 10px; gap: 10px;">
+                    <span class="field-hint flex-1">Enter: görevi ata · Shift+Enter: alt satır</span>
+                    <label class="field-hint" for="taskDueDate">Termin</label>
+                    <input type="date" id="taskDueDate" name="dueDate" class="input" style="width: auto; height: 34px;" />
+                    <button type="submit" class="btn btn-primary btn-md">Görev ata</button>
+                </div>
+            </form>
+        }
+
+        @if (Model.Tasks.Any())
+        {
+            @foreach (var task in Model.Tasks)
+            {
+                var (dot, badge, statusText) = TaskState(task.Status);
+                var isOverdue = task.DueDate is DateTime d && d.Date < today && task.Status != "Done";
+
+                <div class="task">
+                    <span class="task-dot @dot"></span>
+                    <div style="min-width: 0;">
+                        <div class="task-title @(task.Status == "Done" ? "done" : "")">@task.Title</div>
+                        @if (!string.IsNullOrWhiteSpace(task.Description))
                         {
-                            <li class="list-group-item px-0">
-                                <div class="d-flex justify-content-between">
-                                    <strong class="small">@note.AuthorName</strong>
-                                    <span class="text-muted small">@note.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
-                                </div>
-                                <div>@note.Content</div>
-                            </li>
+                            <div class="task-meta pre-line">@task.Description</div>
                         }
-                    </ul>
-                }
-                else
-                {
-                    <p class="text-muted mb-0">Henüz not girilmemiş.</p>
-                }
+                        <div class="task-meta">
+                            <span>@DateText(task.CreatedAt) atandı</span>
+                            @if (task.DueDate is DateTime due)
+                            {
+                                <span class="@(isOverdue ? "text-danger-fg fw-700" : "")">
+                                    · termin @DateText(due)@(isOverdue ? " (gecikti)" : "")
+                                </span>
+                            }
+                        </div>
+                    </div>
+                    <div class="task-actions">
+                        <span class="badge badge-sm @badge">@statusText</span>
+                        @if (canEdit && task.Status == "Pending")
+                        {
+                            <form asp-action="UpdateTaskStatus" method="post" style="display: inline;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@Model.Id" />
+                                <input type="hidden" name="taskId" value="@task.Id" />
+                                <input type="hidden" name="status" value="2" />
+                                <button type="submit" class="btn btn-sm">Başlat</button>
+                            </form>
+                        }
+                        @if (canEdit && task.Status is "Pending" or "InProgress")
+                        {
+                            <form asp-action="UpdateTaskStatus" method="post" style="display: inline;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@Model.Id" />
+                                <input type="hidden" name="taskId" value="@task.Id" />
+                                <input type="hidden" name="status" value="3" />
+                                <button type="submit" class="btn btn-sm btn-primary">Tamamla</button>
+                            </form>
+                        }
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="empty">
+                <div class="empty-title">Henüz görev atanmamış</div>
+                <div class="empty-text">@(canEdit ? "İlk görevi yukarıdaki kutudan yazabilirsin." : "Mentor görev atadığında burada görünecek.")</div>
             </div>
+        }
+    </section>
+
+    @* ── Mentor notları ────────────────────────────────────────────── *@
+    <section class="card card-flush">
+        <div class="card-head">
+            <div class="row-tight">
+                <h2>Mentor notları</h2>
+                <span class="badge badge-sm badge-violet">Stajyer ve İK görür</span>
+            </div>
+            <span class="card-head-meta">@Model.Notes.Count</span>
         </div>
-    </div>
+
+        @if (Model.Notes.Any())
+        {
+            @for (var i = 0; i < Model.Notes.Count; i++)
+            {
+                var note = Model.Notes[i];
+                <div class="note">
+                    <span class="avatar avatar-sm av-3">@Init(note.AuthorName)</span>
+                    <div class="flex-1">
+                        <div class="note-head">
+                            <span class="note-author">@note.AuthorName</span>
+                            <span class="note-date">@note.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                        </div>
+                        <div class="note-text">@note.Content</div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="empty">
+                <div class="empty-title">Henüz not girilmemiş</div>
+                <div class="empty-text">Kısa geri bildirimler stajyerin gelişimini izlenebilir kılar.</div>
+            </div>
+        }
+
+        @if (canEdit)
+        {
+            <form asp-action="AddNote" asp-route-id="@Model.Id" method="post"
+                  style="padding: 14px 18px; display: flex; gap: 10px; align-items: flex-start; border-top: 1px solid var(--line-3);">
+                @Html.AntiForgeryToken()
+                <textarea name="content" class="textarea" rows="2" maxlength="1000" required
+                          placeholder="Gelişim, geri bildirim, devam durumu…" style="min-height: 62px;"></textarea>
+                <button type="submit" class="btn btn-primary btn-md">Notu ekle</button>
+            </form>
+        }
+    </section>
 </div>

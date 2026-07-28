@@ -1,47 +1,233 @@
+@using HRManagement.WebUI.Models
+@model HRManagement.WebUI.Models.Home.PersonalHomeViewModel
 @{
-    ViewData["Title"] = "Ana Sayfa";
+    var me = Model.Me;
+    var firstName = me?.FirstName ?? User.Identity?.Name ?? "";
+    ViewData["Title"] = string.IsNullOrWhiteSpace(firstName) ? "Ana Sayfa" : $"Merhaba {firstName}";
+    ViewData["Subtitle"] = Model.CanApprove
+        ? "İzin bakiyen, açık taleplerin ve onayını bekleyen ekip talepleri."
+        : "İzin bakiyen, açık taleplerin ve ekibin.";
+
+    var openRequests = me?.RecentLeaveRequests.Count(r => r.Status is "Pending" or "PendingHr") ?? 0;
 }
 
-<div class="page-head">
-    <h1>Hoş geldiniz 👋</h1>
-    <p class="text-muted mb-0">Rolünüze göre özet kartlar ve listeler burada görünecek.</p>
-</div>
+@section PageActions {
+    @if (Model.CanApprove && Model.PendingApprovals.Any())
+    {
+        <a asp-controller="LeaveRequests" asp-action="Approvals" class="btn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 12.5 11.5 15 16 9" /><rect x="3" y="3" width="18" height="18" rx="2" /></svg>
+            Onay kutusu (@Model.PendingApprovals.Count)
+        </a>
+    }
+    <a asp-controller="LeaveRequests" asp-action="Create" class="btn btn-primary">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+        İzin talep et
+    </a>
+}
 
-@*
-    ── Rol bazlı dashboard planı (Gereksinim 5.5) ─────────────────────────
-    Auth bağlandığında bu bölüm User.IsInRole(...) ile ayrışacak:
-      HR       → toplam aktif çalışan, bekleyen izin talebi, aktif stajyer
-      Yönetici → ekip çalışan sayısı, ekipten bekleyen izin talepleri
-      Çalışan  → kalan yıllık izin, son 5 izin talebi
-    Şimdilik hepsi için yer tutucular duruyor.
-*@
-
-<div class="row g-3 mt-1">
-    <div class="col-6 col-xl-3">
-        <div class="stat-card placeholder">İstatistik kartı</div>
-    </div>
-    <div class="col-6 col-xl-3">
-        <div class="stat-card placeholder">İstatistik kartı</div>
-    </div>
-    <div class="col-6 col-xl-3">
-        <div class="stat-card placeholder">İstatistik kartı</div>
-    </div>
-    <div class="col-6 col-xl-3">
-        <div class="stat-card placeholder">İstatistik kartı</div>
-    </div>
-</div>
-
-<div class="row g-3 mt-1">
-    <div class="col-lg-7">
-        <div class="panel">
-            <div class="panel-head">Son İzin Talepleri</div>
-            <div class="panel-body placeholder">İçerik sonra doldurulacak</div>
+@if (me is null)
+{
+    <div class="card">
+        <div class="empty">
+            <div class="empty-title">Hesabınız bir çalışan kaydına bağlı değil</div>
+            <div class="empty-text">İzin bakiyesi ve talep geçmişi görebilmek için İK ile iletişime geçin.</div>
         </div>
     </div>
-    <div class="col-lg-5">
-        <div class="panel">
-            <div class="panel-head">Hızlı İşlemler</div>
-            <div class="panel-body placeholder">İçerik sonra doldurulacak</div>
+}
+else
+{
+    @* ── Bakiye özeti ─────────────────────────────────────────────── *@
+    <div class="grid g-4">
+        <div class="stat">
+            <div class="stat-label">KALAN YILLIK</div>
+            <div class="stat-row">
+                <span class="stat-value @(me.RemainingLeaveDays < 0 ? "text-danger-fg" : "")">@me.RemainingLeaveDays</span>
+                <span class="stat-unit">gün</span>
+            </div>
+            @if (me.RemainingLeaveDays < 0)
+            {
+                <div class="stat-note">Avans izin — sonraki yılın hakkından düşecek.</div>
+            }
+        </div>
+        <div class="stat">
+            <div class="stat-label">HAK EDİLEN</div>
+            <div class="stat-row">
+                <span class="stat-value">@me.AccruedLeaveDays</span>
+                <span class="stat-unit">gün</span>
+            </div>
+            <div class="stat-note">İşe giriş yıldönümü esaslı.</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">KULLANILAN + BEKLEYEN</div>
+            <div class="stat-row">
+                <span class="stat-value">@me.UsedLeaveDays</span>
+                <span class="stat-unit">gün</span>
+            </div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">AÇIK TALEBİM</div>
+            <div class="stat-row">
+                <span class="stat-value @(openRequests > 0 ? "text-accent" : "")">@openRequests</span>
+                <span class="stat-unit">talep</span>
+            </div>
+            @if (openRequests > 0)
+            {
+                <div class="stat-note">Onay sürecinde.</div>
+            }
         </div>
     </div>
-</div>
+
+    <div class="grid @(Model.CanApprove ? "g-wide-left" : "g-wide-right")">
+        @* ── Taleplerim ───────────────────────────────────────────── *@
+        <section class="card card-flush">
+            <div class="card-head">
+                <h2>Taleplerim</h2>
+                <a class="card-head-link" asp-controller="LeaveRequests" asp-action="Index">Tümü</a>
+            </div>
+
+            @if (me.RecentLeaveRequests.Any())
+            {
+                @foreach (var r in me.RecentLeaveRequests)
+                {
+                    var (badge, statusText) = LeaveDisplay.StatusBadgeShort(r.Status);
+                    <a class="dt-row" style="--cols: 1fr auto;" asp-controller="LeaveRequests" asp-action="Details" asp-route-id="@r.Id">
+                        <div>
+                            <div class="dt-primary" style="margin-bottom: 3px;">
+                                @LeaveDisplay.TypeText(r.Type) · <span class="num">@r.StartDate.ToString("dd MMM") – @r.EndDate.ToString("dd MMM")</span>
+                            </div>
+                            <div class="dt-secondary">@r.TotalDays iş günü</div>
+                        </div>
+                        <span class="badge badge-sm @badge">@statusText</span>
+                    </a>
+                }
+                <div class="card-foot">
+                    Onay akışın: <strong style="color: var(--ink);">Yöneticin → İnsan Kaynakları</strong>
+                </div>
+            }
+            else
+            {
+                <div class="empty">
+                    <div class="empty-title">Henüz izin talebin yok</div>
+                    <div class="empty-text">Soldaki “İzin Talep Et” kısayolundan ilk talebini oluşturabilirsin.</div>
+                </div>
+            }
+        </section>
+
+        @* ── Yöneticiyse onay kutusu, değilse ekip ────────────────── *@
+        @if (Model.CanApprove)
+        {
+            <section class="card card-flush">
+                <div class="card-head">
+                    <div class="row-tight">
+                        <h2>Onayımda bekleyen</h2>
+                        <span class="badge badge-sm @(Model.PendingApprovals.Any() ? "badge-warn" : "badge-ok")">@Model.PendingApprovals.Count</span>
+                    </div>
+                    <a class="card-head-link" asp-controller="LeaveRequests" asp-action="Approvals">Onay kutusu</a>
+                </div>
+
+                @if (Model.PendingApprovals.Any())
+                {
+                    @for (var i = 0; i < Math.Min(5, Model.PendingApprovals.Count); i++)
+                    {
+                        var a = Model.PendingApprovals[i];
+                        <div class="dt-row" style="--cols: 1fr auto;">
+                            <div class="person">
+                                <span class="avatar av-@(i % 6 + 1)">@Init(a.SubjectName)</span>
+                                <div class="person-text">
+                                    <div class="dt-primary">@a.SubjectName</div>
+                                    <div class="dt-secondary num">@a.StartDate.ToString("dd MMM") – @a.EndDate.ToString("dd MMM") · @a.WorkingDays gün</div>
+                                </div>
+                            </div>
+                            <span class="badge badge-sm badge-info">@a.Stage</span>
+                        </div>
+                    }
+                    @if (Model.PendingApprovals.Count > 5)
+                    {
+                        <div class="card-foot">@(Model.PendingApprovals.Count - 5) talep daha bekliyor.</div>
+                    }
+                }
+                else
+                {
+                    <div class="empty">
+                        <div class="empty-title">Onay kutun temiz</div>
+                        <div class="empty-text">Şu an onayını bekleyen talep yok.</div>
+                    </div>
+                }
+            </section>
+        }
+        else
+        {
+            <section class="card card-flush">
+                <div class="card-head">
+                    <h2>Ekibim</h2>
+                    <a class="card-head-link" asp-controller="Employees" asp-action="Index">Tümü</a>
+                </div>
+
+                @if (me.DirectReports.Any())
+                {
+                    @for (var j = 0; j < me.DirectReports.Count; j++)
+                    {
+                        var t = me.DirectReports[j];
+                        <a class="dt-row" style="--cols: 1fr auto;" asp-controller="Employees" asp-action="Details" asp-route-id="@t.Id">
+                            <div class="person">
+                                <span class="avatar av-@(j % 6 + 1)">@Init(t.FullName)</span>
+                                <div class="person-text">
+                                    <div class="dt-primary">@t.FullName</div>
+                                    <div class="dt-secondary">@SeniorityDisplay.Label(t.Seniority)</div>
+                                </div>
+                            </div>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b6bbc4" stroke-width="2.2" stroke-linecap="round"><path d="m9 6 6 6-6 6" /></svg>
+                        </a>
+                    }
+                }
+                else
+                {
+                    <div class="empty">
+                        <div class="empty-title">Sana bağlı ekip üyesi yok</div>
+                        <div class="empty-text">Ekip arkadaşlarını “Ekibim” ekranından görebilirsin.</div>
+                    </div>
+                }
+            </section>
+        }
+    </div>
+
+    @* ── Mentorluk kısayolu: kişinin stajyeri varsa ───────────────── *@
+    @if (me.MentoredInterns.Any())
+    {
+        <section class="card card-flush">
+            <div class="card-head">
+                <div class="row-tight">
+                    <h2>Mentorluk verdiğim stajyerler</h2>
+                    <span class="badge badge-sm badge-violet">@me.MentoredInterns.Count</span>
+                </div>
+                <a class="card-head-link" asp-controller="Mentorship" asp-action="Index">Mentorluk ekranı</a>
+            </div>
+            @for (var k = 0; k < me.MentoredInterns.Count; k++)
+            {
+                var intern = me.MentoredInterns[k];
+                <a class="dt-row" style="--cols: 1.4fr 1fr auto;" asp-controller="Mentorship" asp-action="Detail" asp-route-id="@intern.Id">
+                    <div class="person">
+                        <span class="avatar av-@(k % 6 + 1)">@Init(intern.FullName)</span>
+                        <div class="person-text">
+                            <div class="dt-primary">@intern.FullName</div>
+                            <div class="dt-secondary">@intern.University</div>
+                        </div>
+                    </div>
+                    <span class="dt-cell-muted num">@intern.StartDate.ToString("dd.MM.yyyy") – @intern.EndDate.ToString("dd.MM.yyyy")</span>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b6bbc4" stroke-width="2.2" stroke-linecap="round"><path d="m9 6 6 6-6 6" /></svg>
+                </a>
+            }
+        </section>
+    }
+}
+
+@functions {
+    string Init(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2
+            ? $"{char.ToUpperInvariant(parts[0][0])}{char.ToUpperInvariant(parts[^1][0])}"
+            : char.ToUpperInvariant(parts[0][0]).ToString();
+    }
+}

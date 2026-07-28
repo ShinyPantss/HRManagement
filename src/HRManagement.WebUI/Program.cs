@@ -81,6 +81,10 @@ builder.Services.AddRefitClient<IAccountRequestApi>(refitSettings)
     .ConfigureHttpClient(client => client.BaseAddress = new Uri(apiBaseUrl))
     .AddHttpMessageHandler<BearerTokenHandler>();
 
+builder.Services.AddRefitClient<IDashboardApi>(refitSettings)
+    .ConfigureHttpClient(client => client.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<BearerTokenHandler>();
+
 var app = builder.Build();
 
 // Türkçe kültür: tarihler gün/ay/yıl (dd.MM.yyyy) gösterilir VE form gönderiminde

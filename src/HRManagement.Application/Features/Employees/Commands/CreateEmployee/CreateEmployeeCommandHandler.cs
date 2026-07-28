@@ -78,6 +78,7 @@ public sealed class CreateEmployeeCommandHandler : IRequestHandler<CreateEmploye
             Phone = request.Phone,
             DateOfBirth = request.BirthDate,
             HireDate = request.HireDate,
+            Gender = request.Gender,
             DepartmentId = request.DepartmentId,
             UnitId = request.UnitId,
             UserId = request.UserId,

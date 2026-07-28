@@ -1,3 +1,4 @@
+using HRManagement.WebUI.Models;
 using HRManagement.WebUI.Models.Api.Departments;
 using HRManagement.WebUI.Models.Departments;
 using HRManagement.WebUI.Services;
@@ -9,20 +10,31 @@ namespace HRManagement.WebUI.Controllers;
 /// <summary>
 /// UI controller'ı: iş yapmaz, Refit istemcisi üzerinden API'yi çağırır ve
 /// dönen BaseResponse'u kullanıcıya gösterilecek biçime çevirir.
+///
+/// TÜM ekran yalnızca HR/Admin'e açık (kullanıcı kararı) — menüde gizli olması
+/// yetmez, URL ile de girilememeli. Departman VERİSİ (isim) ise API'de açık kalır:
+/// Ekibim/İzin gibi ekranlar pozisyon türetmek için onu okur.
 /// </summary>
+[Authorize(Roles = "HR,Admin")]
 public class DepartmentsController : Controller
 {
     private readonly IDepartmentApi _departmentApi;
+    private readonly IEmployeeApi _employeeApi;
+    private readonly IUnitApi _unitApi;
+    private readonly IInternApi _internApi;
 
-    public DepartmentsController(IDepartmentApi departmentApi)
+    public DepartmentsController(
+        IDepartmentApi departmentApi,
+        IEmployeeApi employeeApi,
+        IUnitApi unitApi,
+        IInternApi internApi)
     {
         _departmentApi = departmentApi;
+        _employeeApi = employeeApi;
+        _unitApi = unitApi;
+        _internApi = internApi;
     }
 
-    // Departmanlar ekranı Employee'ye kapalı (kullanıcı kararı) — menüde gizli
-    // olması yetmez, URL ile de girilememeli. Departman VERİSİ ise API'de açık
-    // kalır: Ekibim/İzin ekranları pozisyon türetmek için onu okur.
-    [Authorize(Roles = "HR,Admin,Manager,Intern")]
     public async Task<IActionResult> Index()
     {
         var response = await _departmentApi.GetAllAsync();
@@ -30,10 +42,46 @@ public class DepartmentsController : Controller
         if (!response.IsSuccess)
         {
             TempData["Error"] = response.Message;
-            return View(new List<DepartmentResponse>());
+            return View(new List<DepartmentCardViewModel>());
         }
 
-        return View(response.Data ?? new List<DepartmentResponse>());
+        var departments = response.Data ?? [];
+
+        // Kart sayıları departman ucundan GELMEZ (o uç yalnızca Id/Ad/Açıklama döner);
+        // çalışan, birim ve stajyer listelerinden türetilir. Bu ekran zaten HR/Admin'e
+        // açık olduğu için üç listenin tamamı görülebilir.
+        var employees = (await _employeeApi.GetAllAsync()).Data ?? [];
+        var units = (await _unitApi.GetAllAsync()).Data ?? [];
+        var interns = (await _internApi.GetAllAsync()).Data ?? [];
+
+        var cards = departments.Select(d =>
+        {
+            var inDept = employees.Where(e => e.DepartmentId == d.Id).ToList();
+            var activeCount = inDept.Count(e => e.IsActive);
+
+            // Yönetici: yönetici kademesindeki (GM/GMY/Müdür) en kıdemli aktif çalışan.
+            // Backend'deki UnitManagerResolver ile aynı kural — sayı küçüldükçe kıdem artar.
+            var manager = inDept
+                .Where(e => e.IsActive && SeniorityDisplay.IsManagerial(e.Seniority))
+                .OrderBy(e => e.Seniority)
+                .FirstOrDefault();
+
+            return new DepartmentCardViewModel
+            {
+                Id = d.Id,
+                Name = d.Name,
+                Description = d.Description,
+                ActiveCount = activeCount,
+                TotalCount = inDept.Count,
+                UnitCount = units.Count(u => u.DepartmentId == d.Id),
+                InternCount = interns.Count(i => i.DepartmentId == d.Id),
+                ManagerName = manager is null ? null : $"{manager.FirstName} {manager.LastName}"
+            };
+        })
+        .OrderByDescending(c => c.ActiveCount)
+        .ToList();
+
+        return View(cards);
     }
 
     public IActionResult Create()

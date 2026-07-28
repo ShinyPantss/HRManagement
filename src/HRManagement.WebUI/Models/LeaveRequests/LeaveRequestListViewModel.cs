@@ -29,4 +29,14 @@ public class LeaveRequestListViewModel
     public IEnumerable<SelectListItem> EmployeeOptions { get; set; } = [];
 
     public List<LeaveRequestResponse> Requests { get; set; } = [];
+
+    /// <summary>
+    /// HR/Admin "İzin Geçmişi" görünümü: TÜM izinler (her durumda) tek listede,
+    /// çalışan seçmeden. true ise <see cref="AllRows"/> gösterilir (salt görüntü);
+    /// false ise kişiye bağlı <see cref="Requests"/>.
+    /// </summary>
+    public bool IsAllView { get; set; }
+
+    /// <summary>Tüm izin geçmişi — yalnızca <see cref="IsAllView"/> true iken doludur.</summary>
+    public List<LeaveHistoryResponse> AllRows { get; set; } = [];
 }

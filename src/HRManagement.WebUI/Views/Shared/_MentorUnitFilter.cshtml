@@ -1,0 +1,50 @@
+@*
+    Mentor dropdown'ını seçilen DEPARTMAN + BİRİME göre süzer (UX; otorite API'de):
+      • Departman seçili değilse tüm adaylar listelenir.
+      • Departman seçiliyse yalnızca o departmanın çalışanları kalır.
+      • Birim de seçiliyse: o birimdekiler + birimi olmayan departman çalışanları
+        (müdür gibi departman seviyesindekiler her birime mentorluk verebilir).
+      • Süzme sonrası aday kalmadıysa [data-mentor-empty] uyarısı görünür.
+    Beklenen: departman id="DepartmentId", birim [data-unit-select],
+    mentor [data-mentor-select].
+*@
+<script>
+    (function () {
+        var department = document.getElementById('DepartmentId');
+        var unit = document.querySelector('[data-unit-select]');
+        var mentor = document.querySelector('[data-mentor-select]');
+        var emptyHint = document.querySelector('[data-mentor-empty]');
+        if (!mentor) return;
+
+        function apply() {
+            var pickedDept = department && department.value !== '' ? parseInt(department.value, 10) : NaN;
+            var pickedUnit = unit && unit.value !== '' ? parseInt(unit.value, 10) : NaN;
+            var visibleCount = 0;
+
+            for (var i = 0; i < mentor.options.length; i++) {
+                var opt = mentor.options[i];
+                if (opt.value === '') { opt.hidden = false; continue; } // "Mentor yok" hep dursun
+
+                var d = parseInt(opt.getAttribute('data-department'), 10);
+                var unitAttr = opt.getAttribute('data-unit');
+                var u = unitAttr === '' ? NaN : parseInt(unitAttr, 10);
+
+                var hide = false;
+                if (!isNaN(pickedDept) && d !== pickedDept) hide = true;
+                // Birim seçiliyse: o birimdekiler VEYA birimi olmayanlar (departman
+                // seviyesindekiler) kalır; başka birimdekiler gizlenir.
+                if (!hide && !isNaN(pickedUnit) && !isNaN(u) && u !== pickedUnit) hide = true;
+
+                opt.hidden = hide;
+                if (hide && opt.selected) { mentor.value = ''; } // geçersiz kalan seçimi düşür
+                if (!hide) visibleCount++;
+            }
+
+            if (emptyHint) emptyHint.hidden = visibleCount > 0;
+        }
+
+        if (department) department.addEventListener('change', apply);
+        if (unit) unit.addEventListener('change', apply);
+        apply(); // ilk yüklemede (Edit'te dolu gelen form dahil) mevcut duruma göre süz
+    })();
+</script>

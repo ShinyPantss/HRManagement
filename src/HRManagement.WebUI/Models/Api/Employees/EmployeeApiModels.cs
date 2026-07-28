@@ -19,6 +19,7 @@ public class EmployeeResponse
     public string? Phone { get; set; }
     public DateTime BirthDate { get; set; }
     public DateTime HireDate { get; set; }
+    public int? Gender { get; set; }   // 1=Erkek, 2=Kadın
     public int DepartmentId { get; set; }
     public int? UnitId { get; set; }   // departmanın alt kırılımı (Birim); opsiyonel
     public int? UserId { get; set; }
@@ -39,6 +40,7 @@ public class CreateEmployeeRequest
     public string? Phone { get; set; }
     public DateTime BirthDate { get; set; }
     public DateTime HireDate { get; set; }
+    public int? Gender { get; set; }   // 1=Erkek, 2=Kadın
     public int DepartmentId { get; set; }
     public int? UnitId { get; set; }   // departmanın alt kırılımı (Birim); opsiyonel
     public int? UserId { get; set; }
@@ -59,6 +61,7 @@ public class UpdateEmployeeRequest
     public string? Phone { get; set; }
     public DateTime BirthDate { get; set; }
     public DateTime HireDate { get; set; }
+    public int? Gender { get; set; }   // 1=Erkek, 2=Kadın
     public int DepartmentId { get; set; }
     public int? UnitId { get; set; }   // departmanın alt kırılımı (Birim); opsiyonel
     public int? UserId { get; set; }

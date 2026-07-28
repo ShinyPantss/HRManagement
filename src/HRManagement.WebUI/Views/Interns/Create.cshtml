@@ -1,124 +1,29 @@
 @model HRManagement.WebUI.Models.Interns.InternFormViewModel
 @{
     ViewData["Title"] = "Yeni Stajyer";
+    ViewData["Subtitle"] = "Mentor ve birim dışındaki alanlar zorunludur.";
+    ViewData["Crumb"] = "Stajyerler";
+    ViewData["CrumbUrl"] = Url.Action("Index", "Interns");
+
+    // İndeksle atıyoruz, koleksiyon başlatıcısıyla değil: başlatıcı Add() çağırır
+    // ve anahtar ViewData'da zaten varsa "duplicate key" hatası verir.
+    var formData = new ViewDataDictionary(ViewData);
+    formData["IsCreate"] = true;
 }
 
-<div class="page-head">
-    <h1>Yeni Stajyer</h1>
-    <p class="text-muted mb-0">Mentor dışındaki alanlar zorunludur.</p>
-</div>
+<div class="card card-pad-lg mid">
+    <form asp-action="Create" method="post" novalidate>
+        <partial name="_InternForm" model="Model" view-data="formData" />
 
-<div class="panel mt-3" style="max-width: 860px;">
-    <div class="panel-body">
-        <form asp-action="Create" method="post" novalidate>
-            <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
-
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label asp-for="FirstName" class="form-label"></label>
-                    <input asp-for="FirstName" class="form-control" />
-                    <span asp-validation-for="FirstName" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-6 mb-3">
-                    <label asp-for="LastName" class="form-label"></label>
-                    <input asp-for="LastName" class="form-control" />
-                    <span asp-validation-for="LastName" class="text-danger small"></span>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label asp-for="Email" class="form-label"></label>
-                    <input asp-for="Email" class="form-control" />
-                    <span asp-validation-for="Email" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-6 mb-3">
-                    <label asp-for="University" class="form-label"></label>
-                    <input asp-for="University" class="form-control" />
-                    <span asp-validation-for="University" class="text-danger small"></span>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label asp-for="Major" class="form-label"></label>
-                    <input asp-for="Major" class="form-control" />
-                    <span asp-validation-for="Major" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-6 mb-3">
-                    <label asp-for="Grade" class="form-label"></label>
-                    <input asp-for="Grade" class="form-control" />
-                    <span asp-validation-for="Grade" class="text-danger small"></span>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label asp-for="StartDate" class="form-label"></label>
-                    @* type="date" tarayıcı takvimi açar; value ISO (yyyy-MM-dd) ister,
-                       asp-format ViewModel'deki dd.MM.yyyy edit formatını bu input için ezer. *@
-                    <input asp-for="StartDate" type="date" asp-format="{0:yyyy-MM-dd}" class="form-control" />
-                    <span asp-validation-for="StartDate" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-6 mb-3">
-                    <label asp-for="EndDate" class="form-label"></label>
-                    <input asp-for="EndDate" type="date" asp-format="{0:yyyy-MM-dd}" class="form-control" />
-                    <span asp-validation-for="EndDate" class="text-danger small"></span>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label asp-for="DepartmentId" class="form-label"></label>
-                    <select asp-for="DepartmentId" asp-items="Model.DepartmentOptions" class="form-select">
-                        <option value="">Seçiniz…</option>
-                    </select>
-                    <span asp-validation-for="DepartmentId" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-6 mb-3">
-                    <label asp-for="MentorId" class="form-label"></label>
-                    <input asp-for="MentorId" class="form-control" />
-                    <span asp-validation-for="MentorId" class="text-danger small"></span>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label asp-for="UnitId" class="form-label"></label>
-                    <select asp-for="UnitId" class="form-select" data-unit-select>
-                        <option value="">Birim yok / seçiniz…</option>
-                        @foreach (var u in Model.UnitCandidates)
-                        {
-                            <option value="@u.Id" data-department="@u.DepartmentId">@u.Name</option>
-                        }
-                    </select>
-                    <span asp-validation-for="UnitId" class="text-danger small"></span>
-                    <div class="form-text">Seçilen departmana göre süzülür; zorunlu değil.</div>
-                </div>
-            </div>
-
-            @* Otomatik hesap talebi: işaretliyse stajyer eklenince Admin'e Pending
-               talep düşer (HR ayrıca talep açmaz). Onayı Admin verir. *@
-            <div class="form-check mb-3">
-                <input asp-for="RequestLoginAccount" class="form-check-input" />
-                <label asp-for="RequestLoginAccount" class="form-check-label"></label>
-                <div class="form-text">Onayı Admin verir; işaretli değilse hesap talebi oluşmaz.</div>
-            </div>
-
-            <div class="d-flex gap-2 mt-4">
-                <button type="submit" class="btn btn-primary">Kaydet</button>
-                <a asp-action="Index" class="btn btn-outline-secondary">Vazgeç</a>
-            </div>
-        </form>
-    </div>
+        <div class="form-actions" style="margin-top: 22px;">
+            <button type="submit" class="btn btn-primary btn-lg">Kaydet</button>
+            <a asp-action="Index" class="btn btn-lg">Vazgeç</a>
+        </div>
+    </form>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <partial name="_UnitDepartmentFilter" />
+    <partial name="_MentorUnitFilter" />
 }

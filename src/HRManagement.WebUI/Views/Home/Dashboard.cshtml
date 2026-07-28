@@ -1,0 +1,254 @@
+@model HRManagement.WebUI.Models.Api.Dashboard.HrDashboardResponse
+@{
+    ViewData["Title"] = "Ana Sayfa";
+    ViewData["Subtitle"] = $"Şirket geneli özet — {Model.TotalActiveEmployees} aktif kayıt üzerinden, {DateTime.Today:dd MMMM yyyy} itibarıyla.";
+
+    // Cinsiyet oranları (sıfıra bölme koruması).
+    var genderTotal = Model.MaleCount + Model.FemaleCount + Model.GenderUnspecifiedCount;
+    int Pct(int n) => genderTotal == 0 ? 0 : (int)Math.Round(100.0 * n / genderTotal);
+
+    // Departman barları en kalabalığa göre ölçeklenir.
+    var maxDept = Model.DepartmentHeadcounts.Count > 0 ? Model.DepartmentHeadcounts.Max(d => d.Count) : 0;
+
+    // Halka grafik: dilimler kümülatif yüzdelerle conic-gradient'e çevrilir.
+    var slices = new[]
+    {
+        (Label: "Erkek",        Count: Model.MaleCount,             Color: "#977ef9"),
+        (Label: "Kadın",        Count: Model.FemaleCount,           Color: "#99e1d9"),
+        (Label: "Belirtilmemiş",Count: Model.GenderUnspecifiedCount,Color: "#d9dce3"),
+    }.Where(s => s.Count > 0).ToList();
+
+    string DonutGradient()
+    {
+        if (genderTotal == 0) return "var(--track)";
+        var acc = 0.0;
+        var stops = slices.Select(s =>
+        {
+            var v = 100.0 * s.Count / genderTotal;
+            var stop = string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "{0} {1:0.##}% {2:0.##}%", s.Color, acc, acc + v);
+            acc += v;
+            return stop;
+        });
+        return $"conic-gradient({string.Join(",", stops)})";
+    }
+}
+
+@section PageActions {
+    <a asp-controller="LeaveRequests" asp-action="Approvals" class="btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 12.5 11.5 15 16 9" /><rect x="3" y="3" width="18" height="18" rx="2" /></svg>
+        Onay kutusu
+    </a>
+    <a asp-controller="LeaveRequests" asp-action="Create" class="btn btn-primary">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+        İzin talebi oluştur
+    </a>
+}
+
+@* ── KPI kartları — tıklayınca ilgili ekrana gider ─────────────────── *@
+<div class="grid g-4">
+    <a class="kpi" asp-controller="Employees" asp-action="Index">
+        <div class="kpi-top">
+            <span class="kpi-label">Aktif çalışan</span>
+            <span class="kpi-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M2.5 20a6.5 6.5 0 0 1 13 0M17 5.5a3 3 0 0 1 0 6" /></svg>
+            </span>
+        </div>
+        <div class="kpi-value-row">
+            <span class="kpi-value">@Model.TotalActiveEmployees</span>
+            <span class="kpi-unit">kişi</span>
+        </div>
+        <div class="kpi-note-row">
+            <span class="badge badge-sm badge-brand">@Model.DepartmentHeadcounts.Count departman</span>
+            <span class="kpi-note">kadro dağılımı aşağıda</span>
+        </div>
+    </a>
+
+    <a class="kpi" asp-controller="LeaveRequests" asp-action="Index">
+        <div class="kpi-top">
+            <span class="kpi-label">Şu an izinde</span>
+            <span class="kpi-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 2v4M16 2v4M3 10h18" /><rect x="3" y="6" width="18" height="16" rx="2.5" /></svg>
+            </span>
+        </div>
+        <div class="kpi-value-row">
+            <span class="kpi-value">@Model.OnLeaveNowCount</span>
+            <span class="kpi-unit">kişi</span>
+        </div>
+        <div class="kpi-note-row">
+            <span class="badge badge-sm badge-brand">
+                %@(Model.TotalActiveEmployees == 0 ? 0 : Math.Round(100.0 * Model.OnLeaveNowCount / Model.TotalActiveEmployees, 1))
+            </span>
+            <span class="kpi-note">kadronun oranı</span>
+        </div>
+    </a>
+
+    <a class="kpi" asp-controller="LeaveRequests" asp-action="Approvals">
+        <div class="kpi-top">
+            <span class="kpi-label">Onay bekleyen</span>
+            <span class="kpi-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 7v5l3 2" /><circle cx="12" cy="12" r="9" /></svg>
+            </span>
+        </div>
+        <div class="kpi-value-row">
+            <span class="kpi-value">@Model.PendingLeaveRequests</span>
+            <span class="kpi-unit">talep</span>
+        </div>
+        <div class="kpi-note-row">
+            @if (Model.PendingLeaveRequests > 0)
+            {
+                <span class="badge badge-sm badge-warn">işlem bekliyor</span>
+                <span class="kpi-note">onay kutusuna git</span>
+            }
+            else
+            {
+                <span class="badge badge-sm badge-ok">temiz</span>
+                <span class="kpi-note">bekleyen talep yok</span>
+            }
+        </div>
+    </a>
+
+    <a class="kpi" asp-controller="Interns" asp-action="Index">
+        <div class="kpi-top">
+            <span class="kpi-label">Aktif stajyer</span>
+            <span class="kpi-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3 3 8l9 5 9-5zM3 13l9 5 9-5" /></svg>
+            </span>
+        </div>
+        <div class="kpi-value-row">
+            <span class="kpi-value">@Model.ActiveInterns</span>
+            <span class="kpi-unit">kişi</span>
+        </div>
+        <div class="kpi-note-row">
+            <span class="badge badge-sm badge-violet">mentorluk</span>
+            <span class="kpi-note">staj takibi stajyer ekranında</span>
+        </div>
+    </a>
+</div>
+
+<div class="grid g-wide-left">
+    @* ── Şu an izinde olanlar ──────────────────────────────────────── *@
+    <section class="card card-flush">
+        <div class="card-head">
+            <div class="row-tight">
+                <h2>Şu an izinde olanlar</h2>
+                <span class="badge badge-sm badge-brand">@Model.OnLeaveNow.Count</span>
+            </div>
+            <a class="card-head-link" asp-controller="LeaveRequests" asp-action="Index">Tümü</a>
+        </div>
+
+        @if (Model.OnLeaveNow.Any())
+        {
+            <div class="dt" style="--cols: 1.6fr 1fr 1.2fr;">
+                <div class="dt-head">
+                    <span>Kişi</span><span>İzin türü</span><span class="text-right">Tarih</span>
+                </div>
+                @for (var i = 0; i < Model.OnLeaveNow.Count; i++)
+                {
+                    var p = Model.OnLeaveNow[i];
+                    <div class="dt-row">
+                        <div class="person">
+                            <span class="avatar av-@(i % 6 + 1)">@Init(p.SubjectName)</span>
+                            <div class="person-text">
+                                <div class="dt-primary">@p.SubjectName</div>
+                                <div class="dt-secondary">@p.SubjectType</div>
+                            </div>
+                        </div>
+                        <span><span class="badge badge-sm @LeaveDisplay.TypeBadge(p.TypeName)">@LeaveDisplay.TypeText(p.TypeName)</span></span>
+                        <span class="dt-cell-muted text-right num">@p.StartDate.ToString("dd MMM") – @p.EndDate.ToString("dd MMM")</span>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="empty">
+                <div class="empty-title">Bugün herkes ofiste</div>
+                <div class="empty-text">Şu an izinde olan kimse yok.</div>
+            </div>
+        }
+    </section>
+
+    @* ── Cinsiyet dağılımı ─────────────────────────────────────────── *@
+    <section class="card card-pad">
+        <h2 class="section-title">Cinsiyet dağılımı</h2>
+        @if (genderTotal == 0)
+        {
+            <div class="empty-text">Gösterilecek çalışan yok.</div>
+        }
+        else
+        {
+            <div class="row-center" style="gap: 20px; flex-wrap: nowrap;">
+                <div class="donut" style="background: @DonutGradient();">
+                    <div class="donut-hole">
+                        <div>
+                            <div class="donut-value num">@genderTotal</div>
+                            <div class="donut-label">çalışan</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="legend">
+                    <div class="legend-row">
+                        <span class="legend-dot" style="background: #977ef9;"></span>
+                        <span class="legend-name">Erkek</span>
+                        <span class="legend-value">@Model.MaleCount · %@Pct(Model.MaleCount)</span>
+                    </div>
+                    <div class="legend-row">
+                        <span class="legend-dot" style="background: #99e1d9;"></span>
+                        <span class="legend-name">Kadın</span>
+                        <span class="legend-value">@Model.FemaleCount · %@Pct(Model.FemaleCount)</span>
+                    </div>
+                    @if (Model.GenderUnspecifiedCount > 0)
+                    {
+                        <div class="legend-row">
+                            <span class="legend-dot" style="background: #d9dce3;"></span>
+                            <span class="legend-name">Belirtilmemiş</span>
+                            <span class="legend-value">@Model.GenderUnspecifiedCount · %@Pct(Model.GenderUnspecifiedCount)</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </section>
+</div>
+
+@* ── Departmana göre aktif çalışan ─────────────────────────────────── *@
+<section class="card card-pad">
+    <div class="row-between" style="margin-bottom: 16px;">
+        <h2 class="section-title" style="margin-bottom: 0;">Departmana göre aktif çalışan</h2>
+        <span class="card-head-meta">Toplam @Model.TotalActiveEmployees</span>
+    </div>
+
+    @if (Model.DepartmentHeadcounts.Any())
+    {
+        <div class="stack" style="gap: 13px;">
+            @for (var rank = 0; rank < Model.DepartmentHeadcounts.Count; rank++)
+            {
+                var d = Model.DepartmentHeadcounts[rank];
+                var width = maxDept == 0 ? 0 : (int)Math.Round(100.0 * d.Count / maxDept);
+                var tone = rank == 0 ? "" : rank < 3 ? "teal" : "sky";
+                <div class="bar-row">
+                    <span class="bar-name">@d.DepartmentName</span>
+                    <span class="bar-value">@d.Count</span>
+                    <div class="bar"><div class="bar-fill @tone" style="width: @width%;"></div></div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="empty-text">Departman verisi yok.</div>
+    }
+</section>
+
+@functions {
+    // Baş harfler — avatar için ("Elif Yıldırım" → "EY").
+    string Init(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2
+            ? $"{char.ToUpperInvariant(parts[0][0])}{char.ToUpperInvariant(parts[^1][0])}"
+            : char.ToUpperInvariant(parts[0][0]).ToString();
+    }
+}

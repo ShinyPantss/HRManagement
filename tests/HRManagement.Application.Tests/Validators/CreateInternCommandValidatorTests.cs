@@ -68,9 +68,9 @@ public class CreateInternCommandValidatorTests
     }
 
     [Theory]
-    [InlineData(0)]
-    [InlineData(9)]
-    public void sinif_1_ile_8_disinda_olamaz(int grade)
+    [InlineData(-1)]
+    [InlineData(5)]
+    public void sinif_hazirlik_0_ile_4_disinda_olamaz(int grade)
     {
         var command = ValidCommand() with { Grade = grade };
 

@@ -4,6 +4,7 @@ namespace HRManagement.API.Models.Employees;
 // ManagerId       → bağlı olduğu yönetici; izin onay zinciri buradan kurulur
 // AnnualLeaveDays → izin hakkını elle ezme; normalde null (kıdemden hesaplanır)
 // UnitId          → departmanın alt kırılımı (Birim); opsiyonel, departmana ait olmalı
+// Gender          → 1=Erkek, 2=Kadın (yeni kayıtta zorunlu; Application validator)
 // RequestLoginAccount → true ise çalışan eklenince Admin'e otomatik hesap talebi düşer
 
 public sealed class CreateEmployeeRequest
@@ -16,6 +17,7 @@ public sealed class CreateEmployeeRequest
         string? phone,
         DateTime birthDate,
         DateTime hireDate,
+        int? gender,
         int departmentId,
         int? unitId,
         int? userId,
@@ -31,6 +33,7 @@ public sealed class CreateEmployeeRequest
         Phone = phone;
         BirthDate = birthDate;
         HireDate = hireDate;
+        Gender = gender;
         DepartmentId = departmentId;
         UnitId = unitId;
         UserId = userId;
@@ -47,6 +50,7 @@ public sealed class CreateEmployeeRequest
     public string? Phone { get; }
     public DateTime BirthDate { get; }
     public DateTime HireDate { get; }
+    public int? Gender { get; }
     public int DepartmentId { get; }
     public int? UnitId { get; }
     public int? UserId { get; }
@@ -66,6 +70,7 @@ public sealed class UpdateEmployeeRequest
         string? phone,
         DateTime birthDate,
         DateTime hireDate,
+        int? gender,
         int departmentId,
         int? unitId,
         int? userId,
@@ -81,6 +86,7 @@ public sealed class UpdateEmployeeRequest
         Phone = phone;
         BirthDate = birthDate;
         HireDate = hireDate;
+        Gender = gender;
         DepartmentId = departmentId;
         UnitId = unitId;
         UserId = userId;
@@ -97,6 +103,7 @@ public sealed class UpdateEmployeeRequest
     public string? Phone { get; }
     public DateTime BirthDate { get; }
     public DateTime HireDate { get; }
+    public int? Gender { get; }
     public int DepartmentId { get; }
     public int? UnitId { get; }
     public int? UserId { get; }
@@ -117,6 +124,7 @@ public sealed class EmployeeResponse
         string? phone,
         DateTime birthDate,
         DateTime hireDate,
+        int? gender,
         int departmentId,
         int? unitId,
         int? userId,
@@ -133,6 +141,7 @@ public sealed class EmployeeResponse
         Phone = phone;
         BirthDate = birthDate;
         HireDate = hireDate;
+        Gender = gender;
         DepartmentId = departmentId;
         UnitId = unitId;
         UserId = userId;
@@ -150,6 +159,7 @@ public sealed class EmployeeResponse
     public string? Phone { get; }
     public DateTime BirthDate { get; }
     public DateTime HireDate { get; }
+    public int? Gender { get; }
     public int DepartmentId { get; }
     public int? UnitId { get; }
     public int? UserId { get; }

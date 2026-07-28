@@ -25,6 +25,13 @@ public sealed class UpdateEmployeeCommandValidator : AbstractValidator<UpdateEmp
             .IsInEnum().When(command => command.Seniority.HasValue)
             .WithMessage("Geçerli bir kıdem seçilmelidir.");
 
+        // Cinsiyet zorunlu (kullanıcı kararı, 2026-07-27); dolduysa geçerli enum olmalı.
+        RuleFor(command => command.Gender)
+            .NotNull().WithMessage("Cinsiyet seçimi zorunludur.");
+        RuleFor(command => command.Gender!.Value)
+            .IsInEnum().When(command => command.Gender.HasValue)
+            .WithMessage("Geçerli bir cinsiyet seçilmelidir.");
+
         RuleFor(command => command.DepartmentId)
             .GreaterThan(0).WithMessage("Departman seçilmelidir.");
 

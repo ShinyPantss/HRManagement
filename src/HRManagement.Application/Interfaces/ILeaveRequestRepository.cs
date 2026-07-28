@@ -14,6 +14,13 @@ public interface ILeaveRequestRepository
     /// süzme yetki mantığı LeaveApprovalGuard ile aynıdır (handler'da).
     /// </summary>
     Task<IEnumerable<PendingApprovalDto>> GetActionableWithNamesAsync();
+
+    /// <summary>
+    /// TÜM izin talepleri (her durumda) + kişi adı/tip/tür. "İzin Geçmişi" ekranı
+    /// (HR/Admin) bunu tek listede gösterir. Sıralama: en yeni başlangıç önce.
+    /// </summary>
+    Task<IEnumerable<LeaveHistoryDto>> GetAllWithNamesAsync();
+
     Task<IEnumerable<LeaveRequest>> GetByEmployeeIdAsync(int employeeId);
     Task<int> AddAsync(LeaveRequest leaveRequest);
     Task<IEnumerable<LeaveRequest>> GetByInternIdAsync(int internId);

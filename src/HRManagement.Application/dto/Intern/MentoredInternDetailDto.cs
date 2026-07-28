@@ -18,6 +18,20 @@ public class MentoredInternDetailDto
     public DateTime EndDate { get; set; }
     public string DepartmentName { get; set; } = string.Empty;
 
+    /// <summary>Mentor adı — HR/Admin salt-okur bakarken kimin sorumlu olduğunu görür.</summary>
+    public string? MentorFullName { get; set; }
+
+    /// <summary>Mentorun çalışan Id'si — ekranda profiline link kurmak için.</summary>
+    public int? MentorEmployeeId { get; set; }
+
+    public string? UnitName { get; set; }   // birim opsiyonel
+
+    /// <summary>Türetilmiş yönetici: birimin (yoksa departmanın) en kıdemli yöneticisi.</summary>
+    public string? ManagerFullName { get; set; }
+
+    /// <summary>Türetilmiş yöneticinin çalışan Id'si — profiline link kurmak için.</summary>
+    public int? ManagerEmployeeId { get; set; }
+
     public List<InternTaskDto> Tasks { get; set; } = [];
     public List<InternNoteDto> Notes { get; set; } = [];
 }

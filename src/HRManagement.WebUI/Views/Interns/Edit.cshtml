@@ -1,115 +1,31 @@
 @model HRManagement.WebUI.Models.Interns.InternFormViewModel
 @{
-    ViewData["Title"] = "Stajyer Düzenle";
+    ViewData["Title"] = $"{Model.FirstName} {Model.LastName} · Düzenle";
+    ViewData["Subtitle"] = $"#{Model.Id} numaralı stajyer kaydı.";
+    ViewData["Crumb"] = "Stajyerler";
+    ViewData["CrumbUrl"] = Url.Action("Index", "Interns");
+
+    var formData = new ViewDataDictionary(ViewData);
+    formData["IsCreate"] = false;
 }
 
-<div class="page-head">
-    <h1>Stajyer Düzenle</h1>
-    <p class="text-muted mb-0">#@Model.Id numaralı kayıt.</p>
-</div>
+@section PageActions {
+    <a asp-controller="Mentorship" asp-action="Detail" asp-route-id="@Model.Id" class="btn">Detayı gör</a>
+}
 
-<div class="panel mt-3" style="max-width: 860px;">
-    <div class="panel-body">
-        <form asp-action="Edit" method="post" novalidate>
-            <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
-            <input type="hidden" asp-for="Id" />
+<div class="card card-pad-lg mid">
+    <form asp-action="Edit" method="post" novalidate>
+        <partial name="_InternForm" model="Model" view-data="formData" />
 
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label asp-for="FirstName" class="form-label"></label>
-                    <input asp-for="FirstName" class="form-control" />
-                    <span asp-validation-for="FirstName" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-6 mb-3">
-                    <label asp-for="LastName" class="form-label"></label>
-                    <input asp-for="LastName" class="form-control" />
-                    <span asp-validation-for="LastName" class="text-danger small"></span>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label asp-for="Email" class="form-label"></label>
-                    <input asp-for="Email" class="form-control" />
-                    <span asp-validation-for="Email" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-6 mb-3">
-                    <label asp-for="University" class="form-label"></label>
-                    <input asp-for="University" class="form-control" />
-                    <span asp-validation-for="University" class="text-danger small"></span>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label asp-for="Major" class="form-label"></label>
-                    <input asp-for="Major" class="form-control" />
-                    <span asp-validation-for="Major" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-6 mb-3">
-                    <label asp-for="Grade" class="form-label"></label>
-                    <input asp-for="Grade" class="form-control" />
-                    <span asp-validation-for="Grade" class="text-danger small"></span>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label asp-for="StartDate" class="form-label"></label>
-                    <input asp-for="StartDate" type="text" class="form-control" placeholder="gg.aa.yyyy" />
-                    <span asp-validation-for="StartDate" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-6 mb-3">
-                    <label asp-for="EndDate" class="form-label"></label>
-                    <input asp-for="EndDate" type="text" class="form-control" placeholder="gg.aa.yyyy" />
-                    <span asp-validation-for="EndDate" class="text-danger small"></span>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label asp-for="DepartmentId" class="form-label"></label>
-                    <select asp-for="DepartmentId" asp-items="Model.DepartmentOptions" class="form-select">
-                        <option value="">Seçiniz…</option>
-                    </select>
-                    <span asp-validation-for="DepartmentId" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-6 mb-3">
-                    <label asp-for="MentorId" class="form-label"></label>
-                    <input asp-for="MentorId" class="form-control" />
-                    <span asp-validation-for="MentorId" class="text-danger small"></span>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label asp-for="UnitId" class="form-label"></label>
-                    <select asp-for="UnitId" class="form-select" data-unit-select>
-                        <option value="">Birim yok / seçiniz…</option>
-                        @foreach (var u in Model.UnitCandidates)
-                        {
-                            <option value="@u.Id" data-department="@u.DepartmentId">@u.Name</option>
-                        }
-                    </select>
-                    <span asp-validation-for="UnitId" class="text-danger small"></span>
-                    <div class="form-text">Seçilen departmana göre süzülür; zorunlu değil.</div>
-                </div>
-            </div>
-
-            <div class="d-flex gap-2 mt-4">
-                <button type="submit" class="btn btn-primary">Güncelle</button>
-                <a asp-action="Index" class="btn btn-outline-secondary">Vazgeç</a>
-            </div>
-        </form>
-    </div>
+        <div class="form-actions" style="margin-top: 22px;">
+            <button type="submit" class="btn btn-primary btn-lg">Güncelle</button>
+            <a asp-action="Index" class="btn btn-lg">Vazgeç</a>
+        </div>
+    </form>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <partial name="_UnitDepartmentFilter" />
+    <partial name="_MentorUnitFilter" />
 }

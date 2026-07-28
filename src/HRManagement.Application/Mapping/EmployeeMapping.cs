@@ -19,6 +19,7 @@ public static class EmployeeMapping
         Phone = employee.Phone,
         BirthDate = employee.DateOfBirth,
         HireDate = employee.HireDate,
+        Gender = (int?)employee.Gender,
         DepartmentId = employee.DepartmentId,
         UnitId = employee.UnitId,
         UserId = employee.UserId,

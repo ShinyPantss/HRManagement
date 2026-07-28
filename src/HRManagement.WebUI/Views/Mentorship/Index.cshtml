@@ -1,49 +1,74 @@
+@using HRManagement.WebUI.Models
 @model IEnumerable<HRManagement.WebUI.Models.Api.Interns.InternResponse>
 @{
     ViewData["Title"] = "Mentorluk";
+
+    var mentees = Model.ToList();
+    var today = DateTime.Today;
+
+    ViewData["Subtitle"] = mentees.Any()
+        ? $"Sana atanan {mentees.Count} stajyer — görev atamak ve not yazmak için detaya gir."
+        : "Sana atanan stajyerler burada listelenir.";
 }
 
-<div class="page-head">
-    <h1>Mentorluk</h1>
-    <p class="text-muted mb-0">Mentorluk verdiğiniz stajyerlar. Görev atamak ve not yazmak için detaya girin.</p>
-</div>
-
-<div class="panel mt-3">
-    <div class="panel-body p-0">
-        <table class="table table-hover align-middle mb-0">
-            <thead>
-                <tr>
-                    <th>Ad Soyad</th>
-                    <th>Üniversite</th>
-                    <th>Bölüm</th>
-                    <th>Sınıf</th>
-                    <th>Staj Dönemi</th>
-                    <th class="text-end">İşlemler</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var intern in Model)
-                {
-                    <tr>
-                        <td>@intern.FirstName @intern.LastName</td>
-                        <td>@intern.University</td>
-                        <td>@(string.IsNullOrWhiteSpace(intern.Major) ? "—" : intern.Major)</td>
-                        <td>@intern.Grade</td>
-                        <td>@intern.StartDate.ToString("dd.MM.yyyy") – @intern.EndDate.ToString("dd.MM.yyyy")</td>
-                        <td class="text-end">
-                            <a asp-action="Detail" asp-route-id="@intern.Id" class="btn btn-sm btn-outline-primary">Detay</a>
-                        </td>
-                    </tr>
-                }
-                @if (!Model.Any())
-                {
-                    <tr>
-                        <td colspan="6" class="text-center text-muted py-4">
-                            Mentorluk verdiğiniz bir stajyer bulunmuyor.
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+@if (!mentees.Any())
+{
+    <div class="card">
+        <div class="empty">
+            <div class="empty-title">Sana atanmış stajyer yok</div>
+            <div class="empty-text">İK bir stajyer atadığında görevleri ve notları bu ekranda yöneteceksin.</div>
+        </div>
     </div>
-</div>
+}
+else
+{
+    <div class="grid g-3">
+        @for (var i = 0; i < mentees.Count; i++)
+        {
+            var m = mentees[i];
+            var initials = $"{(m.FirstName.Length > 0 ? char.ToUpperInvariant(m.FirstName[0]) : '?')}{(m.LastName.Length > 0 ? char.ToUpperInvariant(m.LastName[0]) : ' ')}".Trim();
+
+            var totalDays = Math.Max(1, (m.EndDate.Date - m.StartDate.Date).Days);
+            var elapsed = Math.Clamp((int)Math.Round(100.0 * (today - m.StartDate.Date).Days / totalDays), 0, 100);
+            var remaining = (m.EndDate.Date - today).Days;
+
+            var isFinished = remaining < 0;
+            var isEnding = !isFinished && remaining <= 30;
+
+            <section class="card card-pad" style="display: flex; flex-direction: column; gap: 15px;">
+                <div class="row-center" style="gap: 12px; flex-wrap: nowrap;">
+                    <span class="avatar avatar-lg av-@(i % 6 + 1)">@initials</span>
+                    <div class="flex-1">
+                        <div style="font-size: 15px; font-weight: 800; letter-spacing: -.3px;">@m.FirstName @m.LastName</div>
+                        <div class="dt-secondary">@m.University</div>
+                    </div>
+                    <span class="badge badge-sm @(isFinished ? "badge-neutral" : isEnding ? "badge-warn" : "badge-ok")">
+                        @(isFinished ? "Staj bitti" : isEnding ? $"{remaining} gün" : "Devam ediyor")
+                    </span>
+                </div>
+
+                <div class="kv">
+                    <div class="kv-row" style="padding: 7px 0;">
+                        <span class="kv-key">Bölüm</span>
+                        <span class="kv-val">@(string.IsNullOrWhiteSpace(m.Major) ? "—" : m.Major)</span>
+                    </div>
+                    <div class="kv-row" style="padding: 7px 0;">
+                        <span class="kv-key">Sınıf</span>
+                        <span class="kv-val">@GradeDisplay.Label(m.Grade)</span>
+                    </div>
+                    <div class="kv-row" style="padding: 7px 0;">
+                        <span class="kv-key">Staj dönemi</span>
+                        <span class="kv-val num">@m.StartDate.ToString("dd.MM.yyyy") – @m.EndDate.ToString("dd.MM.yyyy")</span>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="bar-caption"><span>Staj süresi</span><span>%@elapsed</span></div>
+                    <div class="bar"><div class="bar-fill @(isEnding ? "warn" : "")" style="width: @elapsed%;"></div></div>
+                </div>
+
+                <a asp-action="Detail" asp-route-id="@m.Id" class="btn btn-md btn-block">Görevler ve notlar</a>
+            </section>
+        }
+    </div>
+}
