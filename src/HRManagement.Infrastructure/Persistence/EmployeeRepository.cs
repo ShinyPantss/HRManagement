@@ -203,6 +203,7 @@ public class EmployeeRepository : IEmployeeRepository
         // Asttan başlayıp ManagerId'leri yukarı doğru izleyen özyinelemeli CTE.
         // Depth < 32 koruması: A→B→A gibi bir veri hatası (döngü) sorguyu sonsuza
         // sürüklemesin. 32 kademeden derin org şeması zaten veri hatasıdır.
+        // TODO: ARASTIR Temp Table CTE vs TempTable
         const string sql = @"
             WITH Chain AS
             (

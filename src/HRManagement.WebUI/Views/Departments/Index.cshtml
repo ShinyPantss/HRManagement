@@ -94,7 +94,8 @@ else
                 }
 
                 <div class="task-actions mt-auto" style="justify-content: flex-start;">
-                    <a asp-controller="Employees" asp-action="Index" class="btn btn-md flex-1">Çalışanları gör</a>
+                    @* departmentId → Çalışanlar ekranı filtre çubuğunu bu departmanla açar. *@
+                    <a asp-controller="Employees" asp-action="Index" asp-route-departmentId="@d.Id" class="btn btn-md flex-1">Çalışanları gör</a>
                     <a asp-action="Edit" asp-route-id="@d.Id" class="btn btn-md">Düzenle</a>
                     <form asp-action="Delete" asp-route-id="@d.Id" method="post" style="display: inline;"
                           data-confirm="@($"“{d.Name}” departmanı silinsin mi? Bağlı çalışan veya birim varsa API işlemi reddeder.")"

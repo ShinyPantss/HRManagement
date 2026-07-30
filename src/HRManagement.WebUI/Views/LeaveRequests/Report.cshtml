@@ -1,0 +1,333 @@
+@model HRManagement.WebUI.Models.LeaveRequests.LeaveReportViewModel
+@{
+    // Rapor uygulama KABUĞU içinde yaşar: önce ekranda okunur, yazdırma bir
+    // seçenektir. site.css'teki @@media print bloğu kenar çubuğunu, üst barı ve
+    // sayfa butonlarını zaten gizliyor — ayrı bir yazdırma sayfası gerekmiyor.
+    var src = Model.Source;
+    ViewData["Title"] = src.IsAllView ? "İzin Raporu" : "İzin Raporum";
+    ViewData["Subtitle"] = $"{Model.RangeText} · {Model.TotalRequests} talep · {Model.TotalDays} iş günü";
+    ViewData["Crumb"] = src.IsAllView ? "İzin Geçmişi" : "İzinlerim";
+    ViewData["CrumbUrl"] = Url.Action("Index", "LeaveRequests");
+}
+
+@section PageActions {
+    <a asp-action="Index"
+       asp-route-range="@src.Range"
+       asp-route-from="@src.From?.ToString("yyyy-MM-dd")"
+       asp-route-to="@src.To?.ToString("yyyy-MM-dd")" class="btn">Listeye dön</a>
+    <a asp-action="ExportExcel"
+       asp-route-range="@src.Range"
+       asp-route-from="@src.From?.ToString("yyyy-MM-dd")"
+       asp-route-to="@src.To?.ToString("yyyy-MM-dd")" class="btn">Excel indir</a>
+    <button type="button" class="btn btn-primary" onclick="window.print()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4v-6h16v6h-2M8 14h8v7H8z" /></svg>
+        Yazdır / PDF
+    </button>
+}
+
+@if (!Model.HasData)
+{
+    <div class="card">
+        <div class="empty">
+            <div class="empty-title">Bu aralıkta rapor edilecek kayıt yok</div>
+            <div class="empty-text">
+                <strong>@Model.RangeText</strong> aralığında izin kaydı bulunmuyor.
+                Listeye dönüp zaman aralığını genişletebilirsin.
+            </div>
+        </div>
+    </div>
+    return;
+}
+
+@* ── Ana göstergeler ──────────────────────────────────────────────────── *@
+<div class="grid g-4">
+    <div class="stat">
+        <div class="stat-label">TOPLAM TALEP</div>
+        <div class="stat-row"><span class="stat-value">@Model.TotalRequests</span><span class="stat-unit">adet</span></div>
+    </div>
+    <div class="stat">
+        <div class="stat-label">TOPLAM İZİN</div>
+        <div class="stat-row"><span class="stat-value">@Model.TotalDays</span><span class="stat-unit">iş günü</span></div>
+    </div>
+    @if (src.IsAllView)
+    {
+        <div class="stat">
+            <div class="stat-label">İZİN KULLANAN</div>
+            <div class="stat-row"><span class="stat-value">@Model.PeopleCount</span><span class="stat-unit">kişi</span></div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">KİŞİ BAŞI ORTALAMA</div>
+            <div class="stat-row"><span class="stat-value">@Model.AverageDaysPerPerson.ToString("0.#")</span><span class="stat-unit">gün</span></div>
+        </div>
+    }
+    else
+    {
+        <div class="stat">
+            <div class="stat-label">ONAYLANAN</div>
+            <div class="stat-row"><span class="stat-value">@Model.ApprovedDays</span><span class="stat-unit">iş günü</span></div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">TALEP BAŞI ORTALAMA</div>
+            <div class="stat-row"><span class="stat-value">@Model.AverageDaysPerRequest.ToString("0.#")</span><span class="stat-unit">gün</span></div>
+        </div>
+    }
+</div>
+
+@* ── İkincil göstergeler ──────────────────────────────────────────────── *@
+<div class="grid g-4">
+    <div class="stat">
+        <div class="stat-label">ONAY ORANI</div>
+        <div class="stat-row"><span class="stat-value">%@Model.ApprovalRate</span></div>
+        <div class="mini-stat-label" style="margin-top: 4px;">
+            @Model.ApprovedCount onay · @Model.RejectedCount ret
+        </div>
+    </div>
+    <div class="stat">
+        <div class="stat-label">TALEP BAŞI SÜRE</div>
+        <div class="stat-row"><span class="stat-value">@Model.AverageDaysPerRequest.ToString("0.#")</span><span class="stat-unit">gün</span></div>
+        <div class="mini-stat-label" style="margin-top: 4px;">
+            en uzunu @Model.LongestLeaveDays gün@(Model.LongestLeaveOwner is null ? "" : $" · {Model.LongestLeaveOwner}")
+        </div>
+    </div>
+    <div class="stat">
+        <div class="stat-label">HASTALIK PAYI</div>
+        <div class="stat-row"><span class="stat-value">%@Model.SickSharePercent</span></div>
+        <div class="mini-stat-label" style="margin-top: 4px;">toplam izin günü içinde</div>
+    </div>
+    <div class="stat">
+        <div class="stat-label">EN YOĞUN DÖNEM</div>
+        <div class="stat-row">
+            <span class="stat-value" style="font-size: 20px;">@(Model.BusiestMonth?.Label ?? "—")</span>
+        </div>
+        <div class="mini-stat-label" style="margin-top: 4px;">
+            @(Model.BusiestMonth is null ? "—" : $"{Model.BusiestMonth.Days} iş günü")
+        </div>
+    </div>
+</div>
+
+@if (Model.PendingCount > 0)
+{
+    <div class="callout">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 8v5M12 16.5h.01" /><circle cx="12" cy="12" r="9" /></svg>
+        <div class="callout-text">
+            @Model.PendingCount talep hâlâ süreçte. Onay oranı yalnızca SONUÇLANMIŞ
+            talepler üzerinden hesaplanır — bekleyenler paydaya girmez.
+        </div>
+    </div>
+}
+
+<div class="grid g-2">
+    @* ── Tür kırılımı ─────────────────────────────────────────────────── *@
+    <section class="card card-pad">
+        <h2 class="section-title">Tür kırılımı</h2>
+        <div class="stack">
+            @foreach (var t in Model.ByType)
+            {
+                <div>
+                    <div class="row-tight" style="justify-content: space-between;">
+                        <span><span class="badge badge-sm @t.BadgeClass">@t.Label</span></span>
+                        <span class="dt-secondary">
+                            <strong class="dt-strong">@t.Days</strong> iş günü ·
+                            @t.Count talep · %@t.PercentOfDays
+                        </span>
+                    </div>
+                    <div class="bar" style="margin-top: 6px;">
+                        <span class="bar-fill" style="width: @(t.PercentOfDays)%;"></span>
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="mini-stat-label" style="margin-top: 14px;">
+            Yüzdeler toplam İŞ GÜNÜ üzerindendir, talep adedi üzerinden değil.
+        </div>
+    </section>
+
+    @* ── Durum kırılımı ───────────────────────────────────────────────── *@
+    <section class="card card-pad">
+        <h2 class="section-title">Durum kırılımı</h2>
+        <div class="dt" style="--cols: 1.4fr .6fr .6fr;">
+            <div class="dt-head">
+                <span>Durum</span><span class="text-right">Talep</span><span class="text-right">Pay</span>
+            </div>
+            @foreach (var s in Model.ByStatus)
+            {
+                <div class="dt-row">
+                    <span><span class="badge badge-sm @s.BadgeClass">@s.Label</span></span>
+                    <span class="dt-strong text-right">@s.Count</span>
+                    <span class="dt-cell-muted text-right">%@s.PercentOfCount</span>
+                </div>
+            }
+        </div>
+    </section>
+</div>
+
+@* ── Aylık dağılım ────────────────────────────────────────────────────── *@
+<section class="card card-pad">
+    <h2 class="section-title">Aylık dağılım</h2>
+    @* Yalnızca veri OLAN aylar listelenir: sabit 12 kutu, 3 aylık bir aralıkta
+       9 boş sütun demekti. Çubuk en yoğun aya göre ölçeklenir. *@
+    <div class="stack">
+        @foreach (var m in Model.ByMonth)
+        {
+            <div>
+                <div class="row-tight" style="justify-content: space-between;">
+                    <span class="dt-cell">@m.Label</span>
+                    <span class="dt-secondary">
+                        <strong class="dt-strong">@m.Days</strong> iş günü · @m.RequestCount talep
+                    </span>
+                </div>
+                <div class="bar" style="margin-top: 6px;">
+                    <span class="bar-fill @(m.Days == Model.BusiestMonth?.Days ? "" : "sky")"
+                          style="width: @(m.PercentOfMax)%;"></span>
+                </div>
+            </div>
+        }
+    </div>
+</section>
+
+@if (src.IsAllView && Model.ByDepartment.Count > 0)
+{
+    @* ── Departman kırılımı ───────────────────────────────────────────── *@
+    <section class="card card-flush">
+        <div class="card-head">
+            <h2>Departman kırılımı</h2>
+            <span class="card-head-meta ml-auto">@Model.ByDepartment.Count departman</span>
+        </div>
+        <div class="dt" style="--cols: 1.6fr .6fr .6fr .7fr .8fr 1.2fr;">
+            <div class="dt-head">
+                <span>Departman</span>
+                <span class="text-right">Kişi</span>
+                <span class="text-right">Talep</span>
+                <span class="text-right">İş günü</span>
+                <span class="text-right">Kişi başı</span>
+                <span></span>
+            </div>
+            @foreach (var d in Model.ByDepartment)
+            {
+                <div class="dt-row">
+                    <span class="dt-primary">@d.Name</span>
+                    <span class="dt-cell-muted text-right">@d.PeopleCount</span>
+                    <span class="dt-cell-muted text-right">@d.RequestCount</span>
+                    <span class="dt-strong text-right">@d.Days</span>
+                    <span class="dt-cell text-right">@d.AveragePerPerson.ToString("0.#")</span>
+                    <span style="align-self: center;">
+                        <span class="bar"><span class="bar-fill" style="width: @(d.PercentOfMax)%;"></span></span>
+                    </span>
+                </div>
+            }
+        </div>
+        <div class="card-pad" style="padding-top: 0;">
+            <div class="mini-stat-label">
+                “Kişi başı”, o departmanda izin KULLANAN kişilere bölünür — kadroya değil.
+                Hiç izin kullanmayanlar ortalamayı düşürmesin diye.
+            </div>
+        </div>
+    </section>
+}
+
+@if (src.IsAllView && Model.TopPeople.Count > 0)
+{
+    @* ── En çok izin kullananlar ──────────────────────────────────────── *@
+    <section class="card card-flush">
+        <div class="card-head">
+            <h2>En çok izin kullananlar</h2>
+            <span class="card-head-meta ml-auto">ilk @Model.TopPeople.Count kişi</span>
+        </div>
+        <div class="dt" style="--cols: 1.8fr .8fr .7fr 1.2fr;">
+            <div class="dt-head">
+                <span>Kişi</span>
+                <span class="text-right">Talep</span>
+                <span class="text-right">İş günü</span>
+                <span></span>
+            </div>
+            @for (var i = 0; i < Model.TopPeople.Count; i++)
+            {
+                var p = Model.TopPeople[i];
+                <div class="dt-row">
+                    <div class="person">
+                        <span class="avatar avatar-sm av-@(i % 6 + 1)">@Init(p.Name)</span>
+                        <div class="person-text">
+                            <div class="dt-primary">@p.Name</div>
+                            <div class="dt-secondary">@p.Note</div>
+                        </div>
+                    </div>
+                    <span class="dt-cell-muted text-right">@p.RequestCount</span>
+                    <span class="dt-strong text-right">@p.Days</span>
+                    <span style="align-self: center;">
+                        <span class="bar"><span class="bar-fill" style="width: @(p.PercentOfMax)%;"></span></span>
+                    </span>
+                </div>
+            }
+        </div>
+    </section>
+}
+
+@* ── Kayıt dökümü ─────────────────────────────────────────────────────── *@
+<section class="card card-flush">
+    <div class="card-head">
+        <h2>Kayıt dökümü</h2>
+        <span class="card-head-meta ml-auto">@Model.TotalRequests kayıt</span>
+    </div>
+
+    @if (src.IsAllView)
+    {
+        <div class="dt" style="--cols: 1.5fr 1.1fr 1fr 1.3fr .5fr .9fr;">
+            <div class="dt-head">
+                <span>Kişi</span><span>Departman</span><span>Tür</span><span>Tarih</span>
+                <span class="text-right">Gün</span><span style="padding-left: 14px;">Durum</span>
+            </div>
+            @foreach (var r in src.AllRows)
+            {
+                var (badge, statusText) = LeaveDisplay.StatusBadgeShort(r.Status);
+                <div class="dt-row">
+                    <div style="min-width: 0;">
+                        <div class="dt-primary">@r.SubjectName</div>
+                        <div class="dt-secondary">@r.SubjectType</div>
+                    </div>
+                    <span class="dt-cell-muted">@(r.DepartmentName ?? "—")</span>
+                    <span><span class="badge badge-sm @LeaveDisplay.TypeBadge(r.Type)">@LeaveDisplay.TypeText(r.Type)</span></span>
+                    <span class="dt-cell-muted num">@r.StartDate.ToString("dd.MM.yyyy") – @r.EndDate.ToString("dd.MM.yyyy")</span>
+                    <span class="dt-strong text-right">@r.WorkingDays</span>
+                    <span style="padding-left: 14px;"><span class="badge badge-sm @badge">@statusText</span></span>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="dt" style="--cols: 1fr 1.3fr .5fr .9fr 1.4fr;">
+            <div class="dt-head">
+                <span>Tür</span><span>Tarih</span><span class="text-right">Gün</span>
+                <span style="padding-left: 14px;">Durum</span><span>Açıklama</span>
+            </div>
+            @foreach (var r in src.Requests)
+            {
+                var (badge, statusText) = LeaveDisplay.StatusBadgeShort(r.Status);
+                <div class="dt-row">
+                    <span><span class="badge badge-sm @LeaveDisplay.TypeBadge(r.Type)">@LeaveDisplay.TypeText(r.Type)</span></span>
+                    <span class="dt-cell-muted num">@r.StartDate.ToString("dd.MM.yyyy") – @r.EndDate.ToString("dd.MM.yyyy")</span>
+                    <span class="dt-strong text-right">@r.TotalDays</span>
+                    <span style="padding-left: 14px;"><span class="badge badge-sm @badge">@statusText</span></span>
+                    <span class="dt-secondary">@(string.IsNullOrWhiteSpace(r.Description) ? "—" : r.Description)</span>
+                </div>
+            }
+        </div>
+    }
+</section>
+
+<div class="mini-stat-label" style="margin: 16px 0 4px;">
+    Gün sayıları İŞ GÜNÜ esaslıdır (hafta sonları düşülmüştür). Aralığa sarkan izinler
+    listeye dahildir. Rapor @DateTime.Now.ToString("dd.MM.yyyy HH:mm") tarihinde
+    @User.Identity?.Name için üretildi.
+</div>
+
+@functions {
+    string Init(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2
+            ? $"{char.ToUpperInvariant(parts[0][0])}{char.ToUpperInvariant(parts[^1][0])}"
+            : char.ToUpperInvariant(parts[0][0]).ToString();
+    }
+}

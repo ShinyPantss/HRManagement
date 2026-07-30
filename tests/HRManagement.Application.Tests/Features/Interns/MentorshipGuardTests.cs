@@ -172,6 +172,7 @@ public class MentorshipGuardTests
         public Task<int> AddAsync(User user) => throw new NotImplementedException();
         public Task UpdateAsync(User user) => throw new NotImplementedException();
         public Task DeleteAsync(int id) => throw new NotImplementedException();
+        public Task<int> CountActiveAdminsAsync() => throw new NotImplementedException();
         public Task<int> CreateForPersonAsync(User user, int? employeeId, int? internId, int? accountRequestId, int? reviewerUserId) => throw new NotImplementedException();
     }
 }

@@ -20,5 +20,8 @@ public sealed class UpdateUserCommandValidator : AbstractValidator<UpdateUserCom
 
         RuleFor(command => command.Role)
             .IsInEnum().WithMessage("Geçerli bir rol seçilmelidir.");
+
+        RuleFor(command => command.CurrentUserId)
+            .GreaterThan(0).WithMessage("İşlemi yapan kullanıcı belirlenemedi.");
     }
 }

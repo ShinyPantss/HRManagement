@@ -185,13 +185,18 @@ public class LeaveRequestRepository : ILeaveRequestRepository
         // burada Approved/Rejected de gelir — bu bir GEÇMİŞ/gözlem listesidir.
         const string sql = @"
             SELECT lr.Id,
+                   lr.EmployeeId,
                    COALESCE(e.FirstName + ' ' + e.LastName, i.FirstName + ' ' + i.LastName) AS SubjectName,
                    CASE WHEN lr.EmployeeId IS NOT NULL THEN N'Çalışan' ELSE N'Stajyer' END AS SubjectType,
+                   d.Name AS DepartmentName,
                    lr.Type, lr.StartDate, lr.EndDate, lr.WorkingDays, lr.Status,
                    lr.Description, lr.RejectionReason, lr.CreatedAt
             FROM LeaveRequests lr
             LEFT JOIN Employees e ON e.Id = lr.EmployeeId
             LEFT JOIN Interns   i ON i.Id = lr.InternId
+            -- Departman kişiden gelir; talep ya çalışana ya stajyere ait olduğu
+            -- için COALESCE ile hangisi doluysa onun departmanına bağlanır.
+            LEFT JOIN Departments d ON d.Id = COALESCE(e.DepartmentId, i.DepartmentId)
             ORDER BY lr.StartDate DESC";
 
         using var connection = _connectionFactory.CreateConnection();
@@ -200,8 +205,10 @@ public class LeaveRequestRepository : ILeaveRequestRepository
         return rows.Select(r => new LeaveHistoryDto
         {
             Id = r.Id,
+            EmployeeId = r.EmployeeId,
             SubjectName = r.SubjectName,
             SubjectType = r.SubjectType,
+            DepartmentName = r.DepartmentName,
             TypeName = ((LeaveType)r.Type).ToString(),
             StartDate = r.StartDate,
             EndDate = r.EndDate,
@@ -217,8 +224,10 @@ public class LeaveRequestRepository : ILeaveRequestRepository
     private sealed class HistoryRow
     {
         public int Id { get; set; }
+        public int? EmployeeId { get; set; }
         public string SubjectName { get; set; } = string.Empty;
         public string SubjectType { get; set; } = string.Empty;
+        public string? DepartmentName { get; set; }
         public int Type { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }

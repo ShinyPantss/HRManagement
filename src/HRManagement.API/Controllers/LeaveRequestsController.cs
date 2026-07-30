@@ -73,7 +73,7 @@ public class LeaveRequestsController : ControllerBase
     {
         var items = await _mediator.Send(new GetAllLeaveRequestsQuery(CurrentUserId()));
         var data = items.Select(x => new LeaveHistoryResponse(
-            x.Id, x.SubjectName, x.SubjectType, x.TypeName, x.StartDate, x.EndDate,
+            x.Id, x.SubjectName, x.SubjectType, x.DepartmentName, x.TypeName, x.StartDate, x.EndDate,
             x.WorkingDays, x.Status.ToString(), x.Description, x.RejectionReason, x.CreatedAt)).ToList();
         return Ok(BaseResponse<List<LeaveHistoryResponse>>.Success(data));
     }

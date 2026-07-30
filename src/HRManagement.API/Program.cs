@@ -27,7 +27,10 @@ app.UseBaseResponseStatusCodes();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    // MapOpenApi bir ENDPOINT'tir; global FallbackPolicy ona da uygulanır. AllowAnonymous
+    // olmasa /openapi/v1.json 401 döner ve belge hiç okunamaz. Yalnızca Development'ta
+    // kayıtlı olduğu için dışarıya açılmış olmuyor.
+    app.MapOpenApi().AllowAnonymous();
 }
 
 app.UseHttpsRedirection();

@@ -12,7 +12,7 @@ using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-
+using HRManagement.Domain.Enums;
 namespace HRManagement.API.Controllers;
 
 [ApiController]
@@ -94,9 +94,9 @@ public class EmployeesController : ControllerBase
         var id = await _mediator.Send(new CreateEmployeeCommand(
             request.FirstName, request.LastName, request.NationalId, request.Email,
             request.Phone, request.BirthDate, request.HireDate,
-            (HRManagement.Domain.Enums.Gender?)request.Gender,
+            (Gender?)request.Gender,
             request.DepartmentId, request.UnitId, request.UserId, request.ManagerId,
-            (HRManagement.Domain.Enums.SeniorityLevel?)request.Seniority, request.AnnualLeaveDays,
+            (SeniorityLevel?)request.Seniority, request.AnnualLeaveDays,
             CurrentUserId(), request.RequestLoginAccount));
         return CreatedAtAction(nameof(GetById), new { id },
             BaseResponse<int>.Success(id, "Çalışan oluşturuldu."));
@@ -109,9 +109,9 @@ public class EmployeesController : ControllerBase
         await _mediator.Send(new UpdateEmployeeCommand(
             id, request.FirstName, request.LastName, request.NationalId, request.Email,
             request.Phone, request.BirthDate, request.HireDate,
-            (HRManagement.Domain.Enums.Gender?)request.Gender,
+            (Gender?)request.Gender,
             request.DepartmentId, request.UnitId, request.UserId, request.ManagerId,
-            (HRManagement.Domain.Enums.SeniorityLevel?)request.Seniority, request.AnnualLeaveDays,
+            (SeniorityLevel?)request.Seniority, request.AnnualLeaveDays,
             request.IsActive));
         return Ok(BaseResponse<int>.Success(id, "Çalışan güncellendi."));
     }

@@ -1,0 +1,166 @@
+@model HRManagement.WebUI.Models.Organization.OrganizationViewModel
+@{
+    ViewData["Title"] = "Organizasyon Yapısı";
+    ViewData["Subtitle"] = $"{Model.Departments.Count} departman · {Model.TotalUnits} birim · {Model.TotalEmployees} aktif çalışan.";
+
+    // "Kim profile atlayabilir" kuralı TEK yerde: partial'lar bunu okur, böylece
+    // kural sayfaya dağılmaz ve bir yerde yanlışlıkla link açık kalmaz.
+    ViewData["CanOpenProfiles"] = Model.CanOpenProfiles;
+}
+
+@section PageActions {
+    @if (Model.CanOpenProfiles)
+    {
+        <a asp-controller="Departments" asp-action="Index" class="btn">Departmanlar</a>
+        <a asp-controller="Employees" asp-action="Index" class="btn btn-primary">Çalışan listesi</a>
+    }
+}
+
+@* Şemanın tamamı herkese aynı gelir; sayılar da gerçek toplamlardır. *@
+<div class="grid g-4">
+    <div class="stat">
+        <div class="stat-label">DEPARTMAN</div>
+        <div class="stat-row"><span class="stat-value">@Model.Departments.Count</span><span class="stat-unit">adet</span></div>
+    </div>
+    <div class="stat">
+        <div class="stat-label">BİRİM</div>
+        <div class="stat-row"><span class="stat-value">@Model.TotalUnits</span><span class="stat-unit">adet</span></div>
+    </div>
+    <div class="stat">
+        <div class="stat-label">AKTİF ÇALIŞAN</div>
+        <div class="stat-row"><span class="stat-value">@Model.TotalEmployees</span><span class="stat-unit">kişi</span></div>
+    </div>
+    <div class="stat">
+        <div class="stat-label">STAJYER</div>
+        <div class="stat-row"><span class="stat-value">@Model.TotalInterns</span><span class="stat-unit">kişi</span></div>
+    </div>
+</div>
+
+@if (!Model.CanOpenProfiles)
+{
+    <div class="callout">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 8v5M12 16.5h.01" /><circle cx="12" cy="12" r="9" /></svg>
+        <div class="callout-text">
+            Şemanın tamamını görüyorsun. Kişi kartları <strong>salt görüntüdür</strong> —
+            profil detayına (iletişim, izin, notlar) geçiş yalnızca İK rolünde açıktır.
+        </div>
+    </div>
+}
+
+@if (!Model.Departments.Any())
+{
+    <div class="card">
+        <div class="empty">
+            <div class="empty-title">Organizasyon tanımlı değil</div>
+            <div class="empty-text">Önce departman ve birim kayıtlarının açılması gerekiyor.</div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="stack">
+        @foreach (var dept in Model.Departments)
+        {
+            <section class="card card-flush">
+                @* ── Departman başlığı ────────────────────────────────── *@
+                <div class="card-head">
+                    <div class="row-center" style="gap: 12px; flex-wrap: nowrap; min-width: 0;">
+                        <span class="kpi-icon" style="width: 34px; height: 34px; flex: 0 0 34px; border-radius: 9px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 21V8l8-5 8 5v13M9 21v-6h6v6" /></svg>
+                        </span>
+                        <div style="min-width: 0;">
+                            <h2>@dept.Name</h2>
+                            <div class="dt-secondary" style="margin-top: 2px;">
+                                @if (dept.Manager is not null)
+                                {
+                                    <span>Yönetici: </span>
+                                    <partial name="_OrgPerson" model="dept.Manager" view-data="ViewData" />
+                                }
+                                else
+                                {
+                                    <span>Yönetici atanmadı</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row-tight">
+                        <span class="badge badge-sm badge-brand">@dept.HeadCount çalışan</span>
+                        <span class="badge badge-sm badge-neutral">@dept.Units.Count birim</span>
+                        @if (dept.InternCount > 0)
+                        {
+                            <span class="badge badge-sm badge-violet">@dept.InternCount stajyer</span>
+                        }
+                    </div>
+                </div>
+
+                @* ── Birimler ─────────────────────────────────────────── *@
+                @foreach (var unit in dept.Units)
+                {
+                    <details class="org-unit">
+                        <summary>
+                            <span class="org-caret">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m9 6 6 6-6 6" /></svg>
+                            </span>
+                            <span class="org-unit-name">@unit.Name</span>
+                            <span class="org-unit-lead">
+                                @if (unit.Lead is not null)
+                                {
+                                    <span>Sorumlu: </span>
+                                    <partial name="_OrgPerson" model="unit.Lead" view-data="ViewData" />
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Sorumlu atanmadı</span>
+                                }
+                            </span>
+                            <span class="org-unit-count num">@(unit.Members.Count + (unit.Lead is null ? 0 : 1)) kişi</span>
+                        </summary>
+
+                        <div class="org-members">
+                            @if (unit.Members.Any())
+                            {
+                                @foreach (var m in unit.Members)
+                                {
+                                    <partial name="_OrgChip" model="m" view-data="ViewData" />
+                                }
+                            }
+                            else
+                            {
+                                <span class="empty-text">Bu birimde sorumlu dışında kayıt yok.</span>
+                            }
+                        </div>
+                    </details>
+                }
+
+                @* ── Birime bağlı olmayanlar ──────────────────────────── *@
+                @if (dept.DirectMembers.Any())
+                {
+                    <details class="org-unit">
+                        <summary>
+                            <span class="org-caret">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m9 6 6 6-6 6" /></svg>
+                            </span>
+                            <span class="org-unit-name">Birime bağlı olmayanlar</span>
+                            <span class="org-unit-lead text-muted">Departman seviyesi (GM/GMY) ve birimi atanmamış kayıtlar</span>
+                            <span class="org-unit-count num">@dept.DirectMembers.Count kişi</span>
+                        </summary>
+                        <div class="org-members">
+                            @foreach (var m in dept.DirectMembers)
+                            {
+                                <partial name="_OrgChip" model="m" view-data="ViewData" />
+                            }
+                        </div>
+                    </details>
+                }
+
+                @if (!dept.Units.Any() && !dept.DirectMembers.Any())
+                {
+                    <div class="empty" style="padding: 22px 18px;">
+                        <div class="empty-text">Bu departmanda henüz birim veya çalışan kaydı yok.</div>
+                    </div>
+                }
+            </section>
+        }
+    </div>
+}

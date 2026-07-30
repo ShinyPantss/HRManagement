@@ -1,0 +1,21 @@
+@model HRManagement.WebUI.Models.Organization.OrgPerson
+@{
+    // Satır içi kişi adı (departman yöneticisi / birim sorumlusu).
+    // İK'da profile giden link, diğer rollerde düz metin.
+    var canOpen = ViewData["CanOpenProfiles"] is true;
+}
+
+@if (canOpen && !Model.IsIntern)
+{
+    <a asp-controller="Employees" asp-action="Details" asp-route-id="@Model.Id"
+       class="org-link" title="@Model.Title · profiline git">@Model.FullName</a>
+}
+else if (canOpen && Model.IsIntern)
+{
+    <a asp-controller="Mentorship" asp-action="Detail" asp-route-id="@Model.Id"
+       class="org-link" title="@Model.Title · detayına git">@Model.FullName</a>
+}
+else
+{
+    <strong style="color: var(--ink-2); font-weight: 650;">@Model.FullName</strong>
+}

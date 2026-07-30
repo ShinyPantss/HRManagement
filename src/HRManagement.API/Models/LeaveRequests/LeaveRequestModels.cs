@@ -57,13 +57,14 @@ public sealed class PendingApprovalResponse
 public sealed class LeaveHistoryResponse
 {
     public LeaveHistoryResponse(
-        int id, string subjectName, string subjectType, string type,
+        int id, string subjectName, string subjectType, string? departmentName, string type,
         DateTime startDate, DateTime endDate, int workingDays, string status,
         string? description, string? rejectionReason, DateTime createdAt)
     {
         Id = id;
         SubjectName = subjectName;
         SubjectType = subjectType;
+        DepartmentName = departmentName;
         Type = type;
         StartDate = startDate;
         EndDate = endDate;
@@ -77,6 +78,7 @@ public sealed class LeaveHistoryResponse
     public int Id { get; }
     public string SubjectName { get; }
     public string SubjectType { get; }   // Çalışan | Stajyer
+    public string? DepartmentName { get; } // rapordaki departman kırılımı için
     public string Type { get; }          // izin türü (Annual/Unpaid/Sick)
     public DateTime StartDate { get; }
     public DateTime EndDate { get; }

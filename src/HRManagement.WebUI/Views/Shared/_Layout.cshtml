@@ -27,9 +27,16 @@
         var userName = User.Identity?.Name ?? "";
         var userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
         var isAuth = User.Identity?.IsAuthenticated == true;
-        // Menüde "Çalışanlar" adı yalnızca İK/Admin'de; Manager ve Employee aynı
-        // ekranı "Ekibim" olarak görür (API içeriği zaten role göre daraltıyor).
-        var employeesLabel = (User.IsInRole("HR") || User.IsInRole("Admin")) ? "Çalışanlar" : "Ekibim";
+        // Menüde "Çalışanlar" adı yalnızca İK'da; Manager ve Employee aynı ekranı
+        // "Ekibim" olarak görür (API içeriği zaten role göre daraltıyor).
+        var employeesLabel = User.IsInRole("HR") ? "Çalışanlar" : "Ekibim";
+
+        // Admin SİSTEM rolüdür: hesap açar, organizasyonu izler, talepleri işler.
+        // Personel dosyası / izin / stajyer ekranları İK'nın işidir ve Admin'in
+        // menüsünde yer almaz — aksi hâlde menü HR'ın birebir kopyası olurdu.
+        // (Bu bir GÖRÜNÜM kararıdır; API'deki yetkiler bilinçli olarak korundu,
+        //  Admin adresi elle yazarsa acil durumda müdahale edebilir.)
+        var isAdmin = User.IsInRole("Admin");
     }
 
     <div class="app-shell">
@@ -66,10 +73,16 @@
                     </a>
                 }
 
-                <a class="nav-item @ActiveExcept("Employees", "Profile")" asp-controller="Employees" asp-action="Index">
-                    @Icon("M9 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M2.5 20a6.5 6.5 0 0 1 13 0M17 5.5a3 3 0 0 1 0 6M21.5 20a6 6 0 0 0-3-5.2")
-                    @employeesLabel
-                </a>
+                @* Personel dosyası Admin'in işi değil: kadro haritasına Organizasyon'dan
+                   bakar, kişi kartlarına girmez (not yazamaması, çalışan ekleyememesiyle
+                   aynı çizgi). *@
+                @if (!isAdmin)
+                {
+                    <a class="nav-item @ActiveExcept("Employees", "Profile")" asp-controller="Employees" asp-action="Index">
+                        @Icon("M9 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M2.5 20a6.5 6.5 0 0 1 13 0M17 5.5a3 3 0 0 1 0 6M21.5 20a6 6 0 0 0-3-5.2")
+                        @employeesLabel
+                    </a>
+                }
 
                 @* Görevlerim: stajyerin mentor tarafından atanan görevleri —
                    Mentorluk ekranının stajyer tarafındaki aynası. *@
@@ -91,13 +104,18 @@
                     </a>
                 }
 
-                <a class="nav-item @ActiveExcept("LeaveRequests", "Approvals", "Calendar")" asp-controller="LeaveRequests" asp-action="Index">
-                    @Icon("M8 2v4M16 2v4M3 10h18M5 6h14a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2")
-                    @((User.IsInRole("HR") || User.IsInRole("Admin")) ? "İzin Geçmişi" : "İzinlerim")
-                </a>
+                @* İzin süreci İK/yönetici işidir; Admin'in ne kendi izni vardır
+                   (çalışan kaydı yok) ne de başkasınınkini yönetir. *@
+                @if (!isAdmin)
+                {
+                    <a class="nav-item @ActiveExcept("LeaveRequests", "Approvals", "Calendar")" asp-controller="LeaveRequests" asp-action="Index">
+                        @Icon("M8 2v4M16 2v4M3 10h18M5 6h14a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2")
+                        @(User.IsInRole("HR") ? "İzin Geçmişi" : "İzinlerim")
+                    </a>
+                }
 
                 @* Onay Bekleyenler: yalnızca onaylayabilen roller. *@
-                @if (User.IsInRole("HR") || User.IsInRole("Manager") || User.IsInRole("Admin"))
+                @if (User.IsInRole("HR") || User.IsInRole("Manager"))
                 {
                     <a class="nav-item @Active2("LeaveRequests", "Approvals")" asp-controller="LeaveRequests" asp-action="Approvals">
                         @Icon("M9 12.5 11.5 15 16 9M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2")
@@ -115,11 +133,11 @@
                     </a>
                 }
 
-                @* Stajyerler (tüm liste) YÖNETİM ekranıdır: yalnızca İK/Admin.
+                @* Stajyerler (tüm liste) YÖNETİM ekranıdır: yalnızca İK.
                    Manager ve Employee kendi stajyerlerine Mentorluk'tan ulaşır;
                    stajyerin kendisi bu listeyi hiç görmez — onun dünyası
                    Staj Panelim + Profilim + Görevlerim'dir. *@
-                @if (User.IsInRole("HR") || User.IsInRole("Admin"))
+                @if (User.IsInRole("HR"))
                 {
                     <a class="nav-item @Active("Interns")" asp-controller="Interns" asp-action="Index">
                         @Icon("M12 3 2 8l10 5 10-5zM6 11v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5")
@@ -127,8 +145,9 @@
                     </a>
                 }
 
-                @* Departmanlar yalnızca HR/Admin görebilir (kullanıcı kararı). *@
-                @if (User.IsInRole("HR") || User.IsInRole("Admin"))
+                @* Departmanlar YÖNETİM ekranıdır (ekleme/silme) — yalnızca İK.
+                   Admin yapıyı Organizasyon'dan salt okunur izler. *@
+                @if (User.IsInRole("HR"))
                 {
                     <a class="nav-item @Active("Departments")" asp-controller="Departments" asp-action="Index">
                         @Icon("M4 21V8l8-5 8 5v13M9 21v-6h6v6M2 21h20")
@@ -136,8 +155,26 @@
                     </a>
                 }
 
+                @* Organizasyon HERKESE açık: departman/birim yapısı referans veridir.
+                   Kişiler zaten API'de göruş alanına göre daralıyor, ekran da
+                   daraltılmış görünümde sayı/yokluk iddiası göstermiyor. *@
+                <a class="nav-item @Active("Organization")" asp-controller="Organization" asp-action="Index">
+                    @Icon("M12 3v4M5 21v-5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v5M9 7h6v4H9zM3 21h4v-4H3zM17 21h4v-4h-4z")
+                    Organizasyon
+                </a>
+
+                @* Hesap yönetimi Admin'in ÇEKİRDEK işi: rol atama gücü yalnızca
+                   burada durur (HR'a verilseydi HR kendini Admin yapabilirdi). *@
+                @if (isAdmin)
+                {
+                    <a class="nav-item @Active("Users")" asp-controller="Users" asp-action="Index">
+                        @Icon("M12 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M5 20a7 7 0 0 1 14 0M17.5 3.5a3 3 0 0 1 0 5")
+                        Kullanıcı Hesapları
+                    </a>
+                }
+
                 @* Yalnızca Admin bekleyen hesap taleplerini işler. *@
-                @if (User.IsInRole("Admin"))
+                @if (isAdmin)
                 {
                     <a class="nav-item @Active2("AccountRequests", "Pending")" asp-controller="AccountRequests" asp-action="Pending">
                         @Icon("M9 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M2.5 20a6.5 6.5 0 0 1 13 0M19 8v6M16 11h6")

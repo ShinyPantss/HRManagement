@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using HRManagement.Application.DTOs;
 using HRManagement.Application.Interfaces;
 using HRManagement.Domain.Enums;
@@ -5,92 +6,59 @@ using MediatR;
 
 namespace HRManagement.Application.Features.Dashboard.Queries.GetHrDashboard;
 
+/// <summary>
+/// İK panosu. Toplama/gruplama işi stored procedure'e taşındıktan sonra bu
+/// handler'a iki sorumluluk kaldı: KİM sorabilir (yetki) ve HANGİ eşiklerle
+/// (parametreler). Query tarafının incelmesi CQRS'in beklediği asimetridir —
+/// karar kuralları command tarafında, raporlama sorguları veri katmanında.
+/// </summary>
 public sealed class GetHrDashboardQueryHandler
     : IRequestHandler<GetHrDashboardQuery, HrDashboardDto>
 {
+    // ── Pano eşikleri ────────────────────────────────────────────────────────
+    // Hem SP'ye parametre olarak gider hem ekrandaki metinleri yazar
+    // (DashboardController bunları yanıta koyar). Tek yerde durmaları bilinçli:
+    // ekranda "5 günden uzun" yazarken SP'nin 7'ye göre süzmesi, panonun kendi
+    // kendine yalan söylemesi olurdu.
+
+    /// <summary>Bir talep bu kadar gündür bekliyorsa "gecikmiş" sayılır.</summary>
+    public const int OverdueDays = 5;
+
+    /// <summary>Stajı bu kadar gün içinde bitenler "yakında bitiyor" sayılır.</summary>
+    public const int InternEndingWindowDays = 30;
+
+    /// <summary>Yaklaşan izinler penceresi.</summary>
+    public const int UpcomingWindowDays = 14;
+
+    /// <summary>Trend grafiğinin kapsadığı ay sayısı.</summary>
+    private const int TrendMonths = 6;
+
     private readonly IUserRepository _userRepository;
-    private readonly IEmployeeRepository _employeeRepository;
-    private readonly IInternRepository _internRepository;
-    private readonly ILeaveRequestRepository _leaveRequestRepository;
-    private readonly IDepartmentRepository _departmentRepository;
+    private readonly IDashboardRepository _dashboardRepository;
 
     public GetHrDashboardQueryHandler(
         IUserRepository userRepository,
-        IEmployeeRepository employeeRepository,
-        IInternRepository internRepository,
-        ILeaveRequestRepository leaveRequestRepository,
-        IDepartmentRepository departmentRepository)
+        IDashboardRepository dashboardRepository)
     {
         _userRepository = userRepository;
-        _employeeRepository = employeeRepository;
-        _internRepository = internRepository;
-        _leaveRequestRepository = leaveRequestRepository;
-        _departmentRepository = departmentRepository;
+        _dashboardRepository = dashboardRepository;
     }
 
     public async Task<HrDashboardDto> Handle(GetHrDashboardQuery request, CancellationToken cancellationToken)
     {
-        // Şirket geneli pano: yalnızca İK/Admin. API rol kapısını burada da doğrularız
-        // (nihai otorite Application) — yetkisizse boş pano döner.
         var actor = await _userRepository.GetByIdAsync(request.ActorUserId);
-        if (actor is null || !actor.IsActive || actor.Role is not (Role.HR or Role.Admin))
-            return new HrDashboardDto();
 
-        // "Bugün" diğer izin hesaplarıyla aynı kaynak: UTC tarih (LeaveEntitlement ile tutarlı).
-        var today = DateTime.UtcNow.Date;
+        if (actor is null || !actor.IsActive)
+            throw new ValidationException("İşlemi yapan hesap bulunamadı veya pasif.");
 
-        var activeEmployees = (await _employeeRepository.GetAllAsync())
-            .Where(e => e.IsActive)
-            .ToList();
+        if (actor.Role is not (Role.HR or Role.Admin))
+            throw new ValidationException("Bu panoyu görüntüleme yetkiniz yok.");
 
-        var interns = await _internRepository.GetAllAsync();
-
-        // İzinler isim + durum + tarih ile TEK sorguda; "şu an izinde" ve "bekleyen"
-        // aynı listeden süzülür (çalışan + stajyer talepleri birlikte).
-        var leaves = await _leaveRequestRepository.GetAllWithNamesAsync();
-
-        var departments = await _departmentRepository.GetAllAsync();
-        var departmentNames = departments.ToDictionary(d => d.Id, d => d.Name);
-
-        var onLeave = leaves
-            .Where(l => l.Status == LeaveStatus.Approved
-                        && l.StartDate.Date <= today
-                        && l.EndDate.Date >= today)
-            .OrderBy(l => l.EndDate)
-            .ToList();
-
-        return new HrDashboardDto
-        {
-            TotalActiveEmployees = activeEmployees.Count,
-            OnLeaveNowCount = onLeave.Count,
-            PendingLeaveRequests = leaves.Count(l => l.Status is LeaveStatus.Pending or LeaveStatus.PendingHr),
-            ActiveInterns = interns.Count(i => i.EndDate.Date >= today),
-
-            MaleCount = activeEmployees.Count(e => e.Gender == Gender.Male),
-            FemaleCount = activeEmployees.Count(e => e.Gender == Gender.Female),
-            GenderUnspecifiedCount = activeEmployees.Count(e => e.Gender is null),
-
-            DepartmentHeadcounts = activeEmployees
-                .GroupBy(e => e.DepartmentId)
-                .Select(g => new DepartmentHeadcountDto
-                {
-                    DepartmentName = departmentNames.TryGetValue(g.Key, out var n) ? n : "—",
-                    Count = g.Count()
-                })
-                .OrderByDescending(x => x.Count)
-                .ThenBy(x => x.DepartmentName)
-                .ToList(),
-
-            OnLeaveNow = onLeave
-                .Select(l => new OnLeaveNowDto
-                {
-                    SubjectName = l.SubjectName,
-                    SubjectType = l.SubjectType,
-                    TypeName = l.TypeName,
-                    StartDate = l.StartDate,
-                    EndDate = l.EndDate
-                })
-                .ToList()
-        };
+        return await _dashboardRepository.GetHrDashboardAsync(new HrDashboardParameters(
+            Today: DateTime.UtcNow.Date,
+            OverdueDays: OverdueDays,
+            UpcomingWindowDays: UpcomingWindowDays,
+            InternEndingWindowDays: InternEndingWindowDays,
+            TrendMonths: TrendMonths));
     }
 }

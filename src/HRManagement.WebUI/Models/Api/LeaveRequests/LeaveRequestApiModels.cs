@@ -46,6 +46,7 @@ public class LeaveHistoryResponse
     public int Id { get; set; }
     public string SubjectName { get; set; } = string.Empty;
     public string SubjectType { get; set; } = string.Empty; // Çalışan | Stajyer
+    public string? DepartmentName { get; set; }             // rapordaki departman kırılımı
     public string Type { get; set; } = string.Empty;        // Annual | Unpaid | Sick
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }

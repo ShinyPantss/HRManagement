@@ -21,6 +21,7 @@ public static class DependencyInjection
         services.AddScoped<IInternNoteRepository, InternNoteRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IAccountRequestRepository, AccountRequestRepository>();
+        services.AddScoped<IDashboardRepository, DashboardRepository>();
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 

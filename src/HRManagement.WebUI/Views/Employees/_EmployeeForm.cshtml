@@ -107,25 +107,38 @@
         <span asp-validation-for="ManagerId"></span>
     </div>
 
-    <div class="field">
-        <label class="field-label" asp-for="UserId"></label>
-        <input asp-for="UserId" type="number" class="input" />
-        <span asp-validation-for="UserId"></span>
-    </div>
+    @* "Kullanıcı Hesabı Id" alanı KALDIRILDI: İK'ya ham veritabanı id'si yazdırmak
+       hem kötü bir deneyim hem yanlış hesaba bağlama riskiydi. Hesap bağı artık tek
+       yoldan kurulur: giriş hesabı talebi → Admin onayı.
 
-    <div class="field">
-        <label class="field-label" asp-for="AnnualLeaveDays"></label>
-        <input asp-for="AnnualLeaveDays" type="number" class="input" />
-        <span class="field-hint">Boş bırakılırsa hak, kıdemden hesaplanır (İş Kanunu md. 53).</span>
-        <span asp-validation-for="AnnualLeaveDays"></span>
-    </div>
+       Ama değer POST edilmeye DEVAM ediyor (gizli input). Sebebi kritik:
+       UpdateEmployeeCommandHandler `employee.UserId = request.UserId` yazıyor;
+       alan hiç gönderilmezse null bağlanır ve Düzenle her kaydedildiğinde MEVCUT
+       hesap bağı sessizce silinirdi. Gizli input mevcut değeri gidip geri getirir.
+       Hidden input'lar display:none olduğu için grid düzenini de bozmaz. *@
+    <input asp-for="UserId" type="hidden" />
+
+    @* Yıllık izin override'ı yeni kayıtta sorulmuyor: gün birinde kişiye özel gün
+       tanımlamak gerekmez, hak kıdemden hesaplanır (İş Kanunu md. 53). Düzenle
+       ekranında görünür kalır — şirket birine özel gün tanımlarsa İK'nın bunu
+       girebileceği tek yer orası. *@
+    @if (!isCreate)
+    {
+        <div class="field">
+            <label class="field-label" asp-for="AnnualLeaveDays"></label>
+            <input asp-for="AnnualLeaveDays" type="number" class="input" />
+            <span class="field-hint">Boş bırakılırsa hak, kıdemden hesaplanır (İş Kanunu md. 53).</span>
+            <span asp-validation-for="AnnualLeaveDays"></span>
+        </div>
+    }
 
     <div class="span-2">
         @if (isCreate)
         {
             @* Otomatik hesap talebi: işaretliyse çalışan eklenince Admin'e Pending
-               talep düşer (İK ayrıca talep açmaz). Yukarıda mevcut bir hesap Id'si
-               yazıldıysa sunucu talebi zaten açmaz. *@
+               talep düşer (İK ayrıca talep açmaz). Yeni kayıtta hesap bağı kurmanın
+               TEK yolu budur — elle hesap Id'si girme alanı kaldırıldı. Kayıt zaten
+               bir hesaba bağlıysa sunucu talebi açmaz. *@
             <label class="check">
                 <input asp-for="RequestLoginAccount" />
                 <span>

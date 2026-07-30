@@ -1,3 +1,4 @@
+@using HRManagement.WebUI.Models
 @model HRManagement.WebUI.Models.Api.Dashboard.HrDashboardResponse
 @{
     ViewData["Title"] = "Ana Sayfa";
@@ -7,8 +8,22 @@
     var genderTotal = Model.MaleCount + Model.FemaleCount + Model.GenderUnspecifiedCount;
     int Pct(int n) => genderTotal == 0 ? 0 : (int)Math.Round(100.0 * n / genderTotal);
 
-    // Departman barları en kalabalığa göre ölçeklenir.
-    var maxDept = Model.DepartmentHeadcounts.Count > 0 ? Model.DepartmentHeadcounts.Max(d => d.Count) : 0;
+    // Uzayabilen listeler pano kartında KESİLİR. Sebebi geçmişte yaşandı: sınırsız
+    // liste ile sabit yükseklikli kart yan yana konunca, liste uzadıkça komşusunun
+    // altında dev bir boşluk kalıyordu. Pano özet ekranı — tam liste "Tümü"nde.
+    const int listLimit = 6;
+
+    var onLeaveShown = Model.OnLeaveNow.Take(listLimit).ToList();
+    var onLeaveHidden = Model.OnLeaveNow.Count - onLeaveShown.Count;
+
+    var upcomingShown = Model.UpcomingLeaves.Take(listLimit).ToList();
+    var upcomingHidden = Model.UpcomingLeaves.Count - upcomingShown.Count;
+
+    // Trend barları en yoğun aya göre ölçeklenir.
+    var maxTrend = Model.MonthlyTrend.Count > 0 ? Model.MonthlyTrend.Max(t => t.WorkingDays) : 0;
+
+    // Kıdem piramidi: en kalabalık kademeye göre.
+    var maxSeniority = Model.SeniorityBreakdown.Count > 0 ? Model.SeniorityBreakdown.Max(s => s.Count) : 0;
 
     // Halka grafik: dilimler kümülatif yüzdelerle conic-gradient'e çevrilir.
     var slices = new[]
@@ -59,8 +74,16 @@
             <span class="kpi-unit">kişi</span>
         </div>
         <div class="kpi-note-row">
-            <span class="badge badge-sm badge-brand">@Model.DepartmentHeadcounts.Count departman</span>
-            <span class="kpi-note">kadro dağılımı aşağıda</span>
+            @if (Model.EmployeesWithoutAccount > 0)
+            {
+                <span class="badge badge-sm badge-warn">@Model.EmployeesWithoutAccount hesapsız</span>
+                <span class="kpi-note">giriş açılmalı</span>
+            }
+            else
+            {
+                <span class="badge badge-sm badge-ok">tam</span>
+                <span class="kpi-note">herkesin hesabı var</span>
+            }
         </div>
     </a>
 
@@ -95,10 +118,17 @@
             <span class="kpi-unit">talep</span>
         </div>
         <div class="kpi-note-row">
-            @if (Model.PendingLeaveRequests > 0)
+            @if (Model.OverduePendingCount > 0)
+            {
+                @* Sayı değil GECİKME vurgulanır: 20 talebin hepsi dünden ise sorun yok,
+                   1 talep 9 gündür bekliyorsa sorun var. *@
+                <span class="badge badge-sm badge-danger">@Model.OverduePendingCount gecikmiş</span>
+                <span class="kpi-note">en eskisi @Model.OldestPendingDays gündür bekliyor</span>
+            }
+            else if (Model.PendingLeaveRequests > 0)
             {
                 <span class="badge badge-sm badge-warn">işlem bekliyor</span>
-                <span class="kpi-note">onay kutusuna git</span>
+                <span class="kpi-note">hepsi @Model.OverdueThresholdDays günden yeni</span>
             }
             else
             {
@@ -120,14 +150,25 @@
             <span class="kpi-unit">kişi</span>
         </div>
         <div class="kpi-note-row">
-            <span class="badge badge-sm badge-violet">mentorluk</span>
-            <span class="kpi-note">staj takibi stajyer ekranında</span>
+            @if (Model.InternsEndingSoon > 0)
+            {
+                <span class="badge badge-sm badge-warn">@Model.InternsEndingSoon bitiyor</span>
+                <span class="kpi-note">@Model.InternEndingWindowDays gün içinde</span>
+            }
+            else
+            {
+                <span class="badge badge-sm badge-violet">mentorluk</span>
+                <span class="kpi-note">yakın zamanda biten yok</span>
+            }
         </div>
     </a>
 </div>
 
-<div class="grid g-wide-left">
-    @* ── Şu an izinde olanlar ──────────────────────────────────────── *@
+@* ── 1. satır: iki izin listesi yan yana ────────────────────────────
+   align-items: start — kartlar birbirini uzatmasın. Grid'in varsayılan
+   stretch davranışı, yanındaki uzun listeye eşitlenen boş kartlar üretiyordu.
+   Her iki liste de 6 satırda kesildiği için ikisi de sınırsız uzayamaz. *@
+<div class="grid g-2" style="align-items: start;">
     <section class="card card-flush">
         <div class="card-head">
             <div class="row-tight">
@@ -137,28 +178,35 @@
             <a class="card-head-link" asp-controller="LeaveRequests" asp-action="Index">Tümü</a>
         </div>
 
-        @if (Model.OnLeaveNow.Any())
+        @if (onLeaveShown.Count > 0)
         {
             <div class="dt" style="--cols: 1.6fr 1fr 1.2fr;">
                 <div class="dt-head">
-                    <span>Kişi</span><span>İzin türü</span><span class="text-right">Tarih</span>
+                    <span>Kişi</span><span>İzin türü</span><span class="text-right">Dönüş</span>
                 </div>
-                @for (var i = 0; i < Model.OnLeaveNow.Count; i++)
+                @for (var i = 0; i < onLeaveShown.Count; i++)
                 {
-                    var p = Model.OnLeaveNow[i];
+                    var p = onLeaveShown[i];
                     <div class="dt-row">
                         <div class="person">
-                            <span class="avatar av-@(i % 6 + 1)">@Init(p.SubjectName)</span>
+                            <span class="avatar avatar-sm av-@(i % 6 + 1)">@Init(p.SubjectName)</span>
                             <div class="person-text">
                                 <div class="dt-primary">@p.SubjectName</div>
                                 <div class="dt-secondary">@p.SubjectType</div>
                             </div>
                         </div>
                         <span><span class="badge badge-sm @LeaveDisplay.TypeBadge(p.TypeName)">@LeaveDisplay.TypeText(p.TypeName)</span></span>
-                        <span class="dt-cell-muted text-right num">@p.StartDate.ToString("dd MMM") – @p.EndDate.ToString("dd MMM")</span>
+                        <span class="dt-cell-muted text-right num">@p.EndDate.ToString("dd MMM")</span>
                     </div>
                 }
             </div>
+
+            @if (onLeaveHidden > 0)
+            {
+                <a class="dt-row dt-row-more" asp-controller="LeaveRequests" asp-action="Index">
+                    <span class="dt-secondary">@onLeaveHidden kişi daha izinde — tümünü gör</span>
+                </a>
+            }
         }
         else
         {
@@ -169,16 +217,123 @@
         }
     </section>
 
-    @* ── Cinsiyet dağılımı ─────────────────────────────────────────── *@
+    <section class="card card-flush">
+        <div class="card-head">
+            <div class="row-tight">
+                <h2>Yaklaşan izinler</h2>
+                <span class="badge badge-sm badge-brand">@Model.UpcomingLeaves.Count</span>
+            </div>
+            <span class="card-head-meta">önümüzdeki @Model.UpcomingWindowDays gün</span>
+        </div>
+
+        @if (upcomingShown.Count > 0)
+        {
+            <div class="dt" style="--cols: 1.6fr 1fr .8fr 1fr;">
+                <div class="dt-head">
+                    <span>Kişi</span><span>İzin türü</span><span class="text-right">Gün</span><span class="text-right">Başlıyor</span>
+                </div>
+                @for (var i = 0; i < upcomingShown.Count; i++)
+                {
+                    var p = upcomingShown[i];
+                    <div class="dt-row">
+                        <div class="person">
+                            <span class="avatar avatar-sm av-@(i % 6 + 1)">@Init(p.SubjectName)</span>
+                            <div class="person-text">
+                                <div class="dt-primary">@p.SubjectName</div>
+                                <div class="dt-secondary">@p.StartDate.ToString("dd MMM") – @p.EndDate.ToString("dd MMM")</div>
+                            </div>
+                        </div>
+                        <span><span class="badge badge-sm @LeaveDisplay.TypeBadge(p.TypeName)">@LeaveDisplay.TypeText(p.TypeName)</span></span>
+                        <span class="dt-strong text-right">@p.WorkingDays</span>
+                        <span class="dt-cell-muted text-right">
+                            @(p.DaysUntilStart == 1 ? "yarın" : $"{p.DaysUntilStart} gün sonra")
+                        </span>
+                    </div>
+                }
+            </div>
+
+            @if (upcomingHidden > 0)
+            {
+                <a class="dt-row dt-row-more" asp-controller="LeaveRequests" asp-action="Index">
+                    <span class="dt-secondary">@upcomingHidden izin daha — tümünü gör</span>
+                </a>
+            }
+        }
+        else
+        {
+            <div class="empty">
+                <div class="empty-title">Yaklaşan izin yok</div>
+                <div class="empty-text">Önümüzdeki @Model.UpcomingWindowDays gün için onaylı izin görünmüyor.</div>
+            </div>
+        }
+    </section>
+</div>
+
+@* ── 2. satır: izin trendi (3 birim) | kadro yapısı (1 birim) ────────
+   Burada align-items: start YOK — bilerek. 1. satırdaki listeler veriye göre
+   uzayabildiği için orada gerekliydi; buradaki iki kartın içeriği ise sabit
+   sayıda satır (6 ay / 6 kıdem kademesi). Dolayısıyla stretch güvenli ve
+   kartların altları hizalanıyor. Trend kartı içeriğini dikey yayarak boşluğu
+   barlar arasına dağıtıyor, alta yığmıyor. *@
+<div class="grid g-3-1">
+
+    @* ── Son 6 ay izin trendi — geniş sütun ──────────────────────────────
+       KOŞULSUZ render ediliyor: grid hücresini @@if içine almak, veri
+       gelmediğinde hücreyi tamamen yok eder; yanındaki kart 3fr'lik sütuna
+       kayar ve satır yarım görünür. Boş durum kartın İÇİNDE ele alınmalı. *@
+    <section class="card card-pad" style="display: flex; flex-direction: column;">
+        <div class="row-between" style="margin-bottom: 16px;">
+            <h2 class="section-title" style="margin-bottom: 0;">
+                @(Model.MonthlyTrend.Count > 0
+                    ? $"Son {Model.MonthlyTrend.Count} ay izin kullanımı"
+                    : "İzin kullanımı")
+            </h2>
+            <span class="card-head-meta">@Model.MonthlyTrend.Sum(t => t.WorkingDays) iş günü</span>
+        </div>
+
+        @if (maxTrend == 0)
+        {
+            <div class="empty">
+                <div class="empty-title">Gösterilecek trend yok</div>
+                <div class="empty-text">Bu dönemde onaylanmış izin bulunmuyor.</div>
+            </div>
+        }
+        else
+        {
+            @* flex:1 + space-between → kart komşusunun boyuna uzadığında fazla
+               alan barların ARASINA dağılır; altta tek parça boşluk kalmaz. *@
+            <div class="stack" style="gap: 13px; flex: 1; justify-content: space-between;">
+                @foreach (var t in Model.MonthlyTrend)
+                {
+                    var width = (int)Math.Round(100.0 * t.WorkingDays / maxTrend);
+                    var isPeak = t.WorkingDays == maxTrend;
+                    var label = new DateTime(t.Year, t.Month, 1).ToString("MMMM yyyy");
+                    <div class="bar-row">
+                        <span class="bar-name">@label</span>
+                        <span class="bar-value">@t.WorkingDays gün · @t.RequestCount talep</span>
+                        <div class="bar bar-lg"><div class="bar-fill @(isPeak ? "" : "sky")" style="width: @width%;"></div></div>
+                    </div>
+                }
+            </div>
+            <div class="mini-stat-label" style="margin-top: 16px;">
+                Yalnızca onaylanmış izinler; izin BAŞLANGIÇ ayına yazılır. İş günü esaslıdır.
+            </div>
+        }
+    </section>
+
+    @* ── Kadro: cinsiyet + kıdem — dar sütun ─────────────────────────
+       Donut 108px sabit genişlikte; dar sütunda legend'in yanına sığmaz,
+       bu yüzden burada alt alta diziliyorlar. *@
     <section class="card card-pad">
-        <h2 class="section-title">Cinsiyet dağılımı</h2>
+        <h2 class="section-title">Kadro yapısı</h2>
+
         @if (genderTotal == 0)
         {
             <div class="empty-text">Gösterilecek çalışan yok.</div>
         }
         else
         {
-            <div class="row-center" style="gap: 20px; flex-wrap: nowrap;">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 14px;">
                 <div class="donut" style="background: @DonutGradient();">
                     <div class="donut-hole">
                         <div>
@@ -187,7 +342,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="legend">
+                <div class="legend" style="width: 100%;">
                     <div class="legend-row">
                         <span class="legend-dot" style="background: #977ef9;"></span>
                         <span class="legend-name">Erkek</span>
@@ -208,38 +363,30 @@
                     }
                 </div>
             </div>
+
+            @if (Model.SeniorityBreakdown.Count > 0)
+            {
+                @* Kıdem piramidi: departman dağılımının yerine geçti. Kaç kişi
+                   olduğundan çok organizasyonun ŞEKLİNİ gösterir — üstü dar mı,
+                   ortası şişkin mi. *@
+                <div style="margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line);">
+                    <div class="mini-stat-label" style="margin-bottom: 10px;">KIDEM DAĞILIMI</div>
+                    <div class="stack" style="gap: 9px;">
+                        @foreach (var s in Model.SeniorityBreakdown)
+                        {
+                            var width = maxSeniority == 0 ? 0 : (int)Math.Round(100.0 * s.Count / maxSeniority);
+                            <div class="bar-row">
+                                <span class="bar-name">@(s.Seniority is null ? "Belirtilmemiş" : SeniorityDisplay.Label(s.Seniority))</span>
+                                <span class="bar-value">@s.Count</span>
+                                <div class="bar"><div class="bar-fill @(s.Seniority is null ? "sky" : "")" style="width: @width%;"></div></div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
         }
     </section>
 </div>
-
-@* ── Departmana göre aktif çalışan ─────────────────────────────────── *@
-<section class="card card-pad">
-    <div class="row-between" style="margin-bottom: 16px;">
-        <h2 class="section-title" style="margin-bottom: 0;">Departmana göre aktif çalışan</h2>
-        <span class="card-head-meta">Toplam @Model.TotalActiveEmployees</span>
-    </div>
-
-    @if (Model.DepartmentHeadcounts.Any())
-    {
-        <div class="stack" style="gap: 13px;">
-            @for (var rank = 0; rank < Model.DepartmentHeadcounts.Count; rank++)
-            {
-                var d = Model.DepartmentHeadcounts[rank];
-                var width = maxDept == 0 ? 0 : (int)Math.Round(100.0 * d.Count / maxDept);
-                var tone = rank == 0 ? "" : rank < 3 ? "teal" : "sky";
-                <div class="bar-row">
-                    <span class="bar-name">@d.DepartmentName</span>
-                    <span class="bar-value">@d.Count</span>
-                    <div class="bar"><div class="bar-fill @tone" style="width: @width%;"></div></div>
-                </div>
-            }
-        </div>
-    }
-    else
-    {
-        <div class="empty-text">Departman verisi yok.</div>
-    }
-</section>
 
 @functions {
     // Baş harfler — avatar için ("Elif Yıldırım" → "EY").

@@ -33,8 +33,17 @@ public class EmployeesController : Controller
         _internApi = internApi;
     }
 
-    public async Task<IActionResult> Index()
+    /// <param name="departmentId">
+    /// Departmanlar ekranındaki "Çalışanları gör" bağlantısından gelir; listeyi
+    /// süzmez, yalnızca istemci tarafı filtre çubuğunda o departmanı SEÇİLİ açar.
+    /// Süzme işini var olan filtre scripti yapar — ikinci bir filtreleme yolu
+    /// açmamak için liste sunucuda daraltılmıyor.
+    /// Geçersiz bir id gelirse eşleşen seçenek olmaz ve filtre "Tümü"de kalır.
+    /// </param>
+    public async Task<IActionResult> Index(int? departmentId = null)
     {
+        ViewBag.SelectedDepartmentId = departmentId;
+
         var response = await _employeeApi.GetAllAsync();
 
         if (!response.IsSuccess)

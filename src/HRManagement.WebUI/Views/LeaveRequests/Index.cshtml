@@ -1,11 +1,13 @@
+@using HRManagement.WebUI.Models.LeaveRequests
 @model HRManagement.WebUI.Models.LeaveRequests.LeaveRequestListViewModel
 @{
     var isAll = Model.IsAllView;
     ViewData["Title"] = isAll ? "İzin Geçmişi" : "İzinlerim";
 
-    // İki görünüm de aynı özet şeridini kullanır; sayılar ELDEKİ satırlardan
-    // türetilir (ayrı bir API ucu yok).
-    var rowCount = isAll ? Model.AllRows.Count : Model.Requests.Count;
+    // Özet şeridi ELDEKİ satırlardan türetilir (ayrı bir API ucu yok) ve
+    // zaman filtresi uygulandıktan SONRAKİ kümeyi anlatır — başlıktaki
+    // aralıkla tutarlı olsun diye.
+    var rowCount = Model.RowCount;
 
     var approvedDays = isAll
         ? Model.AllRows.Where(r => r.Status == "Approved").Sum(r => r.WorkingDays)
@@ -19,28 +21,35 @@
         ? Model.AllRows.Count(r => r.Status == "Rejected")
         : Model.Requests.Count(r => r.Status == "Rejected");
 
-    ViewData["Subtitle"] = isAll
-        ? $"Şirket genelindeki tüm izin talepleri — {rowCount} kayıt, salt gözlem."
-        : "Tüm izin kayıtların, gün sayıları ve onay durumları.";
+    var filtered = Model.HasDateFilter && Model.TotalBeforeFilter > rowCount;
 
-    // Aylık kullanım: onaylanmış izinlerin başlangıç ayına göre iş günü toplamı.
-    var monthDays = new int[12];
-    if (isAll)
-    {
-        foreach (var r in Model.AllRows.Where(r => r.Status == "Approved"))
-            monthDays[r.StartDate.Month - 1] += r.WorkingDays;
-    }
-    else
-    {
-        foreach (var r in Model.Requests.Where(r => r.Status == "Approved"))
-            monthDays[r.StartDate.Month - 1] += r.TotalDays;
-    }
-    var maxMonth = monthDays.Max();
-    var monthLabels = new[] { "Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara" };
-    var hasMonthData = maxMonth > 0;
+    ViewData["Subtitle"] = isAll
+        ? (filtered
+            ? $"Şirket geneli — {Model.RangeText}: {Model.TotalBeforeFilter} kaydın {rowCount} tanesi."
+            : $"Şirket genelindeki tüm izin talepleri — {rowCount} kayıt, salt gözlem.")
+        : (filtered
+            ? $"{Model.RangeText}: {Model.TotalBeforeFilter} kaydın {rowCount} tanesi."
+            : "Tüm izin kayıtların, gün sayıları ve onay durumları.");
 }
 
 @section PageActions {
+    @* Rapor ve CSV, ekranla AYNI filtreyi taşır — parametreler aynen aktarılır. *@
+    <a asp-action="Report"
+       asp-route-range="@Model.Range"
+       asp-route-from="@Model.From?.ToString("yyyy-MM-dd")"
+       asp-route-to="@Model.To?.ToString("yyyy-MM-dd")"
+       target="_blank" rel="noopener" class="btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4v-6h16v6h-2M8 14h8v7H8z" /></svg>
+        Rapor çıktısı
+    </a>
+    <a asp-action="ExportExcel"
+       asp-route-range="@Model.Range"
+       asp-route-from="@Model.From?.ToString("yyyy-MM-dd")"
+       asp-route-to="@Model.To?.ToString("yyyy-MM-dd")"
+       class="btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" /></svg>
+        Excel indir
+    </a>
     <a asp-action="Create" class="btn btn-primary">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
         Yeni izin talebi
@@ -73,148 +82,179 @@
     </div>
 </div>
 
-<div class="grid @(hasMonthData ? "g-wide-right" : "")">
-    @* ── Aylık kullanım grafiği — yalnızca onaylı izin varsa çizilir ─── *@
-    @if (hasMonthData)
+@* ── Zaman filtresi ────────────────────────────────────────────────────
+   Özet şeridinin ALTINDA duruyor: yukarıdaki sayılar zaten bu filtrenin
+   sonucunu anlatıyor, dolayısıyla filtre "sonucu üreten kontrol" olarak
+   sayıların hemen ardından, listenin hemen önünde okunuyor.
+
+   GET formu, JS YOK: hazır aralıklar submit eden butonlar (basılan butonun
+   name/value'su gider), özel aralık iki tarih alanı. Filtre sunucuda
+   uygulanır — durum çipleri gibi satır gizlemekle yetinmez, listeyi
+   gerçekten küçültür.
+
+   Dış boşluk verilmiyor: .content flex column + gap:18px zaten aralığı
+   yönetiyor, ayrıca margin eklemek çift boşluk yapardı. *@
+<form method="get" class="card card-pad">
+    <div class="row-tight" style="flex-wrap: wrap; gap: 8px;">
+        <span class="dt-secondary" style="margin-right: 4px;">Zaman aralığı:</span>
+
+        @foreach (var (key, label) in LeaveRangeOptions.Presets)
+        {
+            <button type="submit" name="range" value="@key"
+                    class="chip chip-sm @(Model.Range == key ? "on" : "")">@label</button>
+        }
+
+        <span style="flex: 1 1 auto;"></span>
+
+        <label class="dt-secondary" for="from">Başlangıç</label>
+        <input type="date" id="from" name="from" class="input" style="width: auto;"
+               value="@Model.From?.ToString("yyyy-MM-dd")" />
+
+        <label class="dt-secondary" for="to">Bitiş</label>
+        <input type="date" id="to" name="to" class="input" style="width: auto;"
+               value="@Model.To?.ToString("yyyy-MM-dd")" />
+
+        <button type="submit" name="range" value="custom"
+                class="btn btn-md @(Model.Range == LeaveRangeOptions.Custom ? "btn-primary" : "")">
+            Uygula
+        </button>
+    </div>
+
+    @if (Model.HasDateFilter)
     {
-        <section class="card card-pad">
-            <div class="row-between" style="margin-bottom: 16px;">
-                <h2 class="section-title" style="margin-bottom: 0;">Aylık kullanım</h2>
-                <span class="card-head-meta">@DateTime.Today.Year</span>
+        <div class="dt-secondary" style="margin-top: 10px;">
+            @* Kesişim mantığı sürprizi önler: aralığa TAŞAN izinler de listede kalır. *@
+            <strong>@Model.RangeText</strong> aralığına giren kayıtlar gösteriliyor.
+            Bu tarihlere sarkan izinler de dahildir.
+        </div>
+    }
+</form>
+
+@* ── Kayıt listesi ─────────────────────────────────────────────────── *@
+<section class="card card-flush">
+    <div class="card-head" style="flex-wrap: wrap; gap: 8px;">
+        <h2 style="margin-right: 8px;">@(isAll ? "Tüm izin kayıtları" : "İzin kayıtlarım")</h2>
+        <div class="row-tight" data-page-filter>
+            <button type="button" class="chip chip-sm on" data-status="">Tümü</button>
+            <button type="button" class="chip chip-sm" data-status="Pending">Yönetici onayı</button>
+            <button type="button" class="chip chip-sm" data-status="PendingHr">İK onayı</button>
+            <button type="button" class="chip chip-sm" data-status="Approved">Onaylandı</button>
+            <button type="button" class="chip chip-sm" data-status="Rejected">Reddedildi</button>
+        </div>
+        <span class="card-head-meta ml-auto" id="rowCount">@rowCount kayıt</span>
+    </div>
+
+    @if (isAll)
+    {
+        <div class="dt" style="--cols: 1.6fr 1fr 1.2fr .5fr .9fr auto;">
+            <div class="dt-head">
+                <span>Çalışan</span><span>Tür</span><span>Tarih</span>
+                <span class="text-right">Gün</span><span style="padding-left: 14px;">Durum</span><span></span>
             </div>
-            <div class="chart" style="height: 150px;">
-                @for (var m = 0; m < 12; m++)
-                {
-                    var h = maxMonth == 0 ? 0 : (int)Math.Round(100.0 * monthDays[m] / maxMonth);
-                    var isPeak = monthDays[m] == maxMonth && maxMonth > 0;
-                    <div class="chart-col">
-                        <div class="chart-track">
-                            <div class="chart-bar @(isPeak ? "on" : "")" style="height: @(h == 0 ? 3 : h)%;" title="@monthLabels[m]: @monthDays[m] gün"></div>
+
+            @for (var i = 0; i < Model.AllRows.Count; i++)
+            {
+                var r = Model.AllRows[i];
+                var (badge, statusText) = LeaveDisplay.StatusBadgeShort(r.Status);
+                var typeTr = LeaveDisplay.TypeText(r.Type);
+                <a class="dt-row" asp-action="Details" asp-route-id="@r.Id"
+                   data-status="@r.Status"
+                   data-search="@($"{r.SubjectName} {typeTr} {r.Description}".ToLowerInvariant())">
+                    <div class="person">
+                        <span class="avatar avatar-sm av-@(i % 6 + 1)">@Init(r.SubjectName)</span>
+                        <div class="person-text">
+                            <div class="dt-primary">@r.SubjectName</div>
+                            <div class="dt-secondary">@r.SubjectType</div>
                         </div>
-                        <span class="chart-label">@monthLabels[m]</span>
                     </div>
-                }
+                    <span><span class="badge badge-sm @LeaveDisplay.TypeBadge(r.Type)">@typeTr</span></span>
+                    <span class="dt-cell-muted num">@r.StartDate.ToString("dd.MM.yyyy") – @r.EndDate.ToString("dd.MM.yyyy")</span>
+                    <span class="dt-strong text-right">@r.WorkingDays</span>
+                    <span style="padding-left: 14px;">
+                        <span class="badge badge-sm @badge" title="@r.RejectionReason">@statusText</span>
+                    </span>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b6bbc4" stroke-width="2.2" stroke-linecap="round"><path d="m9 6 6 6-6 6" /></svg>
+                </a>
+            }
+
+            @if (!Model.AllRows.Any())
+            {
+                <div class="empty">
+                    <div class="empty-title">
+                        @(Model.HasDateFilter ? "Bu aralıkta izin kaydı yok" : "Henüz izin kaydı yok")
+                    </div>
+                    <div class="empty-text">
+                        @(Model.HasDateFilter
+                            ? "Zaman aralığını genişletmeyi ya da “Tümü” seçmeyi dene."
+                            : "Talepler oluşturuldukça bu listede görünecek.")
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="dt" style="--cols: 1fr 1.2fr .5fr .9fr 1.2fr auto;">
+            <div class="dt-head">
+                <span>Tür</span><span>Tarih</span><span class="text-right">Gün</span>
+                <span style="padding-left: 14px;">Durum</span><span>Açıklama</span><span>İşlem</span>
             </div>
-            <div style="margin-top: 14px; font-size: 11.5px; color: var(--muted-2); font-weight: 500; line-height: 1.5;">
-                Yalnızca onaylanmış izinler sayılır; iş günü esaslıdır (hafta sonları düşülmüştür).
-            </div>
-        </section>
+
+            @foreach (var request in Model.Requests)
+            {
+                var (badge, statusText) = LeaveDisplay.StatusBadgeShort(request.Status);
+                var typeTr = LeaveDisplay.TypeText(request.Type);
+                // Bu görünümde satırların hepsi zaten kişinin kendisine ait.
+                var kendiTalebim = request.EmployeeId == Model.CurrentEmployeeId;
+                <div class="dt-row"
+                     data-status="@request.Status"
+                     data-search="@($"{typeTr} {request.Description}".ToLowerInvariant())">
+                    <span><span class="badge badge-sm @LeaveDisplay.TypeBadge(request.Type)">@typeTr</span></span>
+                    <span class="dt-cell num">@request.StartDate.ToString("dd.MM.yyyy") – @request.EndDate.ToString("dd.MM.yyyy")</span>
+                    <span class="dt-strong text-right">@request.TotalDays</span>
+                    <span style="padding-left: 14px;">
+                        <span class="badge badge-sm @badge" title="@request.RejectionReason">@statusText</span>
+                    </span>
+                    <span class="dt-secondary" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        @(string.IsNullOrWhiteSpace(request.Description) ? "—" : request.Description)
+                    </span>
+                    <div class="task-actions">
+                        <a asp-action="Details" asp-route-id="@request.Id" class="btn btn-sm">Detay</a>
+                        @if (kendiTalebim)
+                        {
+                            <form asp-action="Delete" method="post" style="display: inline;"
+                                  data-confirm="Bu izin talebi silinsin mi?" data-confirm-ok="Sil" data-danger>
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@request.Id" />
+                                <input type="hidden" name="employeeId" value="@Model.SelectedEmployeeId" />
+                                <button type="submit" class="btn btn-sm btn-danger">Sil</button>
+                            </form>
+                        }
+                    </div>
+                </div>
+            }
+
+            @if (!Model.Requests.Any())
+            {
+                <div class="empty">
+                    <div class="empty-title">
+                        @(Model.HasDateFilter ? "Bu aralıkta izin kaydın yok" : "İzin talebin yok")
+                    </div>
+                    <div class="empty-text">
+                        @(Model.HasDateFilter
+                            ? "Zaman aralığını genişletmeyi ya da “Tümü” seçmeyi dene."
+                            : "Sağ üstteki “Yeni izin talebi” ile ilk talebini oluşturabilirsin.")
+                    </div>
+                </div>
+            }
+        </div>
     }
 
-    @* ── Kayıt listesi ─────────────────────────────────────────────── *@
-    <section class="card card-flush">
-        <div class="card-head" style="flex-wrap: wrap; gap: 8px;">
-            <h2 style="margin-right: 8px;">@(isAll ? "Tüm izin kayıtları" : "İzin kayıtlarım")</h2>
-            <div class="row-tight" data-page-filter>
-                <button type="button" class="chip chip-sm on" data-status="">Tümü</button>
-                <button type="button" class="chip chip-sm" data-status="Pending">Yönetici onayı</button>
-                <button type="button" class="chip chip-sm" data-status="PendingHr">İK onayı</button>
-                <button type="button" class="chip chip-sm" data-status="Approved">Onaylandı</button>
-                <button type="button" class="chip chip-sm" data-status="Rejected">Reddedildi</button>
-            </div>
-            <span class="card-head-meta ml-auto" id="rowCount">@rowCount kayıt</span>
-        </div>
-
-        @if (isAll)
-        {
-            <div class="dt" style="--cols: 1.6fr 1fr 1.2fr .5fr .9fr auto;">
-                <div class="dt-head">
-                    <span>Çalışan</span><span>Tür</span><span>Tarih</span>
-                    <span class="text-right">Gün</span><span style="padding-left: 14px;">Durum</span><span></span>
-                </div>
-
-                @for (var i = 0; i < Model.AllRows.Count; i++)
-                {
-                    var r = Model.AllRows[i];
-                    var (badge, statusText) = LeaveDisplay.StatusBadgeShort(r.Status);
-                    var typeTr = LeaveDisplay.TypeText(r.Type);
-                    <a class="dt-row" asp-action="Details" asp-route-id="@r.Id"
-                       data-status="@r.Status"
-                       data-search="@($"{r.SubjectName} {typeTr} {r.Description}".ToLowerInvariant())">
-                        <div class="person">
-                            <span class="avatar avatar-sm av-@(i % 6 + 1)">@Init(r.SubjectName)</span>
-                            <div class="person-text">
-                                <div class="dt-primary">@r.SubjectName</div>
-                                <div class="dt-secondary">@r.SubjectType</div>
-                            </div>
-                        </div>
-                        <span><span class="badge badge-sm @LeaveDisplay.TypeBadge(r.Type)">@typeTr</span></span>
-                        <span class="dt-cell-muted num">@r.StartDate.ToString("dd.MM.yyyy") – @r.EndDate.ToString("dd.MM.yyyy")</span>
-                        <span class="dt-strong text-right">@r.WorkingDays</span>
-                        <span style="padding-left: 14px;">
-                            <span class="badge badge-sm @badge" title="@r.RejectionReason">@statusText</span>
-                        </span>
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b6bbc4" stroke-width="2.2" stroke-linecap="round"><path d="m9 6 6 6-6 6" /></svg>
-                    </a>
-                }
-
-                @if (!Model.AllRows.Any())
-                {
-                    <div class="empty">
-                        <div class="empty-title">Henüz izin kaydı yok</div>
-                        <div class="empty-text">Talepler oluşturuldukça bu listede görünecek.</div>
-                    </div>
-                }
-            </div>
-        }
-        else
-        {
-            <div class="dt" style="--cols: 1fr 1.2fr .5fr .9fr 1.2fr auto;">
-                <div class="dt-head">
-                    <span>Tür</span><span>Tarih</span><span class="text-right">Gün</span>
-                    <span style="padding-left: 14px;">Durum</span><span>Açıklama</span><span>İşlem</span>
-                </div>
-
-                @foreach (var request in Model.Requests)
-                {
-                    var (badge, statusText) = LeaveDisplay.StatusBadgeShort(request.Status);
-                    var typeTr = LeaveDisplay.TypeText(request.Type);
-                    // Bu görünümde satırların hepsi zaten kişinin kendisine ait.
-                    var kendiTalebim = request.EmployeeId == Model.CurrentEmployeeId;
-                    <div class="dt-row"
-                         data-status="@request.Status"
-                         data-search="@($"{typeTr} {request.Description}".ToLowerInvariant())">
-                        <span><span class="badge badge-sm @LeaveDisplay.TypeBadge(request.Type)">@typeTr</span></span>
-                        <span class="dt-cell num">@request.StartDate.ToString("dd.MM.yyyy") – @request.EndDate.ToString("dd.MM.yyyy")</span>
-                        <span class="dt-strong text-right">@request.TotalDays</span>
-                        <span style="padding-left: 14px;">
-                            <span class="badge badge-sm @badge" title="@request.RejectionReason">@statusText</span>
-                        </span>
-                        <span class="dt-secondary" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                            @(string.IsNullOrWhiteSpace(request.Description) ? "—" : request.Description)
-                        </span>
-                        <div class="task-actions">
-                            <a asp-action="Details" asp-route-id="@request.Id" class="btn btn-sm">Detay</a>
-                            @if (kendiTalebim)
-                            {
-                                <form asp-action="Delete" method="post" style="display: inline;"
-                                      data-confirm="Bu izin talebi silinsin mi?" data-confirm-ok="Sil" data-danger>
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="id" value="@request.Id" />
-                                    <input type="hidden" name="employeeId" value="@Model.SelectedEmployeeId" />
-                                    <button type="submit" class="btn btn-sm btn-danger">Sil</button>
-                                </form>
-                            }
-                        </div>
-                    </div>
-                }
-
-                @if (!Model.Requests.Any())
-                {
-                    <div class="empty">
-                        <div class="empty-title">İzin talebin yok</div>
-                        <div class="empty-text">Sağ üstteki “Yeni izin talebi” ile ilk talebini oluşturabilirsin.</div>
-                    </div>
-                }
-            </div>
-        }
-
-        <div class="empty" id="noFilterResults" hidden>
-            <div class="empty-title">Bu filtreyle kayıt bulunamadı</div>
-            <div class="empty-text">Durum seçimini gevşetmeyi ya da aramayı temizlemeyi dene.</div>
-        </div>
-    </section>
-</div>
+    <div class="empty" id="noFilterResults" hidden>
+        <div class="empty-title">Bu filtreyle kayıt bulunamadı</div>
+        <div class="empty-text">Durum seçimini gevşetmeyi ya da aramayı temizlemeyi dene.</div>
+    </div>
+</section>
 
 @functions {
     string Init(string name)
@@ -229,9 +269,9 @@
 
 @section Scripts {
     <script>
-        // İzin listesi filtresi — ANLIK, istemci tarafı. Durum çipleri + üst
-        // bardaki arama kutusu birlikte çalışır ([data-page-filter] işareti
-        // sayesinde site.js kendi süzmesini devreye sokmaz).
+        // Durum filtresi — ANLIK, istemci tarafı. Zaman aralığı ise SUNUCUDA
+        // uygulanır (form submit); ikisi birbirinin üstüne biner: önce sunucu
+        // aralığı süzer, sonra burası durum + arama ile daraltır.
         (function () {
             var search = document.getElementById('globalSearch');
             var chips = Array.prototype.slice.call(document.querySelectorAll('.chip[data-status]'));

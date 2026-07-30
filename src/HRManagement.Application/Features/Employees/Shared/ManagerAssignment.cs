@@ -26,21 +26,39 @@ public static class ManagerAssignment
         SeniorityLevel? managerSeniority, int managerDepartmentId,
         SeniorityLevel? employeeSeniority, int employeeDepartmentId)
     {
+        var reason = GetIneligibilityReason(
+            managerSeniority, managerDepartmentId, employeeSeniority, employeeDepartmentId);
+
+        if (reason is not null)
+            throw new ValidationException(reason);
+    }
+
+    /// <summary>
+    /// Aynı kuralın FIRLATMAYAN hâli: uygunsa null, değilse gerekçe metni döner.
+    ///
+    /// Neden ayrı bir metot: yöneticinin KENDİSİ düzenlendiğinde (kıdemi
+    /// düşürülünce, departmanı değişince) ona bağlı astların bağı hâlâ geçerli
+    /// mi diye tek tek bakmak gerekir. Bu toplu bir kontroldür; her ast için
+    /// exception fırlatıp yakalamak akış kontrolünü exception'a bindirirdi.
+    /// </summary>
+    public static string? GetIneligibilityReason(
+        SeniorityLevel? managerSeniority, int managerDepartmentId,
+        SeniorityLevel? employeeSeniority, int employeeDepartmentId)
+    {
         // 1) Yönetici kademesi zorunlu. Kıdemi bilinmiyorsa (null) doğrulanamaz → reddet.
         if (managerSeniority is not SeniorityLevel manager || !manager.IsManagerial())
-            throw new ValidationException(
-                "Yönetici yalnızca yönetici kademesinden (Müdür, GMY, GM) seçilebilir.");
+            return "Yönetici yalnızca yönetici kademesinden (Müdür, GMY, GM) seçilebilir.";
 
         // 2) Kıdem karşılaştırması yalnızca çalışanın kıdemi de belliyse yapılır.
         if (employeeSeniority is SeniorityLevel employee && (int)manager >= (int)employee)
-            throw new ValidationException(
-                "Yönetici, çalışandan daha kıdemli olmalıdır. Seçilen kişi eşit veya daha düşük kıdemde.");
+            return "Yönetici, çalışandan daha kıdemli olmalıdır. Seçilen kişi eşit veya daha düşük kıdemde.";
 
         // 3) Departman eşleşmesi — GM hariç. GM departman üstü olduğu için serbest;
         //    GMY ve Müdür ise kendi departmanlarıyla sınırlıdır.
         if (manager != SeniorityLevel.GenelMudur && managerDepartmentId != employeeDepartmentId)
-            throw new ValidationException(
-                "Yönetici, çalışanla aynı departmanda olmalıdır. " +
-                "Farklı departmandan yalnızca Genel Müdür yönetici atanabilir.");
+            return "Yönetici, çalışanla aynı departmanda olmalıdır. " +
+                   "Farklı departmandan yalnızca Genel Müdür yönetici atanabilir.";
+
+        return null;
     }
 }

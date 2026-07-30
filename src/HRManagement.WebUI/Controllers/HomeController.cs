@@ -14,23 +14,34 @@ public class HomeController : Controller
     private readonly IEmployeeApi _employeeApi;
     private readonly ILeaveRequestApi _leaveRequestApi;
     private readonly IInternApi _internApi;
+    private readonly IUserApi _userApi;
+    private readonly IAccountRequestApi _accountRequestApi;
 
     public HomeController(
         IDashboardApi dashboardApi,
         IEmployeeApi employeeApi,
         ILeaveRequestApi leaveRequestApi,
-        IInternApi internApi)
+        IInternApi internApi,
+        IUserApi userApi,
+        IAccountRequestApi accountRequestApi)
     {
         _dashboardApi = dashboardApi;
         _employeeApi = employeeApi;
         _leaveRequestApi = leaveRequestApi;
         _internApi = internApi;
+        _userApi = userApi;
+        _accountRequestApi = accountRequestApi;
     }
 
     public async Task<IActionResult> Index()
     {
-        // İK/Admin → şirket geneli pano (kendi API ucu var).
-        if (User.IsInRole("HR") || User.IsInRole("Admin"))
+        // Admin → SİSTEM panosu. İK panosundan ayrıdır: Admin sistem rolüdür,
+        // kadro/izin sayıları onun işi değil; hesapların durumuna bakar.
+        if (User.IsInRole("Admin"))
+            return await AdminHome();
+
+        // İK → şirket geneli pano (kendi API ucu var).
+        if (User.IsInRole("HR"))
         {
             var response = await _dashboardApi.GetHrDashboardAsync();
 
@@ -84,6 +95,29 @@ public class HomeController : Controller
         }
 
         return View(model);
+    }
+
+    /// <summary>
+    /// Admin panosu. Yeni bir API ucu YOK: hesap listesi ve bekleyen talepler
+    /// birleştirilir (Manager/Employee panosuyla aynı yaklaşım).
+    /// </summary>
+    private async Task<IActionResult> AdminHome()
+    {
+        var model = new AdminHomeViewModel();
+
+        var users = await _userApi.GetAllAsync();
+
+        if (!users.IsSuccess)
+            TempData["Error"] = users.Message ?? "Hesap listesi alınamadı.";
+        else
+            model.Users = users.Data ?? [];
+
+        var pending = await _accountRequestApi.GetPendingAsync();
+
+        if (pending.IsSuccess)
+            model.PendingRequests = pending.Data ?? [];
+
+        return View("AdminHome", model);
     }
 
     // Hata sayfası girişsiz de açılabilmeli: aksi halde giriş yapılmamışken oluşan

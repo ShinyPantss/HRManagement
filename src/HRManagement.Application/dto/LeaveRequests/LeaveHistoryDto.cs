@@ -10,8 +10,23 @@ namespace HRManagement.Application.DTOs;
 public class LeaveHistoryDto
 {
     public int Id { get; set; }
+
+    /// <summary>
+    /// Talebi açan çalışan (stajyer talebinde null). Panodaki "kişi başına birikmiş
+    /// izin" gibi hesaplar izni KİŞİYE bağlamayı gerektirir; ada göre eşleştirmek
+    /// adaşlarda yanılırdı.
+    /// </summary>
+    public int? EmployeeId { get; set; }
+
     public string SubjectName { get; set; } = string.Empty;
     public string SubjectType { get; set; } = string.Empty; // "Çalışan" | "Stajyer"
+
+    /// <summary>
+    /// Kişinin departmanı — rapordaki kırılımın dayanağı. Satırda taşınır ki
+    /// istemci ayrıca çalışan listesi çekip AD üzerinden eşleştirmek zorunda
+    /// kalmasın (adaşlarda yanılırdı). Departmanı yoksa null.
+    /// </summary>
+    public string? DepartmentName { get; set; }
     public string TypeName { get; set; } = string.Empty;     // izin türü (enum adı)
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }

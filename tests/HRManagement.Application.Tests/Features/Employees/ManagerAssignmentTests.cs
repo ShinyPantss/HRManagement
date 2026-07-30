@@ -61,4 +61,43 @@ public class ManagerAssignmentTests
         Assert.Throws<ValidationException>(() => ManagerAssignment.EnsureManagerEligible(
             SeniorityLevel.Mudur, Oto, SeniorityLevel.Mudur, Oto));
     }
+
+    // ── Fırlatmayan hâl: yöneticinin kendisi düzenlenirken astları toplu denetlenir ──
+
+    [Fact]
+    public void uygun_baglantida_gerekce_null_doner()
+    {
+        Assert.Null(ManagerAssignment.GetIneligibilityReason(
+            SeniorityLevel.GenelMudur, Yonetim, SeniorityLevel.GenelMudurYardimcisi, Mal));
+    }
+
+    [Fact]
+    public void gm_dusurulunce_bagli_gmy_gecersiz_kalir()
+    {
+        // Yaşanan hata: GM'lik başkasına verilip eskisi Müdür'e düşürüldü.
+        // Ona bağlı GMY'ler "Müdür'e raporlayan GMY" hâlinde kaldı — hem kıdem
+        // hem departman kuralı bozuluyor.
+        var reason = ManagerAssignment.GetIneligibilityReason(
+            SeniorityLevel.Mudur, Oto,                       // eski GM'in YENİ hâli
+            SeniorityLevel.GenelMudurYardimcisi, Mal);       // ona bağlı GMY
+
+        Assert.NotNull(reason);
+    }
+
+    [Fact]
+    public void gm_departman_disina_cikabilir_ast_gecerli_kalir()
+    {
+        // GM departman üstüdür: departmanı değişse bile astları geçerli kalır.
+        Assert.Null(ManagerAssignment.GetIneligibilityReason(
+            SeniorityLevel.GenelMudur, Oto, SeniorityLevel.Mudur, Mal));
+    }
+
+    [Fact]
+    public void mudur_departman_degistirince_eski_astlari_gecersiz_kalir()
+    {
+        // Müdür başka departmana taşınırsa eski departmanındaki astları
+        // "farklı departmandan yönetici" durumuna düşer.
+        Assert.NotNull(ManagerAssignment.GetIneligibilityReason(
+            SeniorityLevel.Mudur, Mal, SeniorityLevel.Uzman, Oto));
+    }
 }

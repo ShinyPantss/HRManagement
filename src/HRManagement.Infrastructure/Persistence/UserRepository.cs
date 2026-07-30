@@ -41,6 +41,14 @@ public class UserRepository : IUserRepository
         return await connection.QueryAsync<User>(sql);
     }
 
+    public async Task<int> CountActiveAdminsAsync()
+    {
+        const string sql = "SELECT COUNT(*) FROM Users WHERE Role = @Admin AND IsActive = 1";
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.ExecuteScalarAsync<int>(
+            sql, new { Admin = (int)Domain.Enums.Role.Admin });
+    }
+
     public async Task<int> AddAsync(User user)
     {
         const string sql = @"

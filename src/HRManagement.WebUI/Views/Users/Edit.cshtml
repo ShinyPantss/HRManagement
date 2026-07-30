@@ -1,0 +1,92 @@
+@using HRManagement.WebUI.Models
+@model HRManagement.WebUI.Models.Users.UserFormViewModel
+@{
+    ViewData["Title"] = $"{Model.Username} · Hesap";
+    ViewData["Subtitle"] = $"#{Model.Id} numaralı giriş hesabı.";
+    ViewData["Crumb"] = "Kullanıcı Hesapları";
+    ViewData["CrumbUrl"] = Url.Action("Index", "Users");
+}
+
+<div class="card card-pad-lg narrow">
+    <form asp-action="Edit" method="post" novalidate>
+        <div asp-validation-summary="ModelOnly"></div>
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="Username" />
+        <input type="hidden" asp-for="IsSelf" />
+
+        @if (Model.IsSelf)
+        {
+            <div class="callout" style="margin-bottom: 20px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 8v5M12 16.5h.01" /><circle cx="12" cy="12" r="9" /></svg>
+                <div class="callout-text">
+                    Bu senin hesabın. Kendi rolünü ve erişimini değiştiremezsin —
+                    gerekiyorsa işlemi başka bir yönetici yapmalı. E-postanı
+                    güncelleyebilirsin.
+                </div>
+            </div>
+        }
+
+        <div class="stack">
+            <div class="field">
+                <label class="field-label">Kullanıcı Adı</label>
+                @* Kullanıcı adı kimliğin sabit tutamağıdır: değiştirilirse geçmiş
+                   kayıtlardaki "talep eden / not yazan" izleri okunamaz hâle gelir. *@
+                <input class="input" value="@Model.Username" disabled />
+                <span class="dt-secondary">Kullanıcı adı değiştirilemez.</span>
+            </div>
+
+            <div class="field">
+                <label class="field-label" asp-for="Email"></label>
+                <input asp-for="Email" class="input" />
+                <span asp-validation-for="Email"></span>
+            </div>
+
+            <div class="field">
+                <label class="field-label" asp-for="Role"></label>
+                @if (Model.IsSelf)
+                {
+                    <input class="input" value="@RoleDisplay.Label(Model.Role)" disabled />
+                    @* Kilitli alan POST edilmez; değeri hidden ile taşıyoruz ki
+                       sunucuya giden komut mevcut rolü aynen geri göndersin. *@
+                    <input type="hidden" asp-for="Role" />
+                }
+                else
+                {
+                    <select asp-for="Role" class="select" asp-items="RoleDisplay.Options()"></select>
+                    <span asp-validation-for="Role"></span>
+                }
+            </div>
+
+            <div class="field">
+                @if (Model.IsSelf)
+                {
+                    <label class="field-label">Durum</label>
+                    <input class="input" value="Aktif" disabled />
+                    <input type="hidden" asp-for="IsActive" />
+                }
+                else
+                {
+                    <label class="check">
+                        <input asp-for="IsActive" />
+                        <span>
+                            @Html.DisplayNameFor(m => m.IsActive)
+                            <span class="field-hint" style="display: block; margin-top: 2px;">
+                                Pasif hesaplar giriş yapamaz. Erişimi kesmenin doğru yolu
+                                silmek değil, pasife almaktır — kayıtlardaki izleri korur.
+                            </span>
+                        </span>
+                    </label>
+                }
+            </div>
+        </div>
+
+        <div class="form-actions" style="margin-top: 22px;">
+            <button type="submit" class="btn btn-primary btn-lg">Güncelle</button>
+            <a asp-action="Index" class="btn btn-lg">Vazgeç</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

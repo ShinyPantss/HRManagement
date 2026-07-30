@@ -1,0 +1,139 @@
+@model HRManagement.WebUI.Models.Users.UserListViewModel
+@{
+    ViewData["Title"] = "Kullanıcı Hesapları";
+    ViewData["Subtitle"] = Model.TotalCount > 0
+        ? $"{Model.TotalCount} hesap · {Model.ActiveCount} aktif · {Model.PassiveCount} pasif."
+        : "Sisteme giriş yapabilen hesaplar burada yönetilir.";
+}
+
+@if (Model.TotalCount == 0)
+{
+    <div class="card">
+        <div class="empty">
+            <div class="empty-title">Henüz hesap yok</div>
+            <div class="empty-text">
+                Hesaplar “Bekleyen Talepler” ekranından, var olan çalışan ve stajyer
+                kayıtlarına bağlanarak açılır.
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="grid g-4">
+        <div class="stat">
+            <div class="stat-label">TOPLAM HESAP</div>
+            <div class="stat-row"><span class="stat-value">@Model.TotalCount</span><span class="stat-unit">adet</span></div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">AKTİF</div>
+            <div class="stat-row"><span class="stat-value">@Model.ActiveCount</span><span class="stat-unit">hesap</span></div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">PASİF</div>
+            <div class="stat-row"><span class="stat-value">@Model.PassiveCount</span><span class="stat-unit">hesap</span></div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">YÖNETİCİ</div>
+            <div class="stat-row"><span class="stat-value">@Model.AdminCount</span><span class="stat-unit">aktif</span></div>
+        </div>
+    </div>
+
+    @if (Model.AdminCount <= 1)
+    {
+        <div class="callout">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 8v5M12 16.5h.01" /><circle cx="12" cy="12" r="9" /></svg>
+            <div class="callout-text">
+                Sistemde tek aktif yönetici hesabı var. Bu hesap pasife alınamaz ve
+                rolü değiştirilemez — aksi hâlde hesap yönetimine kimse giremezdi.
+            </div>
+        </div>
+    }
+
+    <section class="card card-flush">
+        <div class="dt" style="--cols: 1.8fr 1.8fr 1.2fr .8fr auto;">
+            <div class="dt-head">
+                <span>Kullanıcı</span><span>E-posta</span><span>Rol</span><span>Durum</span><span style="padding-left: 14px;">İşlem</span>
+            </div>
+
+            @for (var i = 0; i < Model.Users.Count; i++)
+            {
+                var u = Model.Users[i];
+                @* Son aktif yönetici: erişimi kapatan işlem API'de reddedilir,
+                   düğmeyi burada da kapatıp boşuna denenmesini önlüyoruz. *@
+                var isLastAdmin = u.Role == HRManagement.WebUI.Models.RoleDisplay.Admin
+                    && u.IsActive && Model.AdminCount <= 1;
+                var locked = u.IsSelf || isLastAdmin;
+
+                <div class="dt-row" data-search="@u.Username @u.Email @u.RoleLabel">
+                    <div class="person">
+                        <span class="avatar avatar-sm av-@(i % 6 + 1)">@Init(u.Username)</span>
+                        <div class="person-text">
+                            <div class="dt-primary">
+                                @u.Username
+                                @if (u.IsSelf)
+                                {
+                                    <span class="badge badge-sm badge-neutral">bu sensin</span>
+                                }
+                            </div>
+                            <div class="dt-secondary">#@u.Id</div>
+                        </div>
+                    </div>
+
+                    <span class="dt-cell-muted">@u.Email</span>
+
+                    <span>
+                        <span class="badge badge-sm @(u.Role == HRManagement.WebUI.Models.RoleDisplay.Admin ? "badge-brand" : "badge-neutral")">
+                            @u.RoleLabel
+                        </span>
+                    </span>
+
+                    <span>
+                        @if (u.IsActive)
+                        {
+                            <span class="badge badge-sm badge-ok">Aktif</span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-sm badge-neutral">Pasif</span>
+                        }
+                    </span>
+
+                    <div class="task-actions" style="padding-left: 14px;">
+                        @if (locked)
+                        {
+                            <button type="button" class="btn btn-md" disabled
+                                    title="@(u.IsSelf ? "Kendi erişimini değiştiremezsin." : "Son aktif yönetici hesabı pasife alınamaz.")">
+                                @(u.IsActive ? "Pasife al" : "Etkinleştir")
+                            </button>
+                        }
+                        else
+                        {
+                            <form asp-action="ToggleActive" asp-route-id="@u.Id" method="post" style="display: inline;"
+                                  data-confirm="@($"“{u.Username}” hesabı {(u.IsActive ? "pasife alınsın" : "yeniden etkinleştirilsin")} mi?")"
+                                  data-confirm-ok="@(u.IsActive ? "Pasife al" : "Etkinleştir")"
+                                  data-danger="@(u.IsActive ? "true" : null)">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-md @(u.IsActive ? "btn-danger" : "")">
+                                    @(u.IsActive ? "Pasife al" : "Etkinleştir")
+                                </button>
+                            </form>
+                        }
+                        <a asp-action="Edit" asp-route-id="@u.Id" class="btn btn-md btn-primary">Düzenle</a>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+}
+
+@functions {
+    string Init(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+        var parts = name.Split(new[] { ' ', '.', '_', '-' }, StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2
+            ? $"{char.ToUpperInvariant(parts[0][0])}{char.ToUpperInvariant(parts[1][0])}"
+            : char.ToUpperInvariant(name[0]).ToString();
+    }
+}

@@ -51,8 +51,7 @@ public class DepartmentsController : ControllerBase
     public async Task<IActionResult> Create(CreateDepartmentRequest request)
     {
         var id = await _mediator.Send(new CreateDepartmentCommand(request.Name, request.Description));
-        return CreatedAtAction(nameof(GetById), new { id },
-            BaseResponse<int>.Success(id, "Departman oluşturuldu."));
+        return Ok(BaseResponse<int>.Success(id, "Departman oluşturuldu."));
     }
 
     [Authorize(Roles = "HR,Admin")]

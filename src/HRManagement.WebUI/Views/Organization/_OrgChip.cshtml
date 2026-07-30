@@ -1,0 +1,32 @@
+@model HRManagement.WebUI.Models.Organization.OrgPerson
+@{
+    // Birim üyesi kartı. İK'da tıklanabilir (profilden profile gezinme),
+    // diğer rollerde <div> — link hiç render edilmez.
+    var canOpen = ViewData["CanOpenProfiles"] is true;
+    var avatarTone = Model.IsIntern ? "av-4" : Model.IsActive ? "av-1" : "av-5";
+}
+
+@if (canOpen)
+{
+    <a class="org-chip"
+       asp-controller="@(Model.IsIntern ? "Mentorship" : "Employees")"
+       asp-action="@(Model.IsIntern ? "Detail" : "Details")"
+       asp-route-id="@Model.Id">
+        <span class="avatar avatar-sm @avatarTone">@Model.Initials</span>
+        <span class="org-chip-text">
+            <span class="org-chip-name">@Model.FullName</span>
+            <span class="org-chip-title">@Model.Title@(Model.IsActive ? "" : " · pasif")</span>
+        </span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" class="org-chip-caret"><path d="m9 6 6 6-6 6" /></svg>
+    </a>
+}
+else
+{
+    <div class="org-chip org-chip-static">
+        <span class="avatar avatar-sm @avatarTone">@Model.Initials</span>
+        <span class="org-chip-text">
+            <span class="org-chip-name">@Model.FullName</span>
+            <span class="org-chip-title">@Model.Title@(Model.IsActive ? "" : " · pasif")</span>
+        </span>
+    </div>
+}

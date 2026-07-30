@@ -14,6 +14,10 @@
     var unitList = ViewBag.Units as List<HRManagement.WebUI.Models.Api.Units.UnitResponse> ?? new();
     var internList = ViewBag.Interns as List<HRManagement.WebUI.Models.Api.Interns.InternResponse> ?? new();
 
+    // Departmanlar ekranından "Çalışanları gör" ile gelindiyse o departman filtre
+    // çubuğunda seçili açılır; süzmeyi sayfa yüklenirken çalışan filtre scripti yapar.
+    var selectedDeptId = ViewBag.SelectedDepartmentId as int?;
+
     // Ekibim görünümü: liste "Yöneticim" ve ekip diye ayrışır; kişinin kendi
     // kaydı listelenmez (kendisi için Profilim var).
     var myId = ViewBag.MyEmployeeId as int?;
@@ -96,7 +100,8 @@
             <option value="">Tümü</option>
             @foreach (var d in deptNames.OrderBy(x => x.Value))
             {
-                <option value="@d.Key">@d.Value</option>
+                @* selected="@false" Razor'da attribute'u hiç yazmaz — ekstra if gerekmiyor. *@
+                <option value="@d.Key" selected="@(d.Key == selectedDeptId)">@d.Value</option>
             }
         </select>
     </div>

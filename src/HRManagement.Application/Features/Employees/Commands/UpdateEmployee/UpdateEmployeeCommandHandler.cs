@@ -58,6 +58,14 @@ public sealed class UpdateEmployeeCommandHandler : IRequestHandler<UpdateEmploye
         if (request.ManagerId is int managerId)
             await EnsureManagerAssignableAsync(employee.Id, managerId, request.Seniority, request.DepartmentId);
 
+        // Kıdem veya departman değişiyorsa, BU KİŞİYE BAĞLI astların bağı hâlâ
+        // geçerli mi? ManagerAssignment şimdiye kadar yalnızca ASTI düzenlerken
+        // çalışıyordu; yöneticinin kendisi değişince kimse bakmıyordu ve org
+        // sessizce geçersiz hâle geliyordu (ör. GM'lik başkasına verilince
+        // eskisine bağlı GMY'ler bir Müdür'e raporlar hâlde kalıyordu).
+        if (request.Seniority != employee.Seniority || request.DepartmentId != employee.DepartmentId)
+            await EnsureSubordinatesRemainValidAsync(employee.Id, request.Seniority, request.DepartmentId);
+
         // Hesap bağlantısı değişiyorsa yeni hesabın uygunluğunu denetle.
         if (request.UserId is int userId && userId != employee.UserId)
             await EnsureUserLinkableAsync(userId);
@@ -115,6 +123,48 @@ public sealed class UpdateEmployeeCommandHandler : IRequestHandler<UpdateEmploye
 
         user.Role = newRole;
         await _userRepository.UpdateAsync(user);
+    }
+
+    /// <summary>
+    /// Yöneticinin kıdemi/departmanı değişirken ASTLARINI korur.
+    ///
+    /// Kural tek yönlü işletilirse org sessizce bozulur: birini GM yapıp eskisini
+    /// Müdür'e düşürmek, eski GM'e bağlı GMY'leri "Müdür'e raporlayan GMY" hâline
+    /// getirir. Bu yalnızca ekranda yanlış görünmez — izin onay zinciri de
+    /// (LeaveApprovalGuard) o geçersiz bağ üzerinden işler.
+    ///
+    /// Bilinçli olarak ENGELLİYORUZ, otomatik taşımıyoruz: astları sessizce başka
+    /// bir yöneticiye bağlamak, İK'nın görmediği bir org değişikliği yapmak olurdu.
+    /// </summary>
+    private async Task EnsureSubordinatesRemainValidAsync(
+        int employeeId,
+        HRManagement.Domain.Enums.SeniorityLevel? newSeniority,
+        int newDepartmentId)
+    {
+        // Doğrudan astlar: zincir aşağının yalnızca ilk halkası
+        // (EmployeeVisibility'deki kardeş bulma deseninin aynısı).
+        var directReports = (await _employeeRepository.GetTeamAsync(employeeId))
+            .Where(e => e.ManagerId == employeeId)
+            .ToList();
+
+        if (directReports.Count == 0)
+            return;
+
+        var broken = directReports
+            .Where(r => Shared.ManagerAssignment.GetIneligibilityReason(
+                newSeniority, newDepartmentId, r.Seniority, r.DepartmentId) is not null)
+            .Select(r => $"{r.FirstName} {r.LastName}")
+            .ToList();
+
+        if (broken.Count == 0)
+            return;
+
+        var names = string.Join(", ", broken.Take(5));
+        var more = broken.Count > 5 ? $" ve {broken.Count - 5} kişi daha" : "";
+
+        throw new ValidationException(
+            $"Bu değişiklik, bu kişiye bağlı {broken.Count} çalışanın yönetici bağını geçersiz kılar " +
+            $"({names}{more}). Önce onları uygun bir yöneticiye taşıyın, sonra bu kaydı güncelleyin.");
     }
 
     private async Task EnsureManagerAssignableAsync(

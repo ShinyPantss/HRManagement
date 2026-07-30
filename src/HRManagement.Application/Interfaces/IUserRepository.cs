@@ -10,6 +10,14 @@ public interface IUserRepository
     Task DeleteAsync(int id);
 
     /// <summary>
+    /// Sistemde giriş yapabilecek durumdaki (aktif) Admin sayısı. Son Admin'in
+    /// rolünün düşürülmesini/pasife alınmasını engelleyen kural buna dayanır:
+    /// hesap yönetimine girebilecek tek rol Admin olduğu için sayı sıfıra
+    /// düşerse sistem dışarıdan onarılamaz hâle gelir.
+    /// </summary>
+    Task<int> CountActiveAdminsAsync();
+
+    /// <summary>
     /// Hesabı oluşturur ve verilen kişiye (çalışan VEYA stajyer) TEK TRANSACTION'da
     /// bağlar; accountRequestId verilirse o talebi de aynı transaction'da Onaylandı
     /// olarak kapatır. Üç yazma (User INSERT + kişiye bağla + talebi kapat) birlikte

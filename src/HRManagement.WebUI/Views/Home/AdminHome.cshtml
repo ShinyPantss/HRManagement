@@ -1,0 +1,125 @@
+@using HRManagement.WebUI.Models
+@model HRManagement.WebUI.Models.Home.AdminHomeViewModel
+@{
+    ViewData["Title"] = "Sistem Yönetimi";
+    ViewData["Subtitle"] = Model.PendingCount > 0
+        ? $"{Model.PendingCount} hesap talebi onay bekliyor."
+        : "Bekleyen hesap talebi yok — sistem güncel.";
+}
+
+<div class="grid g-4">
+    <div class="stat">
+        <div class="stat-label">TOPLAM HESAP</div>
+        <div class="stat-row"><span class="stat-value">@Model.TotalAccounts</span><span class="stat-unit">adet</span></div>
+    </div>
+    <div class="stat">
+        <div class="stat-label">AKTİF</div>
+        <div class="stat-row"><span class="stat-value">@Model.ActiveAccounts</span><span class="stat-unit">hesap</span></div>
+    </div>
+    <div class="stat">
+        <div class="stat-label">PASİF</div>
+        <div class="stat-row"><span class="stat-value">@Model.PassiveAccounts</span><span class="stat-unit">hesap</span></div>
+    </div>
+    <div class="stat">
+        <div class="stat-label">BEKLEYEN TALEP</div>
+        <div class="stat-row"><span class="stat-value">@Model.PendingCount</span><span class="stat-unit">adet</span></div>
+    </div>
+</div>
+
+@if (Model.ActiveAdminCount <= 1)
+{
+    <div class="callout">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 8v5M12 16.5h.01" /><circle cx="12" cy="12" r="9" /></svg>
+        <div class="callout-text">
+            Sistemde tek aktif yönetici hesabı var. İkinci bir yönetici açmak,
+            bu hesaba erişimin kaybolduğu durumda sistemin kilitlenmesini önler.
+        </div>
+    </div>
+}
+
+<div class="grid g-2">
+    <section class="card card-pad">
+        <div class="row-tight" style="margin-bottom: 14px;">
+            <span style="font-size: 14px; font-weight: 700; letter-spacing: -.2px;">Bekleyen hesap talepleri</span>
+            @if (Model.PendingCount > 0)
+            {
+                <span class="badge badge-sm badge-brand">@Model.PendingCount</span>
+            }
+        </div>
+
+        @if (Model.PendingCount == 0)
+        {
+            <div class="empty">
+                <div class="empty-title">Bekleyen talep yok</div>
+                <div class="empty-text">
+                    İK yeni bir çalışan veya stajyer eklediğinde talep otomatik olarak buraya düşer.
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="stack">
+                @foreach (var r in Model.PendingRequests.Take(5))
+                {
+                    <div class="row-tight" style="justify-content: space-between; gap: 12px;">
+                        <div style="min-width: 0;">
+                            <div class="dt-primary">@r.SubjectName</div>
+                            <div class="dt-secondary">
+                                @r.SubjectType · önerilen rol: @r.SuggestedRole · @r.CreatedAt.ToString("dd.MM.yyyy")
+                            </div>
+                        </div>
+                        <a asp-controller="AccountRequests" asp-action="Approve" asp-route-id="@r.Id"
+                           class="btn btn-md btn-primary">İncele</a>
+                    </div>
+                }
+            </div>
+
+            <div class="form-actions" style="margin-top: 16px;">
+                <a asp-controller="AccountRequests" asp-action="Pending" class="btn btn-md">
+                    Tüm talepleri gör
+                </a>
+            </div>
+        }
+    </section>
+
+    <section class="card card-pad">
+        <div class="row-tight" style="margin-bottom: 14px;">
+            <span style="font-size: 14px; font-weight: 700; letter-spacing: -.2px;">Aktif hesapların rol dağılımı</span>
+        </div>
+
+        @if (Model.ActiveAccounts == 0)
+        {
+            <div class="empty">
+                <div class="empty-title">Aktif hesap yok</div>
+                <div class="empty-text">Hesaplar bekleyen talepler onaylandıkça oluşur.</div>
+            </div>
+        }
+        else
+        {
+            <div class="stack">
+                @foreach (var (label, count) in Model.RoleBreakdown)
+                {
+                    @* Oran çubuğu: en kalabalık rolü değil, TOPLAM aktif hesabı
+                       payda alır — böylece çubuklar birbirine göre değil bütüne
+                       göre okunur. *@
+                    var percent = (int)Math.Round(100.0 * count / Model.ActiveAccounts);
+
+                    <div>
+                        <div class="row-tight" style="justify-content: space-between;">
+                            <span class="dt-cell">@label</span>
+                            <span class="dt-secondary">@count hesap · %@percent</span>
+                        </div>
+                        <div class="bar" style="margin-top: 6px;">
+                            <span class="bar-fill" style="width: @(percent)%;"></span>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="form-actions" style="margin-top: 16px;">
+                <a asp-controller="Users" asp-action="Index" class="btn btn-md">Hesapları yönet</a>
+                <a asp-controller="Organization" asp-action="Index" class="btn btn-md">Organizasyon</a>
+            </div>
+        }
+    </section>
+</div>
