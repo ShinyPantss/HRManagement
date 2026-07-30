@@ -99,8 +99,9 @@ public sealed class EmployeeVisibility
                 && await _employeeRepository.IsInManagerChainAsync(actorEmployee.Id, targetEmployeeId))
                 return;   // kendi ekibinden biri (zincir aşağı)
 
-            if (actor.Role == Role.Employee && actorEmployee.ManagerId is int myManagerId)
+            if (actor.Role == Role.Employee && actorEmployee.ManagerId.HasValue)
             {
+                int myManagerId = actorEmployee.ManagerId.Value;
                 var target = await _employeeRepository.GetByIdAsync(targetEmployeeId);
                 if (target?.ManagerId == myManagerId)
                     return;   // ekip arkadaşı (aynı yöneticiye bağlı)

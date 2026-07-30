@@ -54,30 +54,10 @@ public sealed class EmployeeDetailAssembler
     /// <summary>Görme YETKİSİ çağırandan önce denetlenmiş olmalı (EmployeeVisibility).</summary>
     public async Task<EmployeeDetailDto> BuildAsync(Employee employee, int requesterUserId)
     {
-        // Kırpma kararı için istekçinin rolü ve "kendi kaydı mı" bilgisi gerekir.
-        // Rol JWT claim'inden değil DB'den okunur — claim bayatlayabilir.
-        var requester = await _userRepository.GetByIdAsync(requesterUserId);
-        var isSelf = employee.UserId is int uid && uid == requesterUserId;
+        var visibility = await ResolveVisibilityAsync(employee, requesterUserId);
 
-        var canSeeNationalId = requester?.Role == Role.HR;
-        var canSeeLeaveDescription = isSelf || requester?.Role is Role.HR or Role.Admin;
-
-        // Manager artık hem zincirinin AŞAĞISINI hem bir ÜSTÜNÜ açabilir
-        // (genişletilmiş görünürlük); zincir yöneticisi olup olmadığı hassas
-        // alan kararlarında ayrıca denetlenir — patronunun notu/izni görünmez.
-        var isChainManager = false;
-        if (!isSelf && requester?.Role == Role.Manager)
-        {
-            var requesterEmployee = await _employeeRepository.GetByUserIdAsync(requesterUserId);
-            isChainManager = requesterEmployee is not null
-                && await _employeeRepository.IsInManagerChainAsync(requesterEmployee.Id, employee.Id);
-        }
-
-        var canSeeNotes = !isSelf && (requester?.Role is Role.HR or Role.Admin || isChainManager);
-
-        // İzin bakiyesi/geçmişi: kendisi, İK/Admin ve onay verecek zincir
-        // yöneticisi. Ekip arkadaşları ve astlar (üstüne bakan) GÖREMEZ.
-        var canSeeLeave = isSelf || requester?.Role is Role.HR or Role.Admin || isChainManager;
+        // Göremeyecekse izin verisi HİÇ yüklenmez; sıfır/boş gider, WebUI paneli gizler.
+        var leave = visibility.CanSeeLeave ? await LoadLeaveAsync(employee) : LeaveInfo.Hidden;
 
         var department = await _departmentRepository.GetByIdAsync(employee.DepartmentId);
 
@@ -90,34 +70,16 @@ public sealed class EmployeeDetailAssembler
             ? await _employeeRepository.GetByIdAsync(managerId)
             : null;
 
-        // Bakiye — CreateLeaveRequest'teki kümülatif modelle aynı hesap.
-        // canSeeLeave değilse veri HİÇ yüklenmez; sıfır/boş gider, WebUI paneli gizler.
-        var today = DateTime.UtcNow.Date;
-        var accrued = 0;
-        var used = 0;
-        IEnumerable<Domain.Entities.LeaveRequest> leaveRequests = [];
-
-        if (canSeeLeave)
-        {
-            accrued = LeaveEntitlement.AccruedEntitlement(employee.HireDate, today, employee.AnnualLeaveDays);
-            used = await _leaveRequestRepository.GetTotalUsedAnnualDaysAsync(employee.Id);
-            leaveRequests = await _leaveRequestRepository.GetByEmployeeIdAsync(employee.Id);
-        }
-
-        // GetTeamAsync zincirin TAMAMINI döner (astların astları dahil); profilde
-        // yalnızca doğrudan bağlı olanları gösteriyoruz.
-        var team = await _employeeRepository.GetTeamAsync(employee.Id);
-
-        var mentoredInterns = await _internRepository.GetByMentorIdAsync(employee.Id);
-
-        var notes = canSeeNotes ? await BuildNotesAsync(employee.Id) : null;
+        var directReports = await BuildDirectReportsAsync(employee.Id);
+        var mentoredInterns = await BuildMentoredInternsAsync(employee.Id);
+        var notes = visibility.CanSeeNotes ? await BuildNotesAsync(employee.Id) : null;
 
         return new EmployeeDetailDto
         {
             Id = employee.Id,
             FirstName = employee.FirstName,
             LastName = employee.LastName,
-            NationalId = canSeeNationalId ? employee.NationalId : null,
+            NationalId = visibility.CanSeeNationalId ? employee.NationalId : null,
             Email = employee.Email,
             Phone = employee.Phone,
             BirthDate = employee.DateOfBirth,
@@ -131,47 +93,117 @@ public sealed class EmployeeDetailAssembler
             UnitName = unit?.Name,
             ManagerId = employee.ManagerId,
             ManagerFullName = manager is null ? null : $"{manager.FirstName} {manager.LastName}",
-            CanSeeLeave = canSeeLeave,
-            AccruedLeaveDays = accrued,
-            UsedLeaveDays = used,
-            RemainingLeaveDays = accrued - used,   // avans izinde eksiye düşebilir
-            RecentLeaveRequests = leaveRequests
-                .OrderByDescending(l => l.StartDate)
-                .Take(RecentLeaveRequestCount)
-                .Select(l => new EmployeeDetailLeaveRequestDto
-                {
-                    Id = l.Id,
-                    Type = l.Type,
-                    StartDate = l.StartDate,
-                    EndDate = l.EndDate,
-                    TotalDays = l.WorkingDays,
-                    Status = l.Status,
-                    Description = canSeeLeaveDescription ? l.Description : null
-                })
-                .ToList(),
-            DirectReports = team
-                .Where(t => t.ManagerId == employee.Id)
-                .OrderBy(t => t.Seniority).ThenBy(t => t.FirstName)
-                .Select(t => new EmployeeDetailTeamMemberDto
-                {
-                    Id = t.Id,
-                    FullName = $"{t.FirstName} {t.LastName}",
-                    Seniority = (int?)t.Seniority
-                })
-                .ToList(),
-            MentoredInterns = mentoredInterns
-                .OrderByDescending(i => i.StartDate)
-                .Select(i => new EmployeeDetailInternDto
-                {
-                    Id = i.Id,
-                    FullName = $"{i.FirstName} {i.LastName}",
-                    University = i.University,
-                    StartDate = i.StartDate,
-                    EndDate = i.EndDate
-                })
-                .ToList(),
+            CanSeeLeave = visibility.CanSeeLeave,
+            AccruedLeaveDays = leave.Accrued,
+            UsedLeaveDays = leave.Used,
+            RemainingLeaveDays = leave.Accrued - leave.Used,   // avans izinde eksiye düşebilir
+            RecentLeaveRequests = BuildRecentLeaveRequests(leave, visibility.CanSeeLeaveDescription),
+            DirectReports = directReports,
+            MentoredInterns = mentoredInterns,
             Notes = notes
         };
+    }
+
+    /// <summary>Sınıf başlığındaki kırpma kurallarının bu istekçi için hesaplanmış hali.</summary>
+    private sealed record Visibility(
+        bool CanSeeNationalId,
+        bool CanSeeLeaveDescription,
+        bool CanSeeLeave,
+        bool CanSeeNotes);
+
+    private async Task<Visibility> ResolveVisibilityAsync(Employee employee, int requesterUserId)
+    {
+        // Kırpma kararı için istekçinin rolü ve "kendi kaydı mı" bilgisi gerekir.
+        // Rol JWT claim'inden değil DB'den okunur — claim bayatlayabilir.
+        var requester = await _userRepository.GetByIdAsync(requesterUserId);
+        var isSelf = employee.UserId is int uid && uid == requesterUserId;
+
+        // Manager artık hem zincirinin AŞAĞISINI hem bir ÜSTÜNÜ açabilir
+        // (genişletilmiş görünürlük); zincir yöneticisi olup olmadığı hassas
+        // alan kararlarında ayrıca denetlenir — patronunun notu/izni görünmez.
+        var isChainManager = false;
+        if (!isSelf && requester?.Role == Role.Manager)
+        {
+            var requesterEmployee = await _employeeRepository.GetByUserIdAsync(requesterUserId);
+            isChainManager = requesterEmployee is not null
+                && await _employeeRepository.IsInManagerChainAsync(requesterEmployee.Id, employee.Id);
+        }
+
+        return new Visibility(
+            CanSeeNationalId: requester?.Role == Role.HR,
+            CanSeeLeaveDescription: isSelf || requester?.Role is Role.HR or Role.Admin,
+            // İzin bakiyesi/geçmişi: kendisi, İK/Admin ve onay verecek zincir
+            // yöneticisi. Ekip arkadaşları ve astlar (üstüne bakan) GÖREMEZ.
+            CanSeeLeave: isSelf || requester?.Role is Role.HR or Role.Admin || isChainManager,
+            CanSeeNotes: !isSelf && (requester?.Role is Role.HR or Role.Admin || isChainManager));
+    }
+
+    /// <summary>İzin paneli verisi; Hidden = görme yetkisi yokken giden sıfır/boş hal.</summary>
+    private sealed record LeaveInfo(int Accrued, int Used, IReadOnlyList<LeaveRequest> Requests)
+    {
+        public static readonly LeaveInfo Hidden = new(0, 0, []);
+    }
+
+    /// <summary>Bakiye — CreateLeaveRequest'teki kümülatif modelle aynı hesap.</summary>
+    private async Task<LeaveInfo> LoadLeaveAsync(Employee employee)
+    {
+        var today = DateTime.UtcNow.Date;
+        var accrued = LeaveEntitlement.AccruedEntitlement(employee.HireDate, today, employee.AnnualLeaveDays);
+        var used = await _leaveRequestRepository.GetTotalUsedAnnualDaysAsync(employee.Id);
+        var requests = await _leaveRequestRepository.GetByEmployeeIdAsync(employee.Id);
+        return new LeaveInfo(accrued, used, requests.ToList());
+    }
+
+    private static List<EmployeeDetailLeaveRequestDto> BuildRecentLeaveRequests(
+        LeaveInfo leave, bool canSeeDescription) =>
+        leave.Requests
+            .OrderByDescending(l => l.StartDate)
+            .Take(RecentLeaveRequestCount)
+            .Select(l => new EmployeeDetailLeaveRequestDto
+            {
+                Id = l.Id,
+                Type = l.Type,
+                StartDate = l.StartDate,
+                EndDate = l.EndDate,
+                TotalDays = l.WorkingDays,
+                Status = l.Status,
+                Description = canSeeDescription ? l.Description : null
+            })
+            .ToList();
+
+    /// <summary>
+    /// GetTeamAsync zincirin TAMAMINI döner (astların astları dahil); profilde
+    /// yalnızca doğrudan bağlı olanları gösteriyoruz.
+    /// </summary>
+    private async Task<List<EmployeeDetailTeamMemberDto>> BuildDirectReportsAsync(int employeeId)
+    {
+        var team = await _employeeRepository.GetTeamAsync(employeeId);
+        return team
+            .Where(t => t.ManagerId == employeeId)
+            .OrderBy(t => t.Seniority).ThenBy(t => t.FirstName)
+            .Select(t => new EmployeeDetailTeamMemberDto
+            {
+                Id = t.Id,
+                FullName = $"{t.FirstName} {t.LastName}",
+                Seniority = (int?)t.Seniority
+            })
+            .ToList();
+    }
+
+    private async Task<List<EmployeeDetailInternDto>> BuildMentoredInternsAsync(int employeeId)
+    {
+        var mentoredInterns = await _internRepository.GetByMentorIdAsync(employeeId);
+        return mentoredInterns
+            .OrderByDescending(i => i.StartDate)
+            .Select(i => new EmployeeDetailInternDto
+            {
+                Id = i.Id,
+                FullName = $"{i.FirstName} {i.LastName}",
+                University = i.University,
+                StartDate = i.StartDate,
+                EndDate = i.EndDate
+            })
+            .ToList();
     }
 
     /// <summary>Notları yazar adlarıyla birlikte derler (yazar başına tek User sorgusu).</summary>
