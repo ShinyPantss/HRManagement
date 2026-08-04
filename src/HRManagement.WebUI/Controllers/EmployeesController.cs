@@ -328,7 +328,8 @@ public class EmployeesController : Controller
 
         form.ManagerCandidates = (employees.Data ?? [])
             .Where(e => e.Id != form.Id && SeniorityDisplay.IsManagerial(e.Seniority))
-            .Select(e => new ManagerCandidate(e.Id, $"{e.FirstName} {e.LastName}", e.Seniority, e.DepartmentId))
+            .Select(e => new ManagerCandidate(
+                e.Id, $"{e.FirstName} {e.LastName}", e.Seniority, e.DepartmentId, e.UnitId))
             .ToList();
 
         // Tüm birimler; view'daki dropdown seçilen departmana göre JS ile süzülür.

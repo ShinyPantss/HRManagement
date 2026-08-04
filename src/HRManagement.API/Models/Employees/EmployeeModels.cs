@@ -131,7 +131,10 @@ public sealed class EmployeeResponse
         int? managerId,
         int? seniority,
         int? annualLeaveDays,
-        bool isActive)
+        bool isActive,
+        int accruedLeaveDays,
+        int usedLeaveDays,
+        int remainingLeaveDays)
     {
         Id = id;
         FirstName = firstName;
@@ -149,6 +152,9 @@ public sealed class EmployeeResponse
         Seniority = seniority;
         AnnualLeaveDays = annualLeaveDays;
         IsActive = isActive;
+        AccruedLeaveDays = accruedLeaveDays;
+        UsedLeaveDays = usedLeaveDays;
+        RemainingLeaveDays = remainingLeaveDays;
     }
 
     public int Id { get; }
@@ -167,4 +173,10 @@ public sealed class EmployeeResponse
     public int? Seniority { get; }
     public int? AnnualLeaveDays { get; }
     public bool IsActive { get; }
+
+    // Yıllık izin bakiyesi — veritabanında saklanmaz, her istekte hesaplanır.
+    // RemainingLeaveDays NEGATİF olabilir (avans izin borcu devreder).
+    public int AccruedLeaveDays { get; }
+    public int UsedLeaveDays { get; }
+    public int RemainingLeaveDays { get; }
 }

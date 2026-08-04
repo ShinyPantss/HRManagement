@@ -101,11 +101,13 @@ public class LeaveRequestsController : ControllerBase
         return Ok(BaseResponse<int>.Success(id, "İzin talebi reddedildi."));
     }
 
+    // "Delete" ucu artık iptal/geri çekme anlamındadır: onaysız talep silinir,
+    // onaylı talep Cancelled'a çekilir. Kural Application'dadır (DeleteLeaveRequest).
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {
         await _mediator.Send(new DeleteLeaveRequestCommand(id, CurrentUserId()));
-        return Ok(BaseResponse<int>.Success(id, "İzin talebi silindi."));
+        return Ok(BaseResponse<int>.Success(id, "İzin talebi iptal edildi."));
     }
 
     /// <summary>

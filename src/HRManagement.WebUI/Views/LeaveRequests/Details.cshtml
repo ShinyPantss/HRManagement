@@ -22,7 +22,8 @@
     @* ── Özet + işlem ──────────────────────────────────────────────── *@
     <section class="card card-pad-lg">
         <div class="row-center" style="gap: 10px; margin-bottom: 20px;">
-            <span class="badge @LeaveDisplay.TypeBadge(Model.Type)" style="font-size: 12.5px; padding: 5px 11px;">@LeaveDisplay.TypeText(Model.Type)</span>
+            <span class="badge @LeaveDisplay.TypeBadge(Model.Type)"
+                  style="font-size: 12.5px; padding: 5px 11px;">@LeaveDisplay.TypeText(Model.Type)</span>
             <span class="badge @badgeClass" style="font-size: 12.5px; padding: 5px 11px;">@statusText</span>
         </div>
 
@@ -32,133 +33,143 @@
                 <div class="mini-stat-value num" style="font-size: 18px;">@Dt(Model.StartDate)</div>
             </div>
             <div>
-                <div class="mini-stat-label">BİTİŞ</div>
+                <div class="mini-stat-label">İŞE BAŞLAMA</div>
                 <div class="mini-stat-value num" style="font-size: 18px;">@Dt(Model.EndDate)</div>
             </div>
             <div>
                 <div class="mini-stat-label">DÜŞÜLEN</div>
-                <div class="mini-stat-value text-accent">@Model.WorkingDays<span style="font-size: 12px; font-weight: 600; color: var(--muted-4);"> iş günü</span></div>
+                <div class="mini-stat-value text-accent">@Model.WorkingDays<span
+                    style="font-size: 12px; font-weight: 600; color: var(--muted-4);"> iş günü</span></div>
+                </div>
             </div>
-        </div>
 
-        <div class="kv">
-            <div class="kv-row">
-                <span class="kv-key">Kişi</span>
-                <span class="kv-val">@Model.SubjectName <span class="text-muted">(@Model.SubjectType)</span></span>
-            </div>
-            <div class="kv-row">
-                <span class="kv-key">Talep tarihi</span>
-                <span class="kv-val num">@DtT(Model.CreatedAt)</span>
-            </div>
-            <div class="kv-row">
-                <span class="kv-key">Açıklama</span>
-                <span class="kv-val">@(string.IsNullOrWhiteSpace(Model.Description) ? "—" : Model.Description)</span>
-            </div>
-            @if (Model.Type == "Sick")
-            {
+            <div class="kv">
                 <div class="kv-row">
-                    <span class="kv-key">Rapor bilgisi</span>
-                    <span class="kv-val">@(string.IsNullOrWhiteSpace(Model.MedicalReport) ? "—" : Model.MedicalReport)</span>
+                    <span class="kv-key">Kişi</span>
+                    <span class="kv-val">@Model.SubjectName <span class="text-muted">(@Model.SubjectType)</span></span>
                 </div>
-            }
-        </div>
-
-        @if (!string.IsNullOrWhiteSpace(Model.RejectionReason))
-        {
-            <div class="callout callout-danger" style="margin-top: 18px;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color: var(--danger);"><path d="M12 8v5M12 16.5h.01" /><circle cx="12" cy="12" r="9" /></svg>
-                <div class="callout-text"><strong>Red gerekçesi:</strong> @Model.RejectionReason</div>
-            </div>
-        }
-
-        @* İK/yönetici aşamasında ise buradan onay/red — buton yalnızca gerçekten
-           yetkiliysen çıkar (CanActNow guard'dan gelir). *@
-        @if (Model.CanActNow)
-        {
-            <div class="divider"></div>
-            <p class="page-sub" style="margin-bottom: 14px;">Bu talep şu an <strong style="color: var(--ink);">senin</strong> onayını bekliyor.</p>
-            <div class="row-tight">
-                <form asp-action="Approve" method="post" style="display: inline;"
-                      data-confirm="@($"{Model.SubjectName} adlı kişinin {Model.WorkingDays} günlük izni onaylansın mı?")"
-                      data-confirm-ok="Onayla">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="id" value="@Model.Id" />
-                    <input type="hidden" name="employeeId" value="0" />
-                    <input type="hidden" name="returnTo" value="Details" />
-                    <button type="submit" class="btn btn-primary">Onayla</button>
-                </form>
-
-                <form asp-action="Reject" method="post" style="display: inline;"
-                      data-confirm="Bu izin talebi reddedilsin mi?" data-confirm-ok="Reddet" data-reason data-danger>
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="id" value="@Model.Id" />
-                    <input type="hidden" name="employeeId" value="0" />
-                    <input type="hidden" name="returnTo" value="Details" />
-                    <input type="hidden" name="reason" />
-                    <button type="submit" class="btn btn-danger">Reddet</button>
-                </form>
-            </div>
-        }
-    </section>
-
-    @* ── Onay süreci (iz) ──────────────────────────────────────────── *@
-    <section class="card card-pad">
-        <h2 class="section-title">Onay süreci</h2>
-
-        <div class="steps">
-            <div class="step done">
-                <span class="step-marker">1</span>
-                <div>
-                    <div class="step-title">Talep oluşturuldu</div>
-                    <div class="step-meta num">@DtT(Model.CreatedAt)</div>
+                <div class="kv-row">
+                    <span class="kv-key">Talep tarihi</span>
+                    <span class="kv-val num">@DtT(Model.CreatedAt)</span>
                 </div>
-            </div>
-
-            <div class="step @(Model.ManagerApprovedByName is not null ? "done" : "")">
-                <span class="step-marker">2</span>
-                <div>
-                    <div class="step-title">Yönetici onayı</div>
-                    @if (Model.ManagerApprovedByName is not null)
-                    {
-                        <div class="step-meta">@Model.ManagerApprovedByName · <span class="num">@DtT(Model.ManagerApprovedAt!.Value)</span></div>
-                    }
-                    else
-                    {
-                        <div class="step-meta">@notReached</div>
+                <div class="kv-row">
+                    <span class="kv-key">Açıklama</span>
+                    <span class="kv-val">@(string.IsNullOrWhiteSpace(Model.Description) ? "—" : Model.Description)</span>
+                </div>
+                @if (Model.Type == "Sick")
+                {
+                    <div class="kv-row">
+                        <span class="kv-key">Rapor bilgisi</span>
+                        <span class="kv-val">@(string.IsNullOrWhiteSpace(Model.MedicalReport) ? "—" :
+                                                Model.MedicalReport)</span>
+                        </div>
                     }
                 </div>
-            </div>
 
-            <div class="step @(Model.HrApprovedByName is not null ? "done" : "")">
-                <span class="step-marker">3</span>
-                <div>
-                    <div class="step-title">İK onayı</div>
-                    @if (Model.HrApprovedByName is not null)
-                    {
-                        <div class="step-meta">@Model.HrApprovedByName · <span class="num">@DtT(Model.HrApprovedAt!.Value)</span></div>
-                    }
-                    else if (Model.Status == "Approved")
-                    {
-                        @* İK çalışanının talebinde İK aşaması atlanır (yönetici onayı yeter). *@
-                        <div class="step-meta">Gerekmedi (İK talebi)</div>
-                    }
-                    else
-                    {
-                        <div class="step-meta">@notReached</div>
-                    }
-                </div>
-            </div>
-
-            @if (Model.RejectedByName is not null)
-            {
-                <div class="step failed">
-                    <span class="step-marker">✕</span>
-                    <div>
-                        <div class="step-title text-danger-fg">Reddedildi</div>
-                        <div class="step-meta">@Model.RejectedByName · <span class="num">@DtT(Model.RejectedAt!.Value)</span></div>
+                @if (!string.IsNullOrWhiteSpace(Model.RejectionReason))
+                {
+                    <div class="callout callout-danger" style="margin-top: 18px;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                             stroke-linecap="round" style="color: var(--danger);">
+                            <path d="M12 8v5M12 16.5h.01" />
+                            <circle cx="12" cy="12" r="9" />
+                        </svg>
+                        <div class="callout-text"><strong>Red gerekçesi:</strong> @Model.RejectionReason</div>
                     </div>
-                </div>
-            }
-        </div>
-    </section>
-</div>
+                }
+
+                @* İK/yönetici aşamasında ise buradan onay/red — buton yalnızca gerçekten
+           yetkiliysen çıkar (CanActNow guard'dan gelir). *@
+                @if (Model.CanActNow)
+                {
+                    <div class="divider"></div>
+                    <p class="page-sub" style="margin-bottom: 14px;">Bu talep şu an <strong
+                        style="color: var(--ink);">senin</strong> onayını bekliyor.</p>
+                        <div class="row-tight">
+                            <form asp-action="Approve" method="post" style="display: inline;"
+                                  data-confirm="@($"{Model.SubjectName} adlı kişinin {Model.WorkingDays} günlük izni onaylansın mı?")"
+                                  data-confirm-ok="Onayla">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@Model.Id" />
+                                <input type="hidden" name="employeeId" value="0" />
+                                <input type="hidden" name="returnTo" value="Details" />
+                                <button type="submit" class="btn btn-primary">Onayla</button>
+                            </form>
+
+                            <form asp-action="Reject" method="post" style="display: inline;"
+                                  data-confirm="Bu izin talebi reddedilsin mi?" data-confirm-ok="Reddet" data-reason data-danger>
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@Model.Id" />
+                                <input type="hidden" name="employeeId" value="0" />
+                                <input type="hidden" name="returnTo" value="Details" />
+                                <input type="hidden" name="reason" />
+                                <button type="submit" class="btn btn-danger">Reddet</button>
+                            </form>
+                        </div>
+                    }
+                </section>
+
+                @* ── Onay süreci (iz) ──────────────────────────────────────────── *@
+                <section class="card card-pad">
+                    <h2 class="section-title">Onay süreci</h2>
+
+                    <div class="steps">
+                        <div class="step done">
+                            <span class="step-marker">1</span>
+                            <div>
+                                <div class="step-title">Talep oluşturuldu</div>
+                                <div class="step-meta num">@DtT(Model.CreatedAt)</div>
+                            </div>
+                        </div>
+
+                        <div class="step @(Model.ManagerApprovedByName is not null ? "done" : "")">
+                            <span class="step-marker">2</span>
+                            <div>
+                                <div class="step-title">Yönetici onayı</div>
+                                @if (Model.ManagerApprovedByName is not null)
+                                {
+                                    <div class="step-meta">@Model.ManagerApprovedByName · <span
+                                        class="num">@DtT(Model.ManagerApprovedAt!.Value)</span></div>
+                                    }
+                    else
+                                    {
+                                        <div class="step-meta">@notReached</div>
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="step @(Model.HrApprovedByName is not null ? "done" : "")">
+                                <span class="step-marker">3</span>
+                                <div>
+                                    <div class="step-title">İK onayı</div>
+                                    @if (Model.HrApprovedByName is not null)
+                                    {
+                                        <div class="step-meta">@Model.HrApprovedByName · <span
+                                            class="num">@DtT(Model.HrApprovedAt!.Value)</span></div>
+                                        }
+                    else if (Model.Status == "Approved")
+                                        {
+                                            @* İK çalışanının talebinde İK aşaması atlanır (yönetici onayı yeter). *@
+                                            <div class="step-meta">Gerekmedi (İK talebi)</div>
+                                        }
+                                        else
+                                        {
+                                            <div class="step-meta">@notReached</div>
+                                        }
+                                    </div>
+                                </div>
+
+                                @if (Model.RejectedByName is not null)
+                                {
+                                    <div class="step failed">
+                                        <span class="step-marker">✕</span>
+                                        <div>
+                                            <div class="step-title text-danger-fg">Reddedildi</div>
+                                            <div class="step-meta">@Model.RejectedByName · <span
+                                                class="num">@DtT(Model.RejectedAt!.Value)</span></div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </section>
+                        </div>

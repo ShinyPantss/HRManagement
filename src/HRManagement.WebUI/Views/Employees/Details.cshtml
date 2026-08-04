@@ -221,8 +221,18 @@
         {
             <section class="card card-flush">
                 <div class="card-head">
-                    <h2>İzin geçmişi</h2>
-                    <a class="card-head-link" asp-controller="LeaveRequests" asp-action="Index">Tüm kayıtlar</a>
+                    @* Kendi profilinde başlık kişiseldir; "Tüm kayıtlar" da mine=true ile
+                       kişisel görünüme gider — HR'ı şirket geneli İzin Geçmişi'ne atmaz.
+                       (mine, HR dışı rollerde etkisiz: onlar zaten kendini görür.) *@
+                    <h2>@(isOwnProfile ? "Kendi İzin Geçmişim" : "İzin geçmişi")</h2>
+                    @if (isOwnProfile)
+                    {
+                        <a class="card-head-link" asp-controller="LeaveRequests" asp-action="Index" asp-route-mine="true">Tüm kayıtlarım</a>
+                    }
+                    else
+                    {
+                        <a class="card-head-link" asp-controller="LeaveRequests" asp-action="Index">Tüm kayıtlar</a>
+                    }
                 </div>
 
                 @if (Model.RecentLeaveRequests.Any())

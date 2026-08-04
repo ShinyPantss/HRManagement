@@ -19,8 +19,28 @@
     var upcomingShown = Model.UpcomingLeaves.Take(listLimit).ToList();
     var upcomingHidden = Model.UpcomingLeaves.Count - upcomingShown.Count;
 
-    // Trend barları en yoğun aya göre ölçeklenir.
-    var maxTrend = Model.MonthlyTrend.Count > 0 ? Model.MonthlyTrend.Max(t => t.WorkingDays) : 0;
+    // Çizgi grafik verisi: yıllık kişi trendi iki seriye (bu yıl / geçen yıl)
+    // ayrılır; ay indeksli dizide eksik ay 0 kalır (SP takvimden ürettiği için
+    // normalde 12'şer satır gelir, bu sadece emniyet).
+    var trendThisYear = Model.YearlyPersonTrend.Count > 0
+        ? Model.YearlyPersonTrend.Max(p => p.Year)
+        : DateTime.Today.Year;
+    var trendPrevYear = trendThisYear - 1;
+
+    var trendCur = new int[12];
+    var trendPrev = new int[12];
+    foreach (var p in Model.YearlyPersonTrend)
+    {
+        if (p.Month is < 1 or > 12) continue;
+        if (p.Year == trendThisYear) trendCur[p.Month - 1] = p.PersonCount;
+        else if (p.Year == trendPrevYear) trendPrev[p.Month - 1] = p.PersonCount;
+    }
+
+    var trendRawMax = Math.Max(trendCur.Max(), trendPrev.Max());
+    // Eksen tavanı "güzel" sayıya yuvarlanır (19 → 20, 34 → 40); dört eşit dilim.
+    var trendYMax = trendRawMax <= 4 ? 4
+        : trendRawMax <= 8 ? 8
+        : (int)Math.Ceiling(trendRawMax / 10.0) * 10;
 
     // Kıdem piramidi: en kalabalık kademeye göre.
     var maxSeniority = Model.SeniorityBreakdown.Count > 0 ? Model.SeniorityBreakdown.Max(s => s.Count) : 0;
@@ -164,7 +184,258 @@
     </a>
 </div>
 
-@* ── 1. satır: iki izin listesi yan yana ────────────────────────────
+@* ── 1. satır: izin trendi (3 birim) | kadro yapısı (1 birim) ────────
+   Burada align-items: start YOK — bilerek. 2. satırdaki listeler veriye göre
+   uzayabildiği için orada gerekli; buradaki iki kartın içeriği ise sabit
+   sayıda satır (12 ay / 6 kıdem kademesi). Dolayısıyla stretch güvenli ve
+   kartların altları hizalanıyor. *@
+<div class="grid g-3-1">
+
+    @* ── İzin kullanımı: yıllık çizgi grafik — geniş sütun ───────────────
+       KOŞULSUZ render ediliyor: grid hücresini @@if içine almak, veri
+       gelmediğinde hücreyi tamamen yok eder; yanındaki kart 3fr'lik sütuna
+       kayar ve satır yarım görünür. Boş durum kartın İÇİNDE ele alınmalı.
+
+       Grafik elle çizilmiş SVG'dir — grafik kütüphanesi bilinçli olarak YOK
+       (yeni bağımlılık istemez, sayfayla aynı tema değişkenlerini kullanır).
+       Geometri C#'ta hesaplanır, JS yalnızca fare takibi/tooltip yapar. *@
+    <section class="card card-pad" style="display: flex; flex-direction: column;">
+        @{
+            var ayKisa = new[] { "Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara" };
+
+            // Çizim alanı (viewBox birimleri). Sol boşluk y etiketlerine,
+            // alt boşluk ay etiketlerine ayrılır.
+            const double W = 720, H = 300, L = 36, R = 708, T = 16, B = 264;
+
+            double Xi(int i) => L + i * (R - L) / 11.0;
+            double Yv(int v) => B - (double)v / trendYMax * (B - T);
+
+            var curPts = Enumerable.Range(0, 12).Select(i => (X: Xi(i), Y: Yv(trendCur[i]))).ToList();
+            var prevPts = Enumerable.Range(0, 12).Select(i => (X: Xi(i), Y: Yv(trendPrev[i]))).ToList();
+
+            var curPath = SmoothPath(curPts);
+            var prevPath = SmoothPath(prevPts);
+            // Alan dolgusu: çizginin altı taban çizgisine kapatılır.
+            var areaPath = $"{curPath} L {Sd(R)} {Sd(B)} L {Sd(L)} {Sd(B)} Z";
+        }
+
+        <div class="row-between" style="margin-bottom: 4px; align-items: flex-start;">
+            <div>
+                <h2 class="section-title" style="margin-bottom: 2px;">İzin kullanımı</h2>
+                <div class="dt-secondary">Aylık izne çıkan çalışan sayısı — @trendThisYear</div>
+            </div>
+            @* Lejant: kimlik renk + çizgi stiliyle taşınır (geçen yıl kesikli),
+               metin her zaman mürekkep renklerinde kalır. *@
+            <div class="row-tight" style="gap: 14px; font-size: 12.5px; color: var(--muted-2);">
+                <span class="row-tight" style="gap: 6px;">
+                    <svg width="18" height="6" aria-hidden="true"><line x1="0" y1="3" x2="18" y2="3" stroke="#7c5ff5" stroke-width="2.5" /></svg>
+                    <strong style="color: var(--ink-2);">@trendThisYear</strong>
+                </span>
+                <span class="row-tight" style="gap: 6px;">
+                    <svg width="18" height="6" aria-hidden="true"><line x1="0" y1="3" x2="18" y2="3" stroke="#b9bec8" stroke-width="2.5" stroke-dasharray="4 3" /></svg>
+                    <span>@trendPrevYear</span>
+                </span>
+            </div>
+        </div>
+
+        @if (trendRawMax == 0)
+        {
+            <div class="empty">
+                <div class="empty-title">Gösterilecek trend yok</div>
+                <div class="empty-text">Bu dönemde onaylanmış izin bulunmuyor.</div>
+            </div>
+        }
+        else
+        {
+            <div id="trendWrap" style="position: relative; flex: 1;">
+                <svg id="trendSvg" viewBox="0 0 @W @H" style="width: 100%; height: auto; display: block;"
+                     role="img" aria-label="Aylık izne çıkan çalışan sayısı, @trendThisYear ile @trendPrevYear karşılaştırması">
+                    <defs>
+                        <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0" stop-color="#7c5ff5" stop-opacity="0.14" />
+                            <stop offset="1" stop-color="#7c5ff5" stop-opacity="0" />
+                        </linearGradient>
+                    </defs>
+
+                    @* Izgara + y etiketleri: dört eşit dilim, çizgiler silik.
+                       SVG <text> Razor'un özel literal etiketiyle çakıştığı için
+                       etiketler Html.Raw ile basılır (içerik sayı/sabit — XSS riski yok). *@
+                    @for (var s = 0; s <= 4; s++)
+                    {
+                        var v = trendYMax * s / 4;
+                        var y = Yv(v);
+                        <line x1="@Sd(L)" y1="@Sd(y)" x2="@Sd(R)" y2="@Sd(y)" stroke="#edeff3" stroke-width="1" />
+                        @Html.Raw($"<text x=\"{Sd(L - 8)}\" y=\"{Sd(y + 3.5)}\" text-anchor=\"end\" font-size=\"11\" fill=\"#9aa0aa\">{v}</text>")
+                    }
+
+                    @* Ay etiketleri *@
+                    @for (var i = 0; i < 12; i++)
+                    {
+                        @Html.Raw($"<text x=\"{Sd(Xi(i))}\" y=\"{Sd(H - 8)}\" text-anchor=\"middle\" font-size=\"11\" fill=\"#9aa0aa\">{ayKisa[i]}</text>")
+                    }
+
+                    @* Geçen yıl: sönük, kesikli — bağlam serisi. *@
+                    <path d="@prevPath" fill="none" stroke="#b9bec8" stroke-width="2" stroke-dasharray="5 4" stroke-linecap="round" />
+
+                    @* Bu yıl: vurgulu + alan dolgusu. *@
+                    <path d="@areaPath" fill="url(#trendFill)" stroke="none" />
+                    <path d="@curPath" fill="none" stroke="#7c5ff5" stroke-width="2.5" stroke-linecap="round" />
+
+                    @* Hover katmanı: dikey kılavuz + nokta; JS konumlandırır. *@
+                    <line id="trendGuide" x1="0" x2="0" y1="@Sd(T)" y2="@Sd(B)" stroke="#7c5ff5" stroke-width="1" stroke-dasharray="3 3" opacity="0" />
+                    <circle id="trendDot" r="5" fill="#fff" stroke="#7c5ff5" stroke-width="2.5" opacity="0" />
+                </svg>
+
+                <div id="trendTip" style="position: absolute; display: none; pointer-events: none; z-index: 5;
+                     background: #1f2230; color: #fff; border-radius: 8px; padding: 6px 11px;
+                     font-size: 12px; white-space: nowrap; box-shadow: 0 4px 14px rgba(20, 22, 35, .25);"></div>
+            </div>
+
+            @* Erişilebilirlik/yazdırma için tablo görünümü — grafik tek kaynak olmasın. *@
+            <details style="margin-top: 10px;">
+                <summary class="mini-stat-label" style="cursor: pointer;">Tablo görünümü</summary>
+                <div class="dt" style="--cols: 1fr 1fr 1fr; margin-top: 8px;">
+                    <div class="dt-head"><span>Ay</span><span class="text-right">@trendThisYear</span><span class="text-right">@trendPrevYear</span></div>
+                    @for (var i = 0; i < 12; i++)
+                    {
+                        <div class="dt-row">
+                            <span class="dt-secondary">@ayKisa[i]</span>
+                            <span class="dt-strong text-right">@trendCur[i]</span>
+                            <span class="dt-secondary text-right">@trendPrev[i]</span>
+                        </div>
+                    }
+                </div>
+            </details>
+
+            <div class="mini-stat-label" style="margin-top: 10px;">
+                Yalnızca onaylanmış izinler; kişi, izninin BAŞLANGIÇ ayına yazılır.
+            </div>
+
+            <script>
+                (function () {
+                    var svg = document.getElementById('trendSvg');
+                    var wrap = document.getElementById('trendWrap');
+                    var tip = document.getElementById('trendTip');
+                    var guide = document.getElementById('trendGuide');
+                    var dot = document.getElementById('trendDot');
+                    if (!svg || !wrap || !tip) return;
+
+                    var cur = @System.Text.Json.JsonSerializer.Serialize(trendCur);
+                    var prev = @System.Text.Json.JsonSerializer.Serialize(trendPrev);
+                    var xs = @System.Text.Json.JsonSerializer.Serialize(curPts.Select(p => Math.Round(p.X, 2)));
+                    var ys = @System.Text.Json.JsonSerializer.Serialize(curPts.Select(p => Math.Round(p.Y, 2)));
+                    var aylar = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+                                 "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+                    var VBW = 720; // viewBox genişliği — px dönüşümünde ölçek
+
+                    svg.addEventListener('mousemove', function (e) {
+                        var rect = svg.getBoundingClientRect();
+                        var mx = (e.clientX - rect.left) * VBW / rect.width; // px → viewBox
+                        // En yakın ay: eşit aralıklı x'lerde basit yuvarlama yeter.
+                        var i = 0, best = Infinity;
+                        for (var k = 0; k < xs.length; k++) {
+                            var d = Math.abs(xs[k] - mx);
+                            if (d < best) { best = d; i = k; }
+                        }
+
+                        guide.setAttribute('x1', xs[i]); guide.setAttribute('x2', xs[i]);
+                        guide.setAttribute('opacity', '1');
+                        dot.setAttribute('cx', xs[i]); dot.setAttribute('cy', ys[i]);
+                        dot.setAttribute('opacity', '1');
+
+                        tip.innerHTML = '<strong>' + aylar[i] + '</strong> · <strong>' + cur[i] + ' kişi</strong>'
+                            + '<span style="opacity:.65;"> &nbsp;(' + '@trendPrevYear' + ': ' + prev[i] + ')</span>';
+                        tip.style.display = 'block';
+
+                        // Tooltip, noktanın üstüne; sağ kenara taşarsa sola alınır.
+                        var px = xs[i] * rect.width / VBW;
+                        var py = ys[i] * rect.height / 300;
+                        var tw = tip.offsetWidth;
+                        var left = px - tw / 2;
+                        if (left < 0) left = 0;
+                        if (left + tw > rect.width) left = rect.width - tw;
+                        tip.style.left = left + 'px';
+                        tip.style.top = Math.max(0, py - tip.offsetHeight - 14) + 'px';
+                    });
+
+                    svg.addEventListener('mouseleave', function () {
+                        tip.style.display = 'none';
+                        guide.setAttribute('opacity', '0');
+                        dot.setAttribute('opacity', '0');
+                    });
+                })();
+            </script>
+        }
+    </section>
+
+    @* ── Kadro: cinsiyet + kıdem — dar sütun ─────────────────────────
+       Donut 108px sabit genişlikte; dar sütunda legend'in yanına sığmaz,
+       bu yüzden burada alt alta diziliyorlar. *@
+    <section class="card card-pad">
+        <h2 class="section-title">Kadro yapısı</h2>
+
+        @if (genderTotal == 0)
+        {
+            <div class="empty-text">Gösterilecek çalışan yok.</div>
+        }
+        else
+        {
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 14px;">
+                <div class="donut" style="background: @DonutGradient();">
+                    <div class="donut-hole">
+                        <div>
+                            <div class="donut-value num">@genderTotal</div>
+                            <div class="donut-label">çalışan</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="legend" style="width: 100%;">
+                    <div class="legend-row">
+                        <span class="legend-dot" style="background: #977ef9;"></span>
+                        <span class="legend-name">Erkek</span>
+                        <span class="legend-value">@Model.MaleCount · %@Pct(Model.MaleCount)</span>
+                    </div>
+                    <div class="legend-row">
+                        <span class="legend-dot" style="background: #99e1d9;"></span>
+                        <span class="legend-name">Kadın</span>
+                        <span class="legend-value">@Model.FemaleCount · %@Pct(Model.FemaleCount)</span>
+                    </div>
+                    @if (Model.GenderUnspecifiedCount > 0)
+                    {
+                        <div class="legend-row">
+                            <span class="legend-dot" style="background: #d9dce3;"></span>
+                            <span class="legend-name">Belirtilmemiş</span>
+                            <span class="legend-value">@Model.GenderUnspecifiedCount · %@Pct(Model.GenderUnspecifiedCount)</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            @if (Model.SeniorityBreakdown.Count > 0)
+            {
+                @* Kıdem piramidi: departman dağılımının yerine geçti. Kaç kişi
+                   olduğundan çok organizasyonun ŞEKLİNİ gösterir — üstü dar mı,
+                   ortası şişkin mi. *@
+                <div style="margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line);">
+                    <div class="mini-stat-label" style="margin-bottom: 10px;">KIDEM DAĞILIMI</div>
+                    <div class="stack" style="gap: 9px;">
+                        @foreach (var s in Model.SeniorityBreakdown)
+                        {
+                            var width = maxSeniority == 0 ? 0 : (int)Math.Round(100.0 * s.Count / maxSeniority);
+                            <div class="bar-row">
+                                <span class="bar-name">@(s.Seniority is null ? "Belirtilmemiş" : SeniorityDisplay.Label(s.Seniority))</span>
+                                <span class="bar-value">@s.Count</span>
+                                <div class="bar"><div class="bar-fill @(s.Seniority is null ? "sky" : "")" style="width: @width%;"></div></div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </section>
+</div>
+
+@* ── 2. satır: iki izin listesi yan yana ────────────────────────────
    align-items: start — kartlar birbirini uzatmasın. Grid'in varsayılan
    stretch davranışı, yanındaki uzun listeye eşitlenen boş kartlar üretiyordu.
    Her iki liste de 6 satırda kesildiği için ikisi de sınırsız uzayamaz. *@
@@ -269,125 +540,6 @@
     </section>
 </div>
 
-@* ── 2. satır: izin trendi (3 birim) | kadro yapısı (1 birim) ────────
-   Burada align-items: start YOK — bilerek. 1. satırdaki listeler veriye göre
-   uzayabildiği için orada gerekliydi; buradaki iki kartın içeriği ise sabit
-   sayıda satır (6 ay / 6 kıdem kademesi). Dolayısıyla stretch güvenli ve
-   kartların altları hizalanıyor. Trend kartı içeriğini dikey yayarak boşluğu
-   barlar arasına dağıtıyor, alta yığmıyor. *@
-<div class="grid g-3-1">
-
-    @* ── Son 6 ay izin trendi — geniş sütun ──────────────────────────────
-       KOŞULSUZ render ediliyor: grid hücresini @@if içine almak, veri
-       gelmediğinde hücreyi tamamen yok eder; yanındaki kart 3fr'lik sütuna
-       kayar ve satır yarım görünür. Boş durum kartın İÇİNDE ele alınmalı. *@
-    <section class="card card-pad" style="display: flex; flex-direction: column;">
-        <div class="row-between" style="margin-bottom: 16px;">
-            <h2 class="section-title" style="margin-bottom: 0;">
-                @(Model.MonthlyTrend.Count > 0
-                    ? $"Son {Model.MonthlyTrend.Count} ay izin kullanımı"
-                    : "İzin kullanımı")
-            </h2>
-            <span class="card-head-meta">@Model.MonthlyTrend.Sum(t => t.WorkingDays) iş günü</span>
-        </div>
-
-        @if (maxTrend == 0)
-        {
-            <div class="empty">
-                <div class="empty-title">Gösterilecek trend yok</div>
-                <div class="empty-text">Bu dönemde onaylanmış izin bulunmuyor.</div>
-            </div>
-        }
-        else
-        {
-            @* flex:1 + space-between → kart komşusunun boyuna uzadığında fazla
-               alan barların ARASINA dağılır; altta tek parça boşluk kalmaz. *@
-            <div class="stack" style="gap: 13px; flex: 1; justify-content: space-between;">
-                @foreach (var t in Model.MonthlyTrend)
-                {
-                    var width = (int)Math.Round(100.0 * t.WorkingDays / maxTrend);
-                    var isPeak = t.WorkingDays == maxTrend;
-                    var label = new DateTime(t.Year, t.Month, 1).ToString("MMMM yyyy");
-                    <div class="bar-row">
-                        <span class="bar-name">@label</span>
-                        <span class="bar-value">@t.WorkingDays gün · @t.RequestCount talep</span>
-                        <div class="bar bar-lg"><div class="bar-fill @(isPeak ? "" : "sky")" style="width: @width%;"></div></div>
-                    </div>
-                }
-            </div>
-            <div class="mini-stat-label" style="margin-top: 16px;">
-                Yalnızca onaylanmış izinler; izin BAŞLANGIÇ ayına yazılır. İş günü esaslıdır.
-            </div>
-        }
-    </section>
-
-    @* ── Kadro: cinsiyet + kıdem — dar sütun ─────────────────────────
-       Donut 108px sabit genişlikte; dar sütunda legend'in yanına sığmaz,
-       bu yüzden burada alt alta diziliyorlar. *@
-    <section class="card card-pad">
-        <h2 class="section-title">Kadro yapısı</h2>
-
-        @if (genderTotal == 0)
-        {
-            <div class="empty-text">Gösterilecek çalışan yok.</div>
-        }
-        else
-        {
-            <div style="display: flex; flex-direction: column; align-items: center; gap: 14px;">
-                <div class="donut" style="background: @DonutGradient();">
-                    <div class="donut-hole">
-                        <div>
-                            <div class="donut-value num">@genderTotal</div>
-                            <div class="donut-label">çalışan</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="legend" style="width: 100%;">
-                    <div class="legend-row">
-                        <span class="legend-dot" style="background: #977ef9;"></span>
-                        <span class="legend-name">Erkek</span>
-                        <span class="legend-value">@Model.MaleCount · %@Pct(Model.MaleCount)</span>
-                    </div>
-                    <div class="legend-row">
-                        <span class="legend-dot" style="background: #99e1d9;"></span>
-                        <span class="legend-name">Kadın</span>
-                        <span class="legend-value">@Model.FemaleCount · %@Pct(Model.FemaleCount)</span>
-                    </div>
-                    @if (Model.GenderUnspecifiedCount > 0)
-                    {
-                        <div class="legend-row">
-                            <span class="legend-dot" style="background: #d9dce3;"></span>
-                            <span class="legend-name">Belirtilmemiş</span>
-                            <span class="legend-value">@Model.GenderUnspecifiedCount · %@Pct(Model.GenderUnspecifiedCount)</span>
-                        </div>
-                    }
-                </div>
-            </div>
-
-            @if (Model.SeniorityBreakdown.Count > 0)
-            {
-                @* Kıdem piramidi: departman dağılımının yerine geçti. Kaç kişi
-                   olduğundan çok organizasyonun ŞEKLİNİ gösterir — üstü dar mı,
-                   ortası şişkin mi. *@
-                <div style="margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line);">
-                    <div class="mini-stat-label" style="margin-bottom: 10px;">KIDEM DAĞILIMI</div>
-                    <div class="stack" style="gap: 9px;">
-                        @foreach (var s in Model.SeniorityBreakdown)
-                        {
-                            var width = maxSeniority == 0 ? 0 : (int)Math.Round(100.0 * s.Count / maxSeniority);
-                            <div class="bar-row">
-                                <span class="bar-name">@(s.Seniority is null ? "Belirtilmemiş" : SeniorityDisplay.Label(s.Seniority))</span>
-                                <span class="bar-value">@s.Count</span>
-                                <div class="bar"><div class="bar-fill @(s.Seniority is null ? "sky" : "")" style="width: @width%;"></div></div>
-                            </div>
-                        }
-                    </div>
-                </div>
-            }
-        }
-    </section>
-</div>
-
 @functions {
     // Baş harfler — avatar için ("Elif Yıldırım" → "EY").
     string Init(string name)
@@ -397,5 +549,33 @@
         return parts.Length >= 2
             ? $"{char.ToUpperInvariant(parts[0][0])}{char.ToUpperInvariant(parts[^1][0])}"
             : char.ToUpperInvariant(parts[0][0]).ToString();
+    }
+
+    // SVG koordinatı: kültürden bağımsız ondalık (tr-TR virgül basar, SVG nokta ister).
+    static string Sd(double v) => v.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+
+    // Catmull-Rom → kübik Bezier: noktalardan geçen yumuşak çizgi. Kontrol
+    // noktaları komşu noktaların yönünden türetilir; 1/6 katsayısı standart
+    // Catmull-Rom gerginliğidir (küçük tutuldukça çizgi noktalara sadık kalır).
+    static string SmoothPath(IReadOnlyList<(double X, double Y)> p)
+    {
+        if (p.Count < 2) return string.Empty;
+
+        var sb = new System.Text.StringBuilder($"M {Sd(p[0].X)} {Sd(p[0].Y)}");
+        for (var i = 0; i < p.Count - 1; i++)
+        {
+            var p0 = i == 0 ? p[0] : p[i - 1];
+            var p1 = p[i];
+            var p2 = p[i + 1];
+            var p3 = i + 2 < p.Count ? p[i + 2] : p2;
+
+            var c1X = p1.X + (p2.X - p0.X) / 6.0;
+            var c1Y = p1.Y + (p2.Y - p0.Y) / 6.0;
+            var c2X = p2.X - (p3.X - p1.X) / 6.0;
+            var c2Y = p2.Y - (p3.Y - p1.Y) / 6.0;
+
+            sb.Append($" C {Sd(c1X)} {Sd(c1Y)}, {Sd(c2X)} {Sd(c2Y)}, {Sd(p2.X)} {Sd(p2.Y)}");
+        }
+        return sb.ToString();
     }
 }

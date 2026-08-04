@@ -37,6 +37,13 @@
     <span class="dt-cell-muted">@GradeDisplay.Label(Model.Grade)</span>
     <span class="dt-cell-muted num">@Model.StartDate.ToString("dd.MM.yyyy")</span>
     <span><span class="badge badge-sm badge-violet">Stajyer</span></span>
+    @* "Kalan izin" hücresi. Stajyerler yıllık izin BİRİKTİRMEZ, o yüzden değer yok —
+       ama hücre yine de basılmalı: grid'de hücre sayısı çalışan satırıyla aynı
+       olmazsa sonraki hücreler bir kolon sola kayar ve tablo bozulur.
+       Bu partial yalnızca İK/Admin listesinde render edilir (stajyerler
+       ViewBag.Interns'e yalnızca o rollerde konuyor), yani kolon her zaman vardır.
+       data-remaining niteliği de YOK: birikmiş izin filtresi bu satırları elemeli. *@
+    <span class="dt-cell-muted">—</span>
     <div class="task-actions" style="padding-left: 14px;">
         <a asp-controller="Mentorship" asp-action="Detail" asp-route-id="@Model.Id" class="btn btn-sm">Detay</a>
         <a asp-controller="Interns" asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-sm">Düzenle</a>

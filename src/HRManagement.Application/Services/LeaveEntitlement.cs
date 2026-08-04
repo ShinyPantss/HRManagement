@@ -75,18 +75,21 @@ public static class LeaveEntitlement
     }
 
     /// <summary>
-    /// Başlangıç ve bitiş DAHİL İŞ GÜNÜ sayısı (Cumartesi/Pazar hariç).
-    /// Resmi tatiller şimdilik sayılır (tatil tablosu eklendiğinde buraya girer).
-    /// İzin "gün"ü iş günüdür: Pzt→bir sonraki Pzt = 6 iş günü (2 hafta sonu düşer).
+    /// İş GÜNÜ sayısı — YARI AÇIK aralık [başlangıç, bitiş): başlangıç DAHİL,
+    /// bitiş HARİÇ. Bitiş tarihi kişinin İŞE BAŞLAYACAĞI gündür, izne sayılmaz
+    /// (ör. 3'ü → 5'i: 3 ve 4 izinli, 5'inde işbaşı = 2 gün).
+    /// Cumartesi/Pazar sayılmaz; resmi tatiller şimdilik sayılır (tatil tablosu
+    /// eklendiğinde buraya girer).
+    /// İzin "gün"ü iş günüdür: Pzt→bir sonraki Pzt işbaşı = 5 iş günü.
     /// </summary>
     public static int WorkingDays(DateTime startDate, DateTime endDate)
     {
         var start = startDate.Date;
         var end = endDate.Date;
-        if (end < start) return 0;
+        if (end <= start) return 0;
 
         var days = 0;
-        for (var day = start; day <= end; day = day.AddDays(1))
+        for (var day = start; day < end; day = day.AddDays(1))
         {
             if (day.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday))
                 days++;

@@ -22,9 +22,11 @@ public sealed class CreateLeaveRequestCommandValidator : AbstractValidator<Creat
 
         // Tarih sırası kontrolü: iki alan da istekte geldiği için DB'ye bakmaya
         // gerek yok — bu bir input validation'dır, iş kuralı değil.
+        // Bitiş = işe başlama günü (izne DAHİL DEĞİL); tek günlük izin bile
+        // "başlangıç + ertesi gün" demektir, bu yüzden eşitlik geçersizdir.
         RuleFor(command => command.EndDate)
-            .GreaterThanOrEqualTo(command => command.StartDate)
-            .WithMessage("Başlangıç tarihi bitiş tarihinden sonra olamaz.");
+            .GreaterThan(command => command.StartDate)
+            .WithMessage("Bitiş (işe başlama) tarihi başlangıç tarihinden sonra olmalıdır.");
 
         RuleFor(command => command.Description)
             .MaximumLength(500).WithMessage("Açıklama en fazla 500 karakter olabilir.");

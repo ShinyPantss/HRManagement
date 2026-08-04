@@ -161,6 +161,7 @@ public class GetPendingApprovalsQueryHandlerTests
             Task.FromResult<IEnumerable<PendingApprovalDto>>(candidates);
 
         public Task<IEnumerable<LeaveHistoryDto>> GetAllWithNamesAsync() => throw new NotImplementedException();
+        public Task<IReadOnlyDictionary<int, int>> GetUsedAnnualDaysByEmployeeAsync() => throw new NotImplementedException();
 
         public Task<LeaveRequest?> GetByIdAsync(int id) => throw new NotImplementedException();
         public Task<IEnumerable<LeaveRequest>> GetAllAsync() => throw new NotImplementedException();

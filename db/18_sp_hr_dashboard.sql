@@ -19,6 +19,7 @@
        3) Şu an izinde — bugünü kapsayan onaylı izinler
        4) Yaklaşan     — pencere içinde başlayacak onaylı izinler
        5) Trend        — son N ayın izin kullanımı
+       6) Yıllık kişi trendi — bu yıl + geçen yıl, ay ay izne çıkan KİŞİ sayısı
 
    BİLİNÇLİ KARARLAR
      1) ENUM DEĞERLERİ PARAMETRE. Status/Gender sayıları SQL'e gömülmez,
@@ -87,10 +88,11 @@ BEGIN
           WHERE EndDate >= @Today
             AND EndDate <= DATEADD(DAY, @InternEndingWindowDays, @Today))    AS InternsEndingSoon,
 
-        -- İzin
+        -- İzin. EndDate işe dönüş günüdür (yarı açık aralık): dönüş günü
+        -- gelen kişi artık "izinde" sayılmaz, bu yüzden > (>= değil).
         (SELECT COUNT(*) FROM dbo.LeaveRequests
           WHERE Status = @StatusApproved
-            AND StartDate <= @Today AND EndDate >= @Today)                   AS OnLeaveNowCount,
+            AND StartDate <= @Today AND EndDate > @Today)                    AS OnLeaveNowCount,
         (SELECT COUNT(*) FROM dbo.LeaveRequests
           WHERE Status IN (@StatusPending, @StatusPendingHr))                AS PendingLeaveRequests,
 
@@ -131,7 +133,7 @@ BEGIN
     LEFT JOIN dbo.Interns   i ON i.Id = lr.InternId
     WHERE lr.Status = @StatusApproved
       AND lr.StartDate <= @Today
-      AND lr.EndDate   >= @Today
+      AND lr.EndDate   >  @Today               -- EndDate = işe dönüş günü (hariç)
     ORDER BY lr.EndDate;                       -- önce dönecek olan üstte
 
 
@@ -183,6 +185,40 @@ BEGIN
           AND lr.StartDate <  DATEADD(MONTH, 1, m.MonthStart)
     GROUP BY m.MonthStart
     ORDER BY m.MonthStart;                     -- eskiden yeniye
+
+
+    /* ── 6) YILLIK KİŞİ TRENDİ ─────────────────────────────────────────────
+       Çizgi grafik için: bu yıl ve geçen yılın 12'şer ayında izne çıkan
+       KİŞİ sayısı (talep ya da gün değil — aynı ay iki izin açan kişi 1 sayılır).
+       Ay listesi yine TAKVİMDEN üretilir; izinsiz ay 0 ile döner.
+
+       Kişi kimliği: talep sahibi ya çalışan ya stajyerdir (XOR); 'E{id}I{id}'
+       birleşimi kişi başına tekildir. CASE şart — LEFT JOIN'in boş satırında
+       CONCAT('E',NULL,'I',NULL) = 'EI' üretip hayalet 1 kişi sayardı. */
+    ;WITH Months AS
+    (
+        SELECT TOP (12) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS Mn
+        FROM sys.all_objects
+    ),
+    Yrs AS
+    (
+        SELECT YEAR(@Today) - 1 AS Yr
+        UNION ALL
+        SELECT YEAR(@Today)
+    )
+    SELECT
+        y.Yr AS [Year],
+        m.Mn AS [Month],
+        COUNT(DISTINCT CASE WHEN lr.Id IS NOT NULL
+                            THEN CONCAT('E', lr.EmployeeId, 'I', lr.InternId) END) AS PersonCount
+    FROM Yrs y
+    CROSS JOIN Months m
+    LEFT JOIN dbo.LeaveRequests lr
+           ON lr.Status = @StatusApproved
+          AND lr.StartDate >= DATEFROMPARTS(y.Yr, m.Mn, 1)
+          AND lr.StartDate <  DATEADD(MONTH, 1, DATEFROMPARTS(y.Yr, m.Mn, 1))
+    GROUP BY y.Yr, m.Mn
+    ORDER BY y.Yr, m.Mn;                       -- önce geçen yıl, ay sırasıyla
 END
 GO
 

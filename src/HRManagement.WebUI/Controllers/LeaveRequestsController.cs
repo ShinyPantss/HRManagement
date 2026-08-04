@@ -26,16 +26,18 @@ public class LeaveRequestsController : Controller
         _employeeApi = employeeApi;
     }
 
-    public async Task<IActionResult> Index(string? range, DateTime? from, DateTime? to) =>
-        View(await BuildListAsync(range, from, to));
+    // mine=true → HR'ın "İzinlerim" kapsamı: şirket geneli yerine kendi talepleri.
+    // Diğer roller için etkisiz (onlar zaten kendi taleplerini görür).
+    public async Task<IActionResult> Index(string? range, DateTime? from, DateTime? to, bool mine = false) =>
+        View(await BuildListAsync(range, from, to, mine));
 
     /// <summary>
-    /// Analitik rapor. Ekranla AYNI filtreyi kullanır (parametreler birebir
-    /// aktarılır), böylece "gördüğüm liste" ile "aldığım rapor" ayrışmaz.
+    /// Analitik rapor. Ekranla AYNI filtreyi ve kapsamı kullanır (parametreler
+    /// birebir aktarılır), böylece "gördüğüm liste" ile "aldığım rapor" ayrışmaz.
     /// Ekranda okunmak üzere tasarlanmıştır; yazdırma bir seçenektir, amaç değil.
     /// </summary>
-    public async Task<IActionResult> Report(string? range, DateTime? from, DateTime? to) =>
-        View(BuildReport(await BuildListAsync(range, from, to)));
+    public async Task<IActionResult> Report(string? range, DateTime? from, DateTime? to, bool mine = false) =>
+        View(BuildReport(await BuildListAsync(range, from, to, mine)));
 
     /// <summary>
     /// Rapor metriklerini TEK yerde hesaplar. View yalnızca gösterir — aynı sayının
@@ -153,7 +155,9 @@ public class LeaveRequestsController : Controller
     /// Gruplanmış satırları rapor dilimlerine çevirir; çubuk oranı grubun EN BÜYÜĞÜNE
     /// göredir (toplama değil) — küçük gruplar görünmez ince çizgiye dönüşmesin.
     /// </summary>
-    private static List<LeaveReportViewModel.GroupSlice> BuildGroups(
+    private static
+
+     List<LeaveReportViewModel.GroupSlice> BuildGroups(
         IEnumerable<IGrouping<string, ReportRow>> groups,
         Func<IGrouping<string, ReportRow>, int> peopleCount,
         Func<IGrouping<string, ReportRow>, string?>? note = null)
@@ -189,9 +193,9 @@ public class LeaveRequestsController : Controller
     ///
     /// İki sayfa: "Özet" (raporun metrikleri) ve "Kayıtlar" (ham döküm, pivot için).
     /// </summary>
-    public async Task<IActionResult> ExportExcel(string? range, DateTime? from, DateTime? to)
+    public async Task<IActionResult> ExportExcel(string? range, DateTime? from, DateTime? to, bool mine = false)
     {
-        var source = await BuildListAsync(range, from, to);
+        var source = await BuildListAsync(range, from, to, mine);
         var report = BuildReport(source);
 
         using var workbook = new XLWorkbook();
@@ -384,17 +388,20 @@ public class LeaveRequestsController : Controller
     /// ayrı ayrı hesaplanması er ya da geç birbirinden kopardı.
     /// </summary>
     private async Task<LeaveRequestListViewModel> BuildListAsync(
-        string? range, DateTime? from, DateTime? to)
+        string? range, DateTime? from, DateTime? to, bool mine = false)
     {
         var (effectiveFrom, effectiveTo) = ResolveRange(range, from, to);
 
         // Rol kapısı: HR/Admin TÜM izin geçmişini tek listede görür (çalışan seçmeden,
         // salt gözlem). Diğer roller yalnızca KENDİ izinlerini görür.
-        var isBrowser = User.IsInRole("HR") || User.IsInRole("Admin");
+        // mine=true bu kapıyı bilinçli olarak kapatır: HR de kişisel görünüme iner
+        // (kendi talepleri + iptal/geri çekme butonları).
+        var isBrowser = (User.IsInRole("HR") || User.IsInRole("Admin")) && !mine;
 
         var model = new LeaveRequestListViewModel
         {
             IsAllView = isBrowser,
+            Mine = mine,
             // Seçim yoksa "Tümü". Tarihsiz "custom" da Tümü'ye düşer: kullanıcı
             // tarih girmeden Uygula'ya basarsa filtre uygulanmıyor ama hiçbir çip
             // de yanmıyordu — ekran hangi aralıkta olduğunu söylemez hâle geliyordu.
@@ -443,9 +450,9 @@ public class LeaveRequestsController : Controller
             return model;
         }
 
-        var mine = response.Data ?? [];
-        model.TotalBeforeFilter = mine.Count;
-        model.Requests = mine
+        var ownRequests = response.Data ?? [];
+        model.TotalBeforeFilter = ownRequests.Count;
+        model.Requests = ownRequests
             .Where(r => Overlaps(r.StartDate, r.EndDate, effectiveFrom, effectiveTo))
             .OrderByDescending(r => r.StartDate)
             .ToList();
@@ -507,8 +514,10 @@ public class LeaveRequestsController : Controller
     /// İzin aralığı filtre penceresiyle KESİŞİYOR mu? Başlangıç tarihine bakmak
     /// yetmez: 28 Haziran – 3 Temmuz izni "Temmuz" filtresinde de görünmeli.
     /// </summary>
+    // İzin aralığı yarı açıktır [start, end): end işe dönüş günüdür, izinli
+    // değildir — filtre penceresinin ilk gününe denk gelen dönüş "kesişme" sayılmaz.
     private static bool Overlaps(DateTime start, DateTime end, DateTime? from, DateTime? to) =>
-        (from is null || end.Date >= from.Value.Date)
+        (from is null || end.Date > from.Value.Date)
         && (to is null || start.Date <= to.Value.Date);
 
     // Tek talebin detayı + onay izi. Görüntüleme yetkisini API çözer; yetkisizse
@@ -595,17 +604,18 @@ public class LeaveRequestsController : Controller
                 IsSelf = employee.Id == myId
             };
 
-            // Reddedilenler takvimde yer tutmaz; onaylı ve bekleyenler tutar
-            // (bekleyen izin de planlamada görünmeli).
+            // Reddedilen ve geri çekilenler takvimde yer tutmaz; onaylı ve
+            // bekleyenler tutar (bekleyen izin de planlamada görünmeli). Bitiş
+            // günü işe dönüş günüdür — o gün kişi masasındadır, izinli GÖSTERİLMEZ.
             var relevant = (leaves.Data ?? [])
-                .Where(l => l.Status != "Rejected"
+                .Where(l => l.Status != "Rejected" && l.Status != "Cancelled"
                             && l.StartDate.Date <= endDate
-                            && l.EndDate.Date >= today)
+                            && l.EndDate.Date > today)
                 .ToList();
 
             foreach (var day in model.Days)
             {
-                var hit = relevant.FirstOrDefault(l => l.StartDate.Date <= day && l.EndDate.Date >= day);
+                var hit = relevant.FirstOrDefault(l => l.StartDate.Date <= day && l.EndDate.Date > day);
                 var isWeekend = day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
 
                 row.Cells.Add(new TeamCalendarCell
@@ -746,9 +756,9 @@ public class LeaveRequestsController : Controller
         var response = await _leaveRequestApi.DeleteAsync(id);
 
         if (!response.IsSuccess)
-            TempData["Error"] = response.Message ?? "Silme işlemi başarısız.";
+            TempData["Error"] = response.Message ?? "İptal işlemi başarısız.";
         else
-            TempData["Success"] = response.Message ?? "İzin talebi silindi.";
+            TempData["Success"] = response.Message ?? "İzin talebi iptal edildi.";
 
         return RedirectToAction(nameof(Index), new { employeeId });
     }
@@ -771,3 +781,4 @@ public class LeaveRequestsController : Controller
         new SelectListItem("Hastalık İzni", "3")
     ];
 }
+

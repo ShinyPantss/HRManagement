@@ -109,4 +109,10 @@ public class EmployeeFormViewModel
 /// Yönetici dropdown'ı için aday. Kıdem VE departman, JS süzmesi için taşınır:
 /// yönetici çalışandan kıdemce yüksek + (GM hariç) aynı departmanda olmalı.
 /// </summary>
-public record ManagerCandidate(int Id, string Name, int? Seniority, int DepartmentId);
+/// <summary>
+/// Yönetici dropdown'ının bir seçeneği. <paramref name="UnitId"/> zincir süzmesi
+/// için şart: Müdür BİRİM düzeyindedir (yalnızca kendi biriminin altındakilere
+/// yönetici olur), GMY ise departman düzeyinde birimsizdir. Bu ayrım olmadan
+/// departmandaki TÜM müdürler listelenirdi.
+/// </summary>
+public record ManagerCandidate(int Id, string Name, int? Seniority, int DepartmentId, int? UnitId);

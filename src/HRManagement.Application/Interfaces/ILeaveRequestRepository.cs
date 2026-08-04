@@ -45,4 +45,18 @@ public interface ILeaveRequestRepository
     /// ki dört ayrı bekleyen talep, ayrı ayrı kontrolü geçip hakkı katlamasın.
     /// </summary>
     Task<int> GetTotalUsedAnnualDaysAsync(int employeeId);
+
+    /// <summary>
+    /// <see cref="GetTotalUsedAnnualDaysAsync"/>'in TOPLU hâli: tüm çalışanların
+    /// kullandığı + rezerve ettiği yıllık izin günleri, çalışan Id'sine göre.
+    /// Aynı kuralı uygular (kümülatif, bekleyenler dahil, reddedilenler hariç).
+    ///
+    /// Neden ayrı bir metot: çalışan listesi ekranı herkesin bakiyesine ihtiyaç
+    /// duyuyor. Tek tek çağırmak N+1 üretirdi (300 çalışan = 300 sorgu); bu metot
+    /// tek GROUP BY ile döner.
+    ///
+    /// Hiç yıllık izin talebi olmayan çalışan sözlükte YER ALMAZ — çağıran onu
+    /// 0 saymalıdır.
+    /// </summary>
+    Task<IReadOnlyDictionary<int, int>> GetUsedAnnualDaysByEmployeeAsync();
 }           

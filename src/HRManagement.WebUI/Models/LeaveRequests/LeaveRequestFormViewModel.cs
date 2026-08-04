@@ -24,9 +24,13 @@ public class LeaveRequestFormViewModel
     [Display(Name = "Başlangıç Tarihi")]
     public DateTime? StartDate { get; set; }
 
-    [Required(ErrorMessage = "Bitiş tarihi zorunludur.")]
+    /// <summary>
+    /// İşe başlama günü — izne DAHİL DEĞİLDİR (yarı açık aralık; API ile aynı
+    /// yorum). 3'ü → 5'i seçen kişi 3 ve 4'ünde izinli, 5'inde işbaşındadır.
+    /// </summary>
+    [Required(ErrorMessage = "Bitiş (işe başlama) tarihi zorunludur.")]
     [DisplayFormat(DataFormatString = "{0:dd.MM.yyyy}", ApplyFormatInEditMode = true)]
-    [Display(Name = "Bitiş Tarihi")]
+    [Display(Name = "Bitiş (İşe Başlama) Tarihi")]
     public DateTime? EndDate { get; set; }
 
     [Display(Name = "Açıklama")]

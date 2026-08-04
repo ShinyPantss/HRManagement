@@ -106,7 +106,10 @@ public class LeaveRequestRepository : ILeaveRequestRepository
 
     public async Task<bool> HasOverlapAsync(int? employeeId, int? internId, DateTime startDate, DateTime endDate)
     {
-        // Klasik aralık kesişimi: A.Start <= B.End VE A.End >= B.Start.
+        // YARI AÇIK aralık kesişimi: A.Start < B.End VE A.End > B.Start.
+        // Bitiş günü izin değil, işe dönüş günüdür — bu yüzden "benim bitişim
+        // = onun başlangıcı" çakışma SAYILMAZ (5'inde dönüp 5'inde yeni izne
+        // başlamak geçerlidir).
         // Statü listesi parametre olarak geçilir; SQL içinde sihirli sayı durmaz.
         const string sql = @"
             SELECT CASE WHEN EXISTS
@@ -115,8 +118,8 @@ public class LeaveRequestRepository : ILeaveRequestRepository
                 WHERE Status IN @ActiveStatuses
                   AND ( (@EmployeeId IS NOT NULL AND EmployeeId = @EmployeeId)
                      OR (@InternId  IS NOT NULL AND InternId  = @InternId) )
-                  AND StartDate <= @EndDate
-                  AND EndDate   >= @StartDate
+                  AND StartDate < @EndDate
+                  AND EndDate   > @StartDate
             )
             THEN 1 ELSE 0 END";
 
@@ -280,5 +283,43 @@ public class LeaveRequestRepository : ILeaveRequestRepository
                 (int)LeaveStatus.Approved
             }
         });
+    }
+
+    public async Task<IReadOnlyDictionary<int, int>> GetUsedAnnualDaysByEmployeeAsync()
+    {
+        // GetTotalUsedAnnualDaysAsync ile AYNI kural, yalnızca gruplanmış hâli:
+        // aynı tür, aynı durum kümesi, aynı kümülatif model. Kural iki sorguda
+        // yaşadığı için biri değişirse DİĞERİ DE değişmeli.
+        //
+        // InternId'li talepler dışarıda: stajyerler yıllık izin biriktirmez.
+        const string sql = @"
+            SELECT EmployeeId, COALESCE(SUM(WorkingDays), 0) AS UsedDays
+            FROM LeaveRequests
+            WHERE EmployeeId IS NOT NULL
+              AND Type = @AnnualType
+              AND Status IN @ActiveStatuses
+            GROUP BY EmployeeId";
+
+        using var connection = _connectionFactory.CreateConnection();
+
+        var rows = await connection.QueryAsync<UsedAnnualRow>(sql, new
+        {
+            AnnualType = (int)LeaveType.Annual,
+            ActiveStatuses = new[]
+            {
+                (int)LeaveStatus.Pending,
+                (int)LeaveStatus.PendingHr,
+                (int)LeaveStatus.Approved
+            }
+        });
+
+        return rows.ToDictionary(row => row.EmployeeId, row => row.UsedDays);
+    }
+
+    // GROUP BY sonucunun ham karşılığı; dışarı sızmaz.
+    private sealed class UsedAnnualRow
+    {
+        public int EmployeeId { get; set; }
+        public int UsedDays { get; set; }
     }
 }

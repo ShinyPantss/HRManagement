@@ -45,10 +45,26 @@ public class CreateLeaveRequestCommandValidatorTests
     }
 
     [Fact]
-    public void tek_gunluk_izin_gecerlidir()
+    public void tek_gunluk_izin_ertesi_gun_isbasi_ile_gecerlidir()
     {
-        // Başlangıç == bitiş meşru bir taleptir (1 günlük izin); kural
-        // GreaterThanOrEqualTo olduğu için geçmeli.
+        // Bitiş = işe başlama günü (izne dahil değil). Tek günlük izin
+        // "3'ü izinli, 4'ü işbaşı" demektir; kural GreaterThan olduğu için geçmeli.
+        var command = ValidCommand() with
+        {
+            StartDate = new DateTime(2026, 8, 3),
+            EndDate = new DateTime(2026, 8, 4)
+        };
+
+        var result = _validator.TestValidate(command);
+
+        result.ShouldNotHaveValidationErrorFor(c => c.EndDate);
+    }
+
+    [Fact]
+    public void baslangic_ile_bitis_ayni_gunse_hata_doner()
+    {
+        // Eski (uçlar dahil) yorumda bu 1 günlük izindi; yeni yorumda boş
+        // aralıktır — kişi izne çıktığı gün işe başlayamaz.
         var command = ValidCommand() with
         {
             StartDate = new DateTime(2026, 8, 3),
@@ -57,7 +73,7 @@ public class CreateLeaveRequestCommandValidatorTests
 
         var result = _validator.TestValidate(command);
 
-        result.ShouldNotHaveValidationErrorFor(c => c.EndDate);
+        result.ShouldHaveValidationErrorFor(c => c.EndDate);
     }
 
     [Fact]

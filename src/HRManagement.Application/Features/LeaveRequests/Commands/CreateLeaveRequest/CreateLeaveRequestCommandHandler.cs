@@ -73,9 +73,16 @@ public sealed class CreateLeaveRequestCommandHandler : IRequestHandler<CreateLea
         if (workingDays == 0)
             throw new ValidationException("Seçilen aralıkta iş günü yok (yalnızca hafta sonu).");
 
-        // Başlangıç durumu türe göre: Hastalık izni yönetici aşamasını ATLAR,
-        // doğrudan İK onayına düşer (hasta insan yönetici onayı bekleyemez).
-        var initialStatus = request.Type == LeaveType.Sick
+        // Başlangıç durumu türe VE kişiye göre; iki hâl yönetici aşamasını ATLAR:
+        //   - Hastalık izni (hasta insan yönetici onayı bekleyemez).
+        //   - Zincirin tepesindeki kişi (ManagerId yok = GM): onaylayacak üstü
+        //     olmadığı için talebi DOĞRUDAN İK'ya düşer — Admin'e hiç gitmez,
+        //     tek onay İK'dan (kullanıcı kararı, 2026-08-03).
+        // Stajyeri etkilemez: onun onay zinciri mentordan başlar, tepe olamaz.
+        var skipManagerStage = request.Type == LeaveType.Sick
+            || (employee is not null && employee.ManagerId is null);
+
+        var initialStatus = skipManagerStage
             ? LeaveStatus.PendingHr
             : LeaveStatus.Pending;
 

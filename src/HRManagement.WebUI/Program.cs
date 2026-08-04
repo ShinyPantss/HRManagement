@@ -36,6 +36,10 @@ builder.Services.AddAuthorization();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddTransient<BearerTokenHandler>();
 
+// Kenar çubuğu rozetleri gibi her sayfada çizilen küçük verilerin önbelleği
+// (EmployeeCountViewComponent) — her sayfa yüklemesi API'ye gitmesin.
+builder.Services.AddMemoryCache();
+
 // WebUI'nin API'ye tek çıkış kapısı: Refit istemcileri.
 // Base adres config'ten gelir; WebUI hiçbir iş katmanına referans vermez.
 var apiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"]
@@ -91,6 +95,16 @@ builder.Services.AddRefitClient<IUserApi>(refitSettings)
 
 builder.Services.AddRefitClient<IOrganizationApi>(refitSettings)
     .ConfigureHttpClient(client => client.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<BearerTokenHandler>();
+
+// Veri asistanı: modelin sorguyu yazması + çalıştırması zaman aldığı için
+// varsayılan 100 sn'lik HttpClient zaman aşımı yetmeyebilir.
+builder.Services.AddRefitClient<IAssistantApi>(refitSettings)
+    .ConfigureHttpClient(client =>
+    {
+        client.BaseAddress = new Uri(apiBaseUrl);
+        client.Timeout = TimeSpan.FromMinutes(3);
+    })
     .AddHttpMessageHandler<BearerTokenHandler>();
 
 var app = builder.Build();

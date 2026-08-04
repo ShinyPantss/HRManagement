@@ -99,6 +99,7 @@ public class ApproveLeaveRequestCommandHandlerTests
         public Task<bool> ExistsByInternIdAsync(int internId) => throw new NotImplementedException();
         public Task<bool> HasOverlapAsync(int? employeeId, int? internId, DateTime startDate, DateTime endDate) => throw new NotImplementedException();
         public Task<int> GetTotalUsedAnnualDaysAsync(int employeeId) => throw new NotImplementedException();
+        public Task<IReadOnlyDictionary<int, int>> GetUsedAnnualDaysByEmployeeAsync() => throw new NotImplementedException();
         public Task<IEnumerable<HRManagement.Application.DTOs.PendingApprovalDto>> GetActionableWithNamesAsync() => throw new NotImplementedException();
         public Task<IEnumerable<HRManagement.Application.DTOs.LeaveHistoryDto>> GetAllWithNamesAsync() => throw new NotImplementedException();
     }

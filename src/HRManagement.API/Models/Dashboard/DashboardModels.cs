@@ -38,6 +38,17 @@ public sealed class HrDashboardResponse
     public List<OnLeaveNowResponse> OnLeaveNow { get; init; } = [];
     public List<UpcomingLeaveResponse> UpcomingLeaves { get; init; } = [];
     public List<LeaveTrendPointResponse> MonthlyTrend { get; init; } = [];
+
+    // ── Yıllık kişi trendi — çizgi grafik (bu yıl vs geçen yıl, 12'şer ay) ──
+    public List<MonthlyPersonCountResponse> YearlyPersonTrend { get; init; } = [];
+}
+
+/// <summary>O ay izne çıkan (onaylı izni o ay başlayan) tekil kişi sayısı.</summary>
+public sealed class MonthlyPersonCountResponse
+{
+    public int Year { get; init; }
+    public int Month { get; init; }
+    public int PersonCount { get; init; }
 }
 
 public sealed class SeniorityBreakdownResponse

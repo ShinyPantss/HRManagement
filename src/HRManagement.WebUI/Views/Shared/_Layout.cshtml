@@ -81,6 +81,8 @@
                     <a class="nav-item @ActiveExcept("Employees", "Profile")" asp-controller="Employees" asp-action="Index">
                         @Icon("M9 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M2.5 20a6.5 6.5 0 0 1 13 0M17 5.5a3 3 0 0 1 0 6M21.5 20a6 6 0 0 0-3-5.2")
                         @employeesLabel
+                        @* İK'da toplam çalışan sayısı rozeti; diğer rollerde bileşen boş döner. *@
+                        @await Component.InvokeAsync("EmployeeCount")
                     </a>
                 }
 
@@ -105,13 +107,36 @@
                 }
 
                 @* İzin süreci İK/yönetici işidir; Admin'in ne kendi izni vardır
-                   (çalışan kaydı yok) ne de başkasınınkini yönetir. *@
+                   (çalışan kaydı yok) ne de başkasınınkini yönetir.
+                   HR iki sekme görür: İzinlerim (?mine=true → kişisel görünüm,
+                   iptal/geri çekme butonlarıyla) ve Çalışan İzin Geçmişi (şirket geneli).
+                   İkisi aynı Index action'ı olduğu için aktiflik query'den ayrışır. *@
                 @if (!isAdmin)
                 {
-                    <a class="nav-item @ActiveExcept("LeaveRequests", "Approvals", "Calendar")" asp-controller="LeaveRequests" asp-action="Index">
-                        @Icon("M8 2v4M16 2v4M3 10h18M5 6h14a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2")
-                        @(User.IsInRole("HR") ? "İzin Geçmişi" : "İzinlerim")
-                    </a>
+                    var izinTabanAktif = ActiveExcept("LeaveRequests", "Approvals", "Calendar") != "";
+
+                    @if (User.IsInRole("HR"))
+                    {
+                        var mineAktif = string.Equals(Context.Request.Query["mine"], "true", StringComparison.OrdinalIgnoreCase);
+
+                        <a class="nav-item @(izinTabanAktif && mineAktif ? "active" : "")"
+                           asp-controller="LeaveRequests" asp-action="Index" asp-route-mine="true">
+                            @Icon("M8 2v4M16 2v4M3 10h18M5 6h14a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2")
+                            İzinlerim
+                        </a>
+                        <a class="nav-item @(izinTabanAktif && !mineAktif ? "active" : "")"
+                           asp-controller="LeaveRequests" asp-action="Index">
+                            @Icon("M8 2v4M16 2v4M3 10h18M5 6h14a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2")
+                            Çalışan İzin Geçmişi
+                        </a>
+                    }
+                    else
+                    {
+                        <a class="nav-item @(izinTabanAktif ? "active" : "")" asp-controller="LeaveRequests" asp-action="Index">
+                            @Icon("M8 2v4M16 2v4M3 10h18M5 6h14a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2")
+                            İzinlerim
+                        </a>
+                    }
                 }
 
                 @* Onay Bekleyenler: yalnızca onaylayabilen roller. *@
@@ -302,6 +327,11 @@
         </div>
 
     </div>
+
+    @* Sağ altta yüzen veri asistanı. Kabuğun DIŞINDA duruyor (position:fixed):
+       sayfa akışına girmediği için hiçbir view'ın düzenini etkilemez.
+       Partial kendi içinde rol kontrolü yapar, İK/Admin dışında hiç çizilmez. *@
+    <partial name="_AssistantWidget" />
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>

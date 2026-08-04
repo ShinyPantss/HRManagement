@@ -25,6 +25,16 @@ public static class DependencyInjection
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 
+        // Asistan: salt okuma sorgu çalıştırıcı + Claude istemcisi + sohbet geçmişi.
+        // ClaudeAssistant SINGLETON — içinde HttpClient taşıyan bir istemci
+        // barındırır; scoped olsaydı her istekte yeni soket açardı.
+        // MemoryConversationStore da SINGLETON: geçmiş istekler ARASINDA yaşamalı,
+        // scoped olsaydı her istekte boş bir depo doğar ve hafıza hiç çalışmazdı.
+        services.AddMemoryCache();
+        services.AddScoped<ISqlQueryRunner, ReadOnlySqlQueryRunner>();
+        services.AddSingleton<IAiAssistant, Ai.ClaudeAssistant>();
+        services.AddSingleton<IConversationStore, Ai.MemoryConversationStore>();
+
         return services;
     }
 }

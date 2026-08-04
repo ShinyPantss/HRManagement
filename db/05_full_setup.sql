@@ -49,7 +49,7 @@ GO
    Enum karşılıkları (Domain/Enums):
      Users.Role            1=Admin 2=HR 3=Manager 4=Employee 5=Intern
      LeaveRequests.Type    1=Annual 2=Unpaid 3=Sick
-     LeaveRequests.Status  1=Pending 2=PendingHr 3=Approved 4=Rejected
+     LeaveRequests.Status  1=Pending 2=PendingHr 3=Approved 4=Rejected 5=Cancelled (onaylıyken geri çekildi)
      InternTasks.Status    1=Pending 2=InProgress 3=Done
 
    Tarihler UTC tutulur (SYSUTCDATETIME): sunucunun saat dilimi değişirse

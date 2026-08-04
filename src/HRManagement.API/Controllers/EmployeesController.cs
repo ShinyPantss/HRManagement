@@ -129,10 +129,29 @@ public class EmployeesController : ControllerBase
     private int CurrentUserId() =>
         int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
+    // Adlandırılmış argümanlar bilinçli: 19 parametrenin çoğu aynı tipte
+    // (5 string, 2 DateTime, 7 int/int?). Pozisyonel yazımda iki argümanın yeri
+    // değişse kod SORUNSUZ derlenir ve veriler sessizce karışırdı.
     private static EmployeeResponse ToResponse(HRManagement.Application.DTOs.EmployeeDto e) => new(
-        e.Id, e.FirstName, e.LastName, e.NationalId, e.Email, e.Phone,
-        e.BirthDate, e.HireDate, e.Gender, e.DepartmentId, e.UnitId,
-        e.UserId, e.ManagerId, e.Seniority, e.AnnualLeaveDays, e.IsActive);
+        id: e.Id,
+        firstName: e.FirstName,
+        lastName: e.LastName,
+        nationalId: e.NationalId,
+        email: e.Email,
+        phone: e.Phone,
+        birthDate: e.BirthDate,
+        hireDate: e.HireDate,
+        gender: e.Gender,
+        departmentId: e.DepartmentId,
+        unitId: e.UnitId,
+        userId: e.UserId,
+        managerId: e.ManagerId,
+        seniority: e.Seniority,
+        annualLeaveDays: e.AnnualLeaveDays,
+        isActive: e.IsActive,
+        accruedLeaveDays: e.AccruedLeaveDays,
+        usedLeaveDays: e.UsedLeaveDays,
+        remainingLeaveDays: e.RemainingLeaveDays);
 
     private static EmployeeDetailResponse ToDetailResponse(HRManagement.Application.DTOs.EmployeeDetailDto d) => new(
         d.Id, d.FirstName, d.LastName, d.NationalId, d.Email, d.Phone,

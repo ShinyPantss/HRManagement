@@ -56,7 +56,20 @@
     string Init(string first, string last) =>
         $"{(first.Length > 0 ? char.ToUpperInvariant(first[0]) : '?')}{(last.Length > 0 ? char.ToUpperInvariant(last[0]) : ' ')}".Trim();
 
-    var cols = canManage ? "2fr 1.4fr 1.2fr 1fr .9fr auto" : "2fr 1.4fr 1.2fr 1fr .9fr auto";
+    // İK/Admin'de fazladan "Kalan izin" kolonu var: bakiye yalnızca onlara gönderiliyor
+    // (Application katmanı "Ekibim" görünümünde bu alanları hiç doldurmuyor).
+    //
+    // İşlem kolonu SABİT genişlik — `auto` OLMAZ. Sebebi: .dt-head ve .dt-row ayrı
+    // birer grid container'dır, ortak track paylaşmazlar. `auto` her container'da
+    // KENDİ içeriğine göre çözülür; başlıkta "İŞLEM" dar, satırda iki-üç buton geniş.
+    // Aradaki fark fr kolonlarına dağılır ve başlıklar veriye göre kademeli kayar.
+    // Sabit değer verilince iki container aynı tracklara oturur.
+    // Butonlar sağa yaslı (justify-content: flex-end), o yüzden pay bırakmak zararsız.
+    var actionsCol = canDelete ? "212px" : canManage ? "160px" : "86px";
+
+    var cols = canManage
+        ? $"2fr 1.4fr 1.2fr 1fr .9fr .9fr {actionsCol}"
+        : $"2fr 1.4fr 1.2fr 1fr .9fr {actionsCol}";
 }
 
 @section PageActions {
@@ -138,6 +151,17 @@
         </div>
     </div>
 
+    @* Birikmiş izin: İK'nın "bunlara izin kullandırmam lazım" listesi.
+       Eşikler kanuni kademelerle aynı (14 ve 20 gün) — İK'nın zaten bildiği sayılar. *@
+    <div class="field field-narrow">
+        <span class="field-label">Birikmiş izin</span>
+        <div class="row-tight">
+            <button type="button" class="chip on" data-leave="">Tümü</button>
+            <button type="button" class="chip" data-leave="14">14+ gün</button>
+            <button type="button" class="chip" data-leave="20">20+ gün</button>
+        </div>
+    </div>
+
     @if (canManage && internList.Any())
     {
         @* Stajyer aç/kapa: açıkken stajyerler birimlerinin altında listelenir. *@
@@ -173,7 +197,13 @@
             <span>Ünvan</span>
             <span>İşe giriş</span>
             <span>Durum</span>
-            <span style="padding-left: 14px;">İşlem</span>
+            @if (canManage)
+            {
+                <span>Kalan izin</span>
+            }
+            @* Sağa yaslı: satırdaki .task-actions justify-content: flex-end ile
+               butonları sağ kenara diziyor, başlık da onlarla hizalanmalı. *@
+            <span style="text-align: right;">İşlem</span>
         </div>
 
         @for (var i = 0; i < listRows.Count; i++)
@@ -187,6 +217,9 @@
                  data-unit="@(e.UnitId?.ToString() ?? "")"
                  data-seniority="@e.Seniority"
                  data-status="@(e.IsActive ? "active" : "passive")"
+                 @* Filtre bu sayıyı okur. Yalnızca İK/Admin'de anlamlı — diğer
+                    rollerde API zaten 0 gönderir, filtre çubuğu da render edilmez. *@
+                 data-remaining="@e.RemainingLeaveDays"
                  data-search="@($"{e.FirstName} {e.LastName} {e.Email}".ToLowerInvariant())">
                 <div class="person">
                     <span class="avatar av-@(i % 6 + 1)">@Init(e.FirstName, e.LastName)</span>
@@ -204,6 +237,21 @@
                 <span>
                     <span class="badge badge-sm @(e.IsActive ? "badge-ok" : "badge-neutral")">@(e.IsActive ? "Aktif" : "Pasif")</span>
                 </span>
+                @if (canManage)
+                {
+                    @* Renk birikmiş izne dikkat çeker: 20+ kırmızı, 14+ sarı.
+                       Eksi bakiye (avans izin borcu) uyarı değil, nötr gösterilir. *@
+                    var remaining = e.RemainingLeaveDays;
+                    var leaveBadge = remaining >= 20 ? "badge-danger"
+                        : remaining >= 14 ? "badge-warn"
+                        : "badge-neutral";
+                    <span>
+                        <span class="badge badge-sm @leaveBadge"
+                              title="Hak edilen @e.AccruedLeaveDays gün · kullanılan+bekleyen @e.UsedLeaveDays gün">
+                            @remaining gün
+                        </span>
+                    </span>
+                }
                 <div class="task-actions" style="padding-left: 14px;">
                     @* Listede görünen herkesin detayı açılabilir — görünürlük zaten API'de daraltıldı. *@
                     <a asp-action="Details" asp-route-id="@e.Id" class="btn btn-sm">Detay</a>
@@ -292,10 +340,12 @@
             var noResults = document.getElementById('noFilterResults');
             var count = document.getElementById('rowCount');
             var chips = Array.prototype.slice.call(document.querySelectorAll('.chip[data-status]'));
+            var leaveChips = Array.prototype.slice.call(document.querySelectorAll('.chip[data-leave]'));
             var rows = Array.prototype.slice.call(document.querySelectorAll('.dt-row[data-search]'));
             if (!rows.length) return;
 
             var status = '';
+            var minLeave = 0;   // 0 = birikmiş izin filtresi kapalı
 
             // Birim seçenekleri seçilen departmana göre süzülür (formlardaki kaskadın aynısı).
             function filterUnitOptions() {
@@ -328,6 +378,12 @@
                     if (ok && u && row.getAttribute('data-unit') !== u) ok = false;
                     if (ok && s && row.getAttribute('data-seniority') !== s) ok = false;
                     if (ok && status && row.getAttribute('data-status') !== status) ok = false;
+                    // Birikmiş izin eşiği. Stajyer satırlarında data-remaining yok
+                    // (yıllık izin biriktirmezler) → parseInt NaN döner, eleme doğru çalışır.
+                    if (ok && minLeave) {
+                        var rem = parseInt(row.getAttribute('data-remaining'), 10);
+                        if (isNaN(rem) || rem < minLeave) ok = false;
+                    }
                     row.hidden = !ok;
                     if (ok) visible++;
                 });
@@ -335,7 +391,7 @@
                 if (noResults) noResults.hidden = visible !== 0;
                 if (count) count.textContent = visible + ' kayıt';
 
-                var dirty = !!(q || d || u || s || status);
+                var dirty = !!(q || d || u || s || status || minLeave);
                 if (clear) clear.hidden = !dirty;
             }
 
@@ -344,6 +400,15 @@
                     chips.forEach(function (c) { c.classList.remove('on'); });
                     chip.classList.add('on');
                     status = chip.getAttribute('data-status');
+                    apply();
+                });
+            });
+
+            leaveChips.forEach(function (chip) {
+                chip.addEventListener('click', function () {
+                    leaveChips.forEach(function (c) { c.classList.remove('on'); });
+                    chip.classList.add('on');
+                    minLeave = parseInt(chip.getAttribute('data-leave'), 10) || 0;
                     apply();
                 });
             });
@@ -361,7 +426,9 @@
                     if (search) search.value = '';
                     dept.value = ''; if (unit) unit.value = ''; sen.value = '';
                     status = '';
+                    minLeave = 0;
                     chips.forEach(function (c) { c.classList.toggle('on', c.getAttribute('data-status') === ''); });
+                    leaveChips.forEach(function (c) { c.classList.toggle('on', c.getAttribute('data-leave') === ''); });
                     filterUnitOptions();
                     apply();
                 });

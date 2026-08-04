@@ -152,22 +152,24 @@ public class LeaveEntitlementTests
         Assert.False(0 + requested <= accrued + nextGrant); // 15 ≤ 14 değil
     }
 
-    // ── İş günü sayımı: hafta sonu hariç, iki uç dahil ──────────────────────
+    // ── İş günü sayımı: hafta sonu hariç, başlangıç dahil, bitiş (işbaşı) HARİÇ ──
 
     [Theory]
-    // 2026-07-20 Pzt, 24 Cuma → 5 iş günü
-    [InlineData("2026-07-20", "2026-07-24", 5)]
-    // 20 Pzt → 27 Pzt (bir sonraki): araya Cmt+Pzr girer → 6 iş günü
-    [InlineData("2026-07-20", "2026-07-27", 6)]
-    // Tek gün, hafta içi → 1
-    [InlineData("2026-07-22", "2026-07-22", 1)]
-    // Cumartesi tek gün → 0 iş günü
-    [InlineData("2026-07-25", "2026-07-25", 0)]
-    // Cmt+Pzr → 0
+    // 2026-07-20 Pzt → 24 Cuma işbaşı: Pzt–Per izinli → 4 iş günü
+    [InlineData("2026-07-20", "2026-07-24", 4)]
+    // 20 Pzt → 27 Pzt işbaşı (tam hafta): Pzt–Cuma izinli, Cmt+Pzr düşer → 5
+    [InlineData("2026-07-20", "2026-07-27", 5)]
+    // Tek günlük izin: 22'si (Çrş) izinli, 23'ü işbaşı → 1
+    [InlineData("2026-07-22", "2026-07-23", 1)]
+    // Başlangıç == bitiş: aralık boş → 0 (validator zaten reddeder)
+    [InlineData("2026-07-22", "2026-07-22", 0)]
+    // Yalnızca Cumartesi izinli (Pzr işbaşı) → 0 iş günü
     [InlineData("2026-07-25", "2026-07-26", 0)]
-    // Cuma→Pazartesi: Cuma + Pzt sayılır, Cmt/Pzr düşer → 2
-    [InlineData("2026-07-24", "2026-07-27", 2)]
-    public void WorkingDays_hafta_sonunu_haric_tutar(string start, string end, int expected)
+    // Cmt+Pzr izinli, Pzt işbaşı → 0
+    [InlineData("2026-07-25", "2026-07-27", 0)]
+    // Cuma → Salı işbaşı: Cuma + Pzt sayılır, Cmt/Pzr düşer → 2
+    [InlineData("2026-07-24", "2026-07-28", 2)]
+    public void WorkingDays_bitis_gununu_ve_hafta_sonunu_haric_tutar(string start, string end, int expected)
     {
         Assert.Equal(expected,
             LeaveEntitlement.WorkingDays(DateTime.Parse(start), DateTime.Parse(end)));

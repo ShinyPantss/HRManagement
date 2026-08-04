@@ -45,6 +45,7 @@
                 <div class="field">
                     <label class="field-label" asp-for="EndDate"></label>
                     <input asp-for="EndDate" type="date" asp-format="{0:yyyy-MM-dd}" class="input" />
+                    <span class="field-hint">İşe başlayacağın gün — izne sayılmaz.</span>
                     <span asp-validation-for="EndDate"></span>
                 </div>
             </div>
@@ -72,7 +73,7 @@
                 </div>
             </div>
             <div class="divider"></div>
-            <div class="field-hint">Hafta sonları iş gününe sayılmaz. Bakiye kontrolünü ve nihai gün sayısını API yapar.</div>
+            <div class="field-hint">Hafta sonları iş gününe sayılmaz; bitiş günü işe dönüş günüdür, izne dahil değildir. Bakiye kontrolünü ve nihai gün sayısını API yapar.</div>
         </section>
 
         <div class="form-actions">
@@ -109,14 +110,15 @@
 
             if (typeSelect) { typeSelect.addEventListener('change', syncReport); syncReport(); }
 
-            // İş günü önizlemesi: hafta sonları düşülür (API'deki kuralın aynısı).
+            // İş günü önizlemesi: hafta sonları düşülür, bitiş günü (işe başlama)
+            // aralığa DAHİL EDİLMEZ (API'deki kuralın aynısı).
             function workingDays() {
                 if (!start || !end || !start.value || !end.value) return null;
                 var s = new Date(start.value + 'T00:00:00');
                 var e = new Date(end.value + 'T00:00:00');
-                if (isNaN(s) || isNaN(e) || e < s) return null;
+                if (isNaN(s) || isNaN(e) || e <= s) return null;
                 var n = 0;
-                for (var d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) {
+                for (var d = new Date(s); d < e; d.setDate(d.getDate() + 1)) {
                     var wd = d.getDay();
                     if (wd !== 0 && wd !== 6) n++;
                 }

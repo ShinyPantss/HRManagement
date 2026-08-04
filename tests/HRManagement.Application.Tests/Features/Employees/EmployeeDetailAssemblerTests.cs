@@ -280,6 +280,7 @@ public class EmployeeDetailAssemblerTests
         public Task<int> GetTotalUsedAnnualDaysAsync(int employeeId) =>
             Task.FromResult(totalUsedAnnualDays);
 
+        public Task<IReadOnlyDictionary<int, int>> GetUsedAnnualDaysByEmployeeAsync() => throw new NotImplementedException();
         public Task<LeaveRequest?> GetByIdAsync(int id) => throw new NotImplementedException();
         public Task<IEnumerable<LeaveRequest>> GetAllAsync() => throw new NotImplementedException();
         public Task<int> AddAsync(LeaveRequest leaveRequest) => throw new NotImplementedException();

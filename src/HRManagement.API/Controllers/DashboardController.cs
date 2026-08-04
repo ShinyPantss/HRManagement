@@ -84,6 +84,15 @@ public class DashboardController : ControllerBase
                     WorkingDays = x.WorkingDays,
                     RequestCount = x.RequestCount
                 })
+                .ToList(),
+
+            YearlyPersonTrend = d.YearlyPersonTrend
+                .Select(x => new MonthlyPersonCountResponse
+                {
+                    Year = x.Year,
+                    Month = x.Month,
+                    PersonCount = x.PersonCount
+                })
                 .ToList()
         };
 

@@ -50,6 +50,17 @@ public class HrDashboardDto
 
     // ── Son aylardaki izin kullanımı — mevsimsellik ──
     public List<LeaveTrendPointDto> MonthlyTrend { get; set; } = [];
+
+    // ── Yıllık kişi trendi — çizgi grafik (bu yıl vs geçen yıl, 12'şer ay) ──
+    public List<MonthlyPersonCountDto> YearlyPersonTrend { get; set; } = [];
+}
+
+/// <summary>O ay izne ÇIKAN (onaylı izni o ay başlayan) tekil kişi sayısı.</summary>
+public class MonthlyPersonCountDto
+{
+    public int Year { get; set; }
+    public int Month { get; set; }
+    public int PersonCount { get; set; }
 }
 
 public class SeniorityBreakdownDto

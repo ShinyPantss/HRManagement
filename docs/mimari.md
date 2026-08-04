@@ -186,7 +186,7 @@ imzalı token'dan okunur.
 Mesaj handler'a ulaşmadan önce `CreateLeaveRequestCommandValidator` çalışır.
 Burada yalnızca **veritabanına bakmadan** cevaplanabilen kurallar denetlenir:
 
-- Bitiş tarihi ≥ başlangıç tarihi
+- Bitiş (işe başlama) tarihi > başlangıç tarihi — bitiş günü izne dahil değildir
 - İzin türü geçerli bir enum değeri
 - Açıklama ≤ 500 karakter
 - Hastalık izniyse rapor bilgisi dolu

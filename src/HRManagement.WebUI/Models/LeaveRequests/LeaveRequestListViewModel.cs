@@ -40,6 +40,13 @@ public class LeaveRequestListViewModel
     /// <summary>Tüm izin geçmişi — yalnızca <see cref="IsAllView"/> true iken doludur.</summary>
     public List<LeaveHistoryResponse> AllRows { get; set; } = [];
 
+    /// <summary>
+    /// HR'ın "İzinlerim" kapsamı (?mine=true): şirket geneli yerine kişinin KENDİ
+    /// talepleri. Filtre formu ve rapor linkleri bu bayrağı taşımak zorunda —
+    /// yoksa tarih filtresi uygulayan HR kendini yeniden şirket geneli görünümde bulur.
+    /// </summary>
+    public bool Mine { get; set; }
+
     // ── Zaman filtresi ───────────────────────────────────────────────────────
     // Filtre SUNUCUDA uygulanır, listenin JS süzgeci gibi değil: ekran her satırı
     // HTML'e basıyor, dolayısıyla gizlemek yükü azaltmaz. Sunucuda eleyince hem

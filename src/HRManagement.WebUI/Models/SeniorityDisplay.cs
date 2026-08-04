@@ -10,19 +10,29 @@ namespace HRManagement.WebUI.Models;
 public static class SeniorityDisplay
 {
     // Sıra, dropdown'da da bu düzende görünsün diye kıdem yüksekten düşüğe.
-    private static readonly (int Value, string Label)[] Levels =
+    // Short: dar alanlarda (yönetici dropdown'ı gibi) parantez içinde gösterilen kısaltma.
+    private static readonly (int Value, string Label, string Short)[] Levels =
     [
-        (1, "Genel Müdür"),
-        (2, "Genel Müdür Yardımcısı"),
-        (3, "Müdür"),
-        (4, "Müdür Yardımcısı"),
-        (5, "Kıdemli Uzman"),
-        (6, "Uzman"),
+        (1, "Genel Müdür", "GM"),
+        (2, "Genel Müdür Yardımcısı", "GMY"),
+        (3, "Müdür", "M"),
+        (4, "Müdür Yardımcısı", "MY"),
+        (5, "Kıdemli Uzman", "KU"),
+        (6, "Uzman", "U"),
     ];
 
     public static string Label(int? seniority) =>
         seniority is int s
             ? Levels.FirstOrDefault(l => l.Value == s).Label ?? "—"
+            : "—";
+
+    /// <summary>
+    /// Kısa kıdem etiketi (GM, GMY, M...). Uzun ad satıra sığmadığında kullanılır;
+    /// tam karşılığı için <see cref="Label"/>.
+    /// </summary>
+    public static string ShortLabel(int? seniority) =>
+        seniority is int s
+            ? Levels.FirstOrDefault(l => l.Value == s).Short ?? "—"
             : "—";
 
     /// <summary>Departman + kıdem → "IT Uzmanı". Kıdem yoksa yalnız departman adı.</summary>

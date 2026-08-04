@@ -27,6 +27,13 @@ public class EmployeeResponse
     public int? Seniority { get; set; }
     public int? AnnualLeaveDays { get; set; }
     public bool IsActive { get; set; }
+
+    // Yıllık izin bakiyesi — API'de her istekte hesaplanır, saklanmaz.
+    // Liste ekranındaki "Kalan" rozetini ve "birikmiş izin" filtresini besler.
+    // RemainingLeaveDays NEGATİF olabilir (avans izin borcu devreder).
+    public int AccruedLeaveDays { get; set; }
+    public int UsedLeaveDays { get; set; }
+    public int RemainingLeaveDays { get; set; }
 }
 
 // Departmanlardan farklı olarak Create ve Update aynı alanları taşımıyor:

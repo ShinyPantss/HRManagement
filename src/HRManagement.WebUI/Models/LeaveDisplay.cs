@@ -36,6 +36,7 @@ public static class LeaveDisplay
         "PendingHr" => ("badge-info", "İK Onayı Bekliyor"),
         "Approved" => ("badge-ok", "Onaylandı"),
         "Rejected" => ("badge-danger", "Reddedildi"),
+        "Cancelled" => ("badge-neutral", "Geri Çekildi"),
         _ => ("badge-neutral", status)
     };
 
@@ -46,6 +47,7 @@ public static class LeaveDisplay
         "PendingHr" => ("badge-info", "İK onayı"),
         "Approved" => ("badge-ok", "Onaylandı"),
         "Rejected" => ("badge-danger", "Reddedildi"),
+        "Cancelled" => ("badge-neutral", "Geri çekildi"),
         _ => ("badge-neutral", status)
     };
 

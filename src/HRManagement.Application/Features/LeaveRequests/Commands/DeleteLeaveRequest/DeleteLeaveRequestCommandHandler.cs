@@ -24,6 +24,14 @@ public sealed class DeleteLeaveRequestCommandHandler : IRequestHandler<DeleteLea
         _internRepository = internRepository;
     }
 
+    // İptal / geri çekme kuralları (kullanıcı kararı):
+    //   izin BAŞLADIYSA (bugün ≥ başlangıç)     → hiçbir şey yapılamaz
+    //   onaylanmadıysa + başlamadıysa           → DİREKT İPTAL: kayıt silinir
+    //   onaylandıysa  + başlamadıysa            → GERİ ÇEKME: kayıt SİLİNMEZ,
+    //                                             Cancelled'a çekilir (denetim izi
+    //                                             kalır, günler bakiyeye döner)
+    //   reddedildi / zaten geri çekildi         → işlem yok (akış sonuçlanmış)
+    // Admin istisnası: her talebi silebilir (yönetimsel temizlik / veri onarımı).
     public async Task<Unit> Handle(DeleteLeaveRequestCommand request, CancellationToken cancellationToken)
     {
         var leaveRequest = await _leaveRequestRepository.GetByIdAsync(request.Id);
@@ -35,23 +43,46 @@ public sealed class DeleteLeaveRequestCommandHandler : IRequestHandler<DeleteLea
         if (actor is null || !actor.IsActive)
             throw new ValidationException("İşlemi yapan hesap bulunamadı veya pasif.");
 
-        // Admin her talebi silebilir (yönetimsel temizlik).
-        if (actor.Role != Role.Admin)
+        if (actor.Role == Role.Admin)
         {
-            // Admin değilse: yalnızca KENDİ talebini VE yalnızca daha onaylanmamışsa.
-            // Onaylı/İK aşamasındaki bir talebi silmek, kullanılan izni bakiyeden
-            // düşüren kaydı yok ederek hakkı geri kazandırırdı (bakiye hilesi).
-            var ownerUserId = await GetOwnerUserIdAsync(leaveRequest);
-
-            if (ownerUserId is null || ownerUserId != actor.Id)
-                throw new ValidationException("Yalnızca kendi izin talebinizi silebilirsiniz.");
-
-            if (leaveRequest.Status != LeaveStatus.Pending)
-                throw new ValidationException(
-                    "Yalnızca henüz onaylanmamış (beklemede) talepler silinebilir.");
+            await _leaveRequestRepository.DeleteAsync(request.Id);
+            return Unit.Value;
         }
 
-        await _leaveRequestRepository.DeleteAsync(request.Id);
+        var ownerUserId = await GetOwnerUserIdAsync(leaveRequest);
+
+        if (ownerUserId is null || ownerUserId != actor.Id)
+            throw new ValidationException("Yalnızca kendi izin talebinizi iptal edebilirsiniz.");
+
+        // "Bugün" tanımı sistemin geri kalanıyla aynı kaynaktan (UTC). Başlangıç
+        // gününün sabahı da "izne girilmiş" sayılır — o günün yerine başkası
+        // planlanamayacağı için geri almanın operasyonel karşılığı kalmamıştır.
+        if (leaveRequest.StartDate.Date <= DateTime.UtcNow.Date)
+            throw new ValidationException("İzin başlamış; artık iptal edilemez veya geri çekilemez.");
+
+        switch (leaveRequest.Status)
+        {
+            // Henüz kimse onaylamadı: rezerve edilen hak dışında iz yok, kayıt silinir.
+            case LeaveStatus.Pending:
+            case LeaveStatus.PendingHr:
+                await _leaveRequestRepository.DeleteAsync(request.Id);
+                break;
+
+            // Onaylı talep geri çekilir ama SİLİNMEZ: onay izi (kim, ne zaman)
+            // denetim için kalmalı. Cancelled, kullanılan-gün ve çakışma
+            // sorgularının statü listelerinde olmadığından günler kendiliğinden
+            // bakiyeye döner.
+            case LeaveStatus.Approved:
+                leaveRequest.Status = LeaveStatus.Cancelled;
+                await _leaveRequestRepository.UpdateAsync(leaveRequest);
+                break;
+
+            case LeaveStatus.Cancelled:
+                throw new ValidationException("Bu talep zaten geri çekilmiş.");
+
+            default: // Rejected
+                throw new ValidationException("Reddedilmiş talep iptal edilemez; kayıt geçmişte kalır.");
+        }
 
         return Unit.Value;
     }

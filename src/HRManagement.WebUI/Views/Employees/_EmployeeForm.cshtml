@@ -100,10 +100,15 @@
             <option value="">Yok (zincirin tepesi)</option>
             @foreach (var m in Model.ManagerCandidates)
             {
-                <option value="@m.Id" data-seniority="@m.Seniority" data-department="@m.DepartmentId">@m.Name</option>
+                @* data-unit boş = departman düzeyi yönetici (GMY/GM); dolu = birim müdürü.
+                   Süzme mantığı _ManagerSeniorityFilter.cshtml'de. *@
+                <option value="@m.Id"
+                        data-seniority="@m.Seniority"
+                        data-department="@m.DepartmentId"
+                        data-unit="@(m.UnitId?.ToString() ?? "")">@m.Name (@SeniorityDisplay.ShortLabel(m.Seniority))</option>
             }
         </select>
-        <span class="field-hint">Yalnızca Müdür, GMY, GM ve çalışandan kıdemli olanlar listelenir.</span>
+        <span class="field-hint">Kendi biriminin zinciri listelenir: birim müdürün, departmanının GMY'si ve GM.</span>
         <span asp-validation-for="ManagerId"></span>
     </div>
 

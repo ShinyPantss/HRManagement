@@ -2,7 +2,7 @@
 @model HRManagement.WebUI.Models.LeaveRequests.LeaveRequestListViewModel
 @{
     var isAll = Model.IsAllView;
-    ViewData["Title"] = isAll ? "İzin Geçmişi" : "İzinlerim";
+    ViewData["Title"] = isAll ? "Çalışan İzin Geçmişi" : "İzinlerim";
 
     // Özet şeridi ELDEKİ satırlardan türetilir (ayrı bir API ucu yok) ve
     // zaman filtresi uygulandıktan SONRAKİ kümeyi anlatır — başlıktaki
@@ -33,11 +33,13 @@
 }
 
 @section PageActions {
-    @* Rapor ve CSV, ekranla AYNI filtreyi taşır — parametreler aynen aktarılır. *@
+    @* Rapor ve CSV, ekranla AYNI filtreyi VE kapsamı (mine) taşır — parametreler
+       aynen aktarılır; aksi hâlde kişisel görünümdeki HR şirket geneli rapor alırdı. *@
     <a asp-action="Report"
        asp-route-range="@Model.Range"
        asp-route-from="@Model.From?.ToString("yyyy-MM-dd")"
        asp-route-to="@Model.To?.ToString("yyyy-MM-dd")"
+       asp-route-mine="@(Model.Mine ? "true" : null)"
        target="_blank" rel="noopener" class="btn">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4v-6h16v6h-2M8 14h8v7H8z" /></svg>
         Rapor çıktısı
@@ -46,6 +48,7 @@
        asp-route-range="@Model.Range"
        asp-route-from="@Model.From?.ToString("yyyy-MM-dd")"
        asp-route-to="@Model.To?.ToString("yyyy-MM-dd")"
+       asp-route-mine="@(Model.Mine ? "true" : null)"
        class="btn">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" /></svg>
         Excel indir
@@ -95,6 +98,12 @@
    Dış boşluk verilmiyor: .content flex column + gap:18px zaten aralığı
    yönetiyor, ayrıca margin eklemek çift boşluk yapardı. *@
 <form method="get" class="card card-pad">
+    @* Kapsam bayrağı filtreyle birlikte gider: HR'ın "İzinlerim" görünümünde
+       tarih filtresi uygulamak onu şirket geneli görünüme geri düşürmemeli. *@
+    @if (Model.Mine)
+    {
+        <input type="hidden" name="mine" value="true" />
+    }
     <div class="row-tight" style="flex-wrap: wrap; gap: 8px;">
         <span class="dt-secondary" style="margin-right: 4px;">Zaman aralığı:</span>
 
@@ -218,16 +227,26 @@
                     <span class="dt-secondary" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                         @(string.IsNullOrWhiteSpace(request.Description) ? "—" : request.Description)
                     </span>
+                    @{
+                        // İptal/geri çekme yalnızca izin BAŞLAMADAN mümkündür; onaylıda
+                        // adı "geri çek"tir (kayıt kalır), onaysızda "iptal" (kayıt silinir).
+                        // Buradaki koşul UX'tir; asıl kural API + Application'dadır.
+                        var izinBaslamadi = request.StartDate.Date > DateTime.Today;
+                        var geriCekme = request.Status == "Approved";
+                        var iptalEdilebilir = izinBaslamadi
+                            && request.Status is "Pending" or "PendingHr" or "Approved";
+                    }
                     <div class="task-actions">
                         <a asp-action="Details" asp-route-id="@request.Id" class="btn btn-sm">Detay</a>
-                        @if (kendiTalebim)
+                        @if (kendiTalebim && iptalEdilebilir)
                         {
                             <form asp-action="Delete" method="post" style="display: inline;"
-                                  data-confirm="Bu izin talebi silinsin mi?" data-confirm-ok="Sil" data-danger>
+                                  data-confirm="@(geriCekme ? "Onaylı izin talebi geri çekilsin mi? Günler bakiyene döner." : "Bu izin talebi iptal edilsin mi?")"
+                                  data-confirm-ok="@(geriCekme ? "Geri Çek" : "İptal Et")" data-danger>
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" name="id" value="@request.Id" />
                                 <input type="hidden" name="employeeId" value="@Model.SelectedEmployeeId" />
-                                <button type="submit" class="btn btn-sm btn-danger">Sil</button>
+                                <button type="submit" class="btn btn-sm btn-danger">@(geriCekme ? "Geri Çek" : "İptal Et")</button>
                             </form>
                         }
                     </div>

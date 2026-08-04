@@ -11,4 +11,5 @@ public class Department
     // Audit. UTC tutulur; kullanıcıya gösterilirken çevrilir.
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }     // hiç güncellenmediyse null
+
 }

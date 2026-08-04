@@ -111,11 +111,11 @@ erDiagram
         int InternId FK "null - CK ile tam biri"
         int Type "1-3 bkz enum"
         date StartDate
-        date EndDate
-        int WorkingDays "hafta sonu hariç"
+        date EndDate "işe başlama günü - izne dahil değil"
+        int WorkingDays "hafta sonu ve bitiş günü hariç"
         nvarchar Description "null"
         nvarchar MedicalReport "null - hastalıkta zorunlu"
-        int Status "1-4 bkz enum"
+        int Status "1-5 bkz enum"
         nvarchar RejectionReason "null"
         int ManagerApprovedByUserId FK "null"
         datetime2 ManagerApprovedAt "null"
@@ -208,7 +208,7 @@ başka anlama gelir** — değişiklik gerekirse veri taşıma script'i şarttı
 | `Employees.Seniority` | `1` Genel Müdür · `2` GM Yardımcısı · `3` Müdür · `4` Müdür Yrd. · `5` Kıdemli Uzman · `6` Uzman — *sayı küçüldükçe kıdem yükselir* |
 | `Employees.Gender` | `1` Erkek · `2` Kadın · `NULL` belirtilmemiş |
 | `LeaveRequests.Type` | `1` Yıllık · `2` Ücretsiz · `3` Hastalık |
-| `LeaveRequests.Status` | `1` Beklemede (yönetici onayı) · `2` İK onayı bekliyor · `3` Onaylandı · `4` Reddedildi |
+| `LeaveRequests.Status` | `1` Beklemede (yönetici onayı) · `2` İK onayı bekliyor · `3` Onaylandı · `4` Reddedildi · `5` Geri çekildi (onaylıyken, izin başlamadan sahibi iptal etti) |
 | `InternTasks.Status` | `1` Atandı · `2` Devam ediyor · `3` Tamamlandı |
 | `AccountRequests.Status` | `1` Beklemede · `2` Onaylandı · `3` Reddedildi |
 

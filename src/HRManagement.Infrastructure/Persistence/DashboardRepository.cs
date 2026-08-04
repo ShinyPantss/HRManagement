@@ -10,7 +10,7 @@ namespace HRManagement.Infrastructure.Persistence;
 /// Panoyu tek stored procedure çağrısıyla doldurur (dbo.usp_HrDashboard_Get).
 /// Projedeki ilk SP kullanımı; diğer repository'ler düz SQL yazmaya devam eder.
 ///
-/// SP tercih edildi çünkü pano beş ayrı sorgunun sonucunu birlikte istiyor:
+/// SP tercih edildi çünkü pano altı ayrı sorgunun sonucunu birlikte istiyor:
 /// tek çağrı hem round-trip'i hem tutarsız anlık görüntü riskini ortadan kaldırır.
 /// </summary>
 public class DashboardRepository : IDashboardRepository
@@ -47,12 +47,13 @@ public class DashboardRepository : IDashboardRepository
 
         // OKUMA SIRASI SP'DEKİ SELECT SIRASIYLA AYNI OLMAK ZORUNDA.
         // Kayarsa derleyici uyarmaz, ekranda sessizce yanlış veri görünür.
-        // Araya koşul/erken çıkış eklenmemeli — sıra hep bu beş satırda okunur.
+        // Araya koşul/erken çıkış eklenmemeli — sıra hep bu altı satırda okunur.
         var summary = await multi.ReadSingleAsync<SummaryRow>();               // 1) Özet
         var seniority = (await multi.ReadAsync<SeniorityRow>()).ToList();      // 2) Kıdem
         var onLeave = (await multi.ReadAsync<LeaveRow>()).ToList();            // 3) Şu an izinde
         var upcoming = (await multi.ReadAsync<UpcomingRow>()).ToList();        // 4) Yaklaşan
         var trend = (await multi.ReadAsync<TrendRow>()).ToList();              // 5) Trend
+        var personTrend = (await multi.ReadAsync<PersonTrendRow>()).ToList();  // 6) Yıllık kişi trendi
 
         return new HrDashboardDto
         {
@@ -105,6 +106,15 @@ public class DashboardRepository : IDashboardRepository
                     Month = t.Month,
                     WorkingDays = t.WorkingDays,
                     RequestCount = t.RequestCount
+                })
+                .ToList(),
+
+            YearlyPersonTrend = personTrend
+                .Select(t => new MonthlyPersonCountDto
+                {
+                    Year = t.Year,
+                    Month = t.Month,
+                    PersonCount = t.PersonCount
                 })
                 .ToList()
         };
@@ -167,5 +177,12 @@ public class DashboardRepository : IDashboardRepository
         public int Month { get; set; }
         public int WorkingDays { get; set; }
         public int RequestCount { get; set; }
+    }
+
+    private sealed class PersonTrendRow
+    {
+        public int Year { get; set; }
+        public int Month { get; set; }
+        public int PersonCount { get; set; }
     }
 }
