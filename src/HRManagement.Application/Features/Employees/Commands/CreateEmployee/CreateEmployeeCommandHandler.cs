@@ -40,6 +40,12 @@ public sealed class CreateEmployeeCommandHandler : IRequestHandler<CreateEmploye
     {
         var email = request.Email.Trim();
 
+        // Boş bırakılabilir; boşsa null saklanır ki filtered UNIQUE index birden
+        // fazla "T.C.'si girilmemiş" kaydı engellemesin.
+        var nationalId = string.IsNullOrWhiteSpace(request.NationalId)
+            ? null
+            : request.NationalId.Trim();
+
         if (await _departmentRepository.GetByIdAsync(request.DepartmentId) is null)
             throw new ValidationException("Departman bulunamadı.");
 
@@ -54,6 +60,12 @@ public sealed class CreateEmployeeCommandHandler : IRequestHandler<CreateEmploye
         // Kuralı burada önden uygulayıp anlaşılır bir 400 mesajı veriyoruz.
         if (await _employeeRepository.GetByEmailAsync(email) is not null)
             throw new ValidationException("Bu e-posta ile kayıtlı bir çalışan zaten var.");
+
+        // T.C. Kimlik benzersizliği: e-postadaki desenin aynısı. Mükerrer kayıt
+        // kişinin izin bakiyesini ikiye böler — her kayıttan ayrı izin kullanılabilirdi.
+        if (nationalId is not null
+            && await _employeeRepository.GetByNationalIdAsync(nationalId) is not null)
+            throw new ValidationException("Bu T.C. Kimlik No ile kayıtlı bir çalışan zaten var.");
 
         if (request.ManagerId is int managerId)
         {
@@ -73,7 +85,7 @@ public sealed class CreateEmployeeCommandHandler : IRequestHandler<CreateEmploye
         {
             FirstName = request.FirstName.Trim(),
             LastName = request.LastName.Trim(),
-            NationalId = request.NationalId,
+            NationalId = nationalId,
             Email = email,
             Phone = request.Phone,
             DateOfBirth = request.BirthDate,

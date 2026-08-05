@@ -138,6 +138,15 @@ public class InternRepository : IInternRepository
         return await connection.QueryFirstOrDefaultAsync<Intern>(sql, new { UserId = userId });
     }
 
+    public async Task<Intern?> GetByEmailAsync(string email)
+    {
+        // FirstOrDefault (Single değil): kısıt eklenmeden önce girilmiş mükerrer
+        // kayıtlar bu sorguyu 500'e çevirmemeli.
+        const string sql = "SELECT * FROM Interns WHERE Email = @Email";
+        using var connection = _connectionFactory.CreateConnection();
+        return await connection.QueryFirstOrDefaultAsync<Intern>(sql, new { Email = email });
+    }
+
     public async Task<IEnumerable<Intern>> GetByMentorIdAsync(int mentorEmployeeId)
     {
         const string sql = "SELECT * FROM Interns WHERE MentorId = @MentorId";

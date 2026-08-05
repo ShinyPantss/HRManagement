@@ -34,6 +34,13 @@ public interface IEmployeeRepository
     Task<Employee?> GetByEmailAsync(string email);
 
     /// <summary>
+    /// T.C. Kimlik benzersizliği iş kuralı için (e-postadaki desenin aynısı).
+    /// Aynı T.C. ile ikinci kayıt açılabilseydi kişinin izin bakiyesi iki kayda
+    /// bölünür ve her ikisinden ayrı ayrı izin kullanılabilirdi.
+    /// </summary>
+    Task<Employee?> GetByNationalIdAsync(string nationalId);
+
+    /// <summary>
     /// "managerEmployeeId, subordinateEmployeeId'nin yönetici zincirinde YUKARIDA mı?"
     /// İzin onayı yetkisi ve döngü önleme (çalışan kendi astına bağlanamaz) bunu kullanır.
     /// </summary>

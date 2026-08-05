@@ -40,11 +40,15 @@ public static class HrDatabaseSchema
         Users(Id, Username, Email, PasswordHash, Role, IsActive, CreatedAt, UpdatedAt)
             Giriş hesabı. PasswordHash'i ASLA sorgulama veya gösterme.
 
-        Employees(Id, FirstName, LastName, NationalId, DateOfBirth, DepartmentId,
+        Employees(Id, FirstName, LastName, DateOfBirth, DepartmentId,
                   UnitId, HireDate, Email, Phone, IsActive, UserId, ManagerId,
                   AnnualLeaveDays, Seniority, Gender, CreatedAt, UpdatedAt)
             ManagerId kendine referans verir (yönetici de bir çalışandır).
-            NationalId = T.C. kimlik no; gerekmedikçe sorgulama.
+            NationalId kolonu BİLEREK listelenmedi: T.C. kimlik yalnızca İK'ya
+            açıktır (bkz. EmployeeFieldVisibility), asistan ise İK + Admin'e
+            açıktır. Şemada dursaydı Admin, REST uçlarından göremediği T.C.'yi
+            asistana sordurarak okuyabilirdi. "Sorgulama" diye yazılan bir not
+            tavsiyedir, kontrol değildir — kolonu hiç tanıtmamak kontroldür.
 
         Interns(Id, FirstName, LastName, Email, University, Major, Grade,
                 StartDate, EndDate, MentorId, DepartmentId, UnitId, UserId,

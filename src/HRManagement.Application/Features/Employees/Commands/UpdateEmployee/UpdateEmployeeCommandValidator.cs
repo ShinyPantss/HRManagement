@@ -39,6 +39,12 @@ public sealed class UpdateEmployeeCommandValidator : AbstractValidator<UpdateEmp
             .GreaterThanOrEqualTo(command => command.BirthDate)
             .WithMessage("İşe giriş tarihi doğum tarihinden önce olamaz.");
 
+        // T.C. Kimlik ZORUNLU DEĞİL; dolduysa 11 hane RAKAM olmalı (Create ile aynı).
+        RuleFor(command => command.NationalId)
+            .Length(11).WithMessage("T.C. Kimlik No 11 haneli olmalıdır.")
+            .Matches("^[0-9]{11}$").WithMessage("T.C. Kimlik No yalnızca rakamlardan oluşmalıdır.")
+            .When(command => !string.IsNullOrWhiteSpace(command.NationalId));
+
         // Opsiyonel alanlar: boş bırakılabilir, ama DOLU geldiyse anlamlı olmalı.
         RuleFor(command => command.UserId)
             .GreaterThan(0).When(command => command.UserId.HasValue)

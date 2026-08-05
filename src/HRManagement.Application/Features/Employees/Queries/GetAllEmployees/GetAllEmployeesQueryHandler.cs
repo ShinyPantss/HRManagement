@@ -37,6 +37,11 @@ public sealed class GetAllEmployeesQueryHandler : IRequestHandler<GetAllEmployee
         var actor = await _userRepository.GetByIdAsync(request.RequesterUserId);
         var canSeeLeave = actor is not null && actor.Role is Role.HR or Role.Admin;
 
+        // T.C. Kimlik: detay yolundaki kırpmanın AYNISI (tek kaynak
+        // EmployeeFieldVisibility). Liste bu kırpmadan geçmediği için Manager
+        // ekibinin, Employee ekip arkadaşlarının T.C.'sini görüyordu.
+        var canSeeNationalId = EmployeeFieldVisibility.CanSeeNationalId(actor);
+
         // Göremeyecekse sorgu HİÇ çalışmaz — hem gizlilik hem boşuna iş yapmamak.
         // Kullanılan günler tek GROUP BY ile gelir: kişi başına sorgu (N+1) yok.
         var usedByEmployee = canSeeLeave
@@ -49,7 +54,7 @@ public sealed class GetAllEmployeesQueryHandler : IRequestHandler<GetAllEmployee
         return employees
             .Select(employee =>
             {
-                var dto = EmployeeMapping.ToDto(employee);
+                var dto = EmployeeMapping.ToDto(employee, canSeeNationalId);
 
                 if (usedByEmployee is not null)
                 {

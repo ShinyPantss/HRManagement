@@ -71,7 +71,10 @@ public sealed class GetOrganizationQueryHandler : IRequestHandler<GetOrganizatio
                 DepartmentId = i.DepartmentId,
                 UnitId = i.UnitId,
                 // Stajyer kaydında aktiflik bayrağı yok; staj bitmemişse aktif sayılır.
-                IsActive = i.EndDate.Date >= DateTime.Today,
+                // "Bugün" UTC'dir: projedeki tüm kural kodu (izin hakkı, staj süresi)
+                // UtcNow.Date kullanır. Yerel saat kullanılsaydı UTC+3'te her gece
+                // 00:00–03:00 arası iki katman farklı gün söylerdi.
+                IsActive = i.EndDate.Date >= DateTime.UtcNow.Date,
                 IsIntern = true,
                 Grade = i.Grade
             }))

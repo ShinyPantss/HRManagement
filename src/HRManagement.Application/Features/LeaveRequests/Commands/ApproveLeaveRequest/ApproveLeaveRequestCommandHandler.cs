@@ -44,17 +44,21 @@ public sealed class ApproveLeaveRequestCommandHandler : IRequestHandler<ApproveL
 
         var approver = await _approvalGuard.EnsureCanActAsync(leaveRequest, request.ApproverUserId);
 
+        // "Kontrol zamanı ≠ kullanım zamanı": talep açılırken bakiye yetiyordu,
+        // ama aradan geçen sürede başka talepler onaylanmış olabilir. Yıllık
+        // izinse HER onay adımında TEKRAR denetlenir.
+        //
+        // Denetim switch'in DIŞINDA: yalnızca Pending dalında olsaydı, yönetici
+        // aşamasını atlayan talepler (tepe yönetici → doğrudan PendingHr) o dala
+        // hiç uğramadığı için denetimsiz onaylanırdı.
+        if (leaveRequest.Type == LeaveType.Annual && leaveRequest.EmployeeId is int employeeId)
+            await EnsureBalanceStillSufficientAsync(employeeId);
+
         var now = DateTime.UtcNow;
 
         switch (leaveRequest.Status)
         {
             case LeaveStatus.Pending:
-                // "Kontrol zamanı ≠ kullanım zamanı": talep açılırken bakiye
-                // yetiyordu, ama aradan geçen sürede başka talepler onaylanmış
-                // olabilir. Yıllık izinse burada TEKRAR denetlenir.
-                if (leaveRequest.Type == LeaveType.Annual && leaveRequest.EmployeeId is int employeeId)
-                    await EnsureBalanceStillSufficientAsync(employeeId);
-
                 leaveRequest.ManagerApprovedByUserId = approver.Id;
                 leaveRequest.ManagerApprovedAt = now;
 

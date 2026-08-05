@@ -25,6 +25,14 @@ public interface IInternRepository
     /// <summary>User ↔ Intern köprüsü: giriş yapan hesabın stajyer kaydını bulur.</summary>
     Task<Intern?> GetByUserIdAsync(int userId);
 
+    /// <summary>
+    /// E-posta benzersizliği iş kuralı için (çalışan tarafındaki
+    /// IEmployeeRepository.GetByEmailAsync ile aynı desen; DB'deki UNIQUE
+    /// kısıtın ön kontrolü). E-posta hesap açma akışının kimlik anahtarıdır;
+    /// mükerrer olması "bu adres kime ait?" sorusunu belirsizleştirir.
+    /// </summary>
+    Task<Intern?> GetByEmailAsync(string email);
+
     /// <summary>Bir çalışanın mentorluk verdiği stajyerlar (çalışan detay sayfası).</summary>
     Task<IEnumerable<Intern>> GetByMentorIdAsync(int mentorEmployeeId);
 }

@@ -15,7 +15,7 @@ namespace HRManagement.Application.Services;
 ///   accrued=0, used=10 → bakiye −10 (avans, sonraki yıl 14 kazanacağı için sınır içinde)
 ///   1 yıl dolunca accrued=14 → bakiye 14−10 = 4     ← borç yeni yıla devreder
 ///
-/// Kademeler (İş Kanunu md. 53): 1–5. yıl 14 gün, 6–15. yıl 20 gün, 15+ yıl 26 gün.
+/// Kademeler (İş Kanunu md. 53): 1–5. yıl 14 gün, 6–14. yıl 20 gün, 15. yıl ve sonrası 26 gün.
 /// Hak dönemi TAKVİM YILI DEĞİL, işe giriş YILDÖNÜMÜ esaslıdır.
 /// </summary>
 public static class LeaveEntitlement

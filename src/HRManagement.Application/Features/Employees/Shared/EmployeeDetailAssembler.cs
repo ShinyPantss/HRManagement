@@ -130,7 +130,8 @@ public sealed class EmployeeDetailAssembler
         }
 
         return new Visibility(
-            CanSeeNationalId: requester?.Role == Role.HR,
+            // Kural EmployeeFieldVisibility'de: liste yolu da AYNI kaynağı kullanır.
+            CanSeeNationalId: EmployeeFieldVisibility.CanSeeNationalId(requester),
             CanSeeLeaveDescription: isSelf || requester?.Role is Role.HR or Role.Admin,
             // İzin bakiyesi/geçmişi: kendisi, İK/Admin ve onay verecek zincir
             // yöneticisi. Ekip arkadaşları ve astlar (üstüne bakan) GÖREMEZ.

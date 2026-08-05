@@ -32,10 +32,14 @@ public class InternsController : ControllerBase
         _mediator = mediator;
     }
 
-    // Stajyer LİSTESİNE Manager ve Employee erişemez (kullanıcı kararı) —
-    // kendi stajyerlerine /mentored ucundan ulaşırlar. Otorite API'dedir:
-    // WebUI'nin menüde gizlemesi tek başına koruma sayılmaz.
-    [Authorize(Roles = "HR,Admin,Intern")]
+    // Stajyer LİSTESİ bir YÖNETİM ekranıdır: yalnızca HR/Admin (kullanıcı kararı,
+    // 2026-08-05). Manager ve Employee kendi stajyerlerine /mentored ucundan
+    // ulaşır; stajyerin kendisinin de listeye ihtiyacı yok (kendi ekranları
+    // /me ve /my-tasks). Intern rolü buradan ÇIKARILDI: bir stajyerin tüm
+    // stajyerlerin e-posta/üniversite bilgisini görmesi için sebep yok ve
+    // WebUI'daki üç tüketicinin üçü de zaten HR/Admin'e kilitli.
+    // Otorite API'dedir: WebUI'nin menüde gizlemesi tek başına koruma sayılmaz.
+    [Authorize(Roles = "HR,Admin")]
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
@@ -44,11 +48,17 @@ public class InternsController : ControllerBase
         return Ok(BaseResponse<List<InternResponse>>.Success(data));
     }
 
-    // Detay kapısı liste kapısıyla AYNI (satır 38): listede gizlenen kayda
-    // detay adresinden ulaşılamamalı (IDOR). Stajyer kuralı saf rol kuralı
-    // olduğu için attribute yeterli; çalışan tarafındaki gibi ilişki kontrolü
-    // (EmployeeVisibility) gerekmiyor.
-    [Authorize(Roles = "HR,Admin,Intern")]
+    // Stajyer kaydının detayı İK işidir. Bu uçta HİÇ rol kısıtı yoktu — girişli
+    // HERKES (Employee, Manager, başka bir stajyer) istediği stajyerin kaydını
+    // okuyabiliyordu; delik kapatıldı.
+    //
+    // Neden liste ucundan (satır 38) DAHA DAR: WebUI'da stajyer listesini kullanan
+    // üç ekranın üçü de HR/Admin'e kilitli ve EmployeesController.cs:67'deki yorum
+    // "diğer rollerin stajyer listesine erişimi zaten kapalı" diyor. Liste ucundaki
+    // Intern rolü bu varsayımla çelişen bir sapmadır; onu detaya kopyalamak açığı
+    // taşımak olurdu. Kural saf rol kuralı olduğu için attribute yeterli; çalışan
+    // tarafındaki gibi ilişki kontrolü (EmployeeVisibility) gerekmiyor.
+    [Authorize(Roles = "HR,Admin")]
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {

@@ -135,15 +135,18 @@ public sealed class AskAssistantQueryHandler
         var sql = queryElement.GetString() ?? string.Empty;
 
         // Birinci savunma katmanı. İkincisi salt okuma veritabanı kullanıcısıdır.
-        if (!SqlReadOnlyGuard.IsReadOnly(sql, out var reason))
+        // Çalıştırılan metin, DENETLENEN metnin ta kendisidir (safeSql) — ham metin
+        // değil. İkisi ayrışırsa denetim atlatılabilir (bkz. SqlReadOnlyGuard).
+        if (!SqlReadOnlyGuard.TryNormalize(sql, out var safeSql, out var reason))
             return $"HATA: Sorgu reddedildi — {reason}";
 
         // Reddedilen sorgu listeye girmez: burası "gerçekten çalışanlar" kaydıdır.
-        executedQueries.Add(sql);
+        // Kayda da çalıştırılan metin girer ki liste gerçeği yansıtsın.
+        executedQueries.Add(safeSql);
 
         try
         {
-            var result = await _sqlQueryRunner.RunReadOnlyAsync(sql, cancellationToken);
+            var result = await _sqlQueryRunner.RunReadOnlyAsync(safeSql, cancellationToken);
 
             if (result.RowCount == 0)
                 return "Sorgu çalıştı, hiç satır dönmedi.";

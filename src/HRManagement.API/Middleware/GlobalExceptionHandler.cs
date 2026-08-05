@@ -12,9 +12,21 @@ namespace HRManagement.API.Middleware;
 ///     (ör. "Bu e-posta zaten kullanılıyor")
 /// Beklenmeyen her şey → 500.
 /// Başarı ve hata AYNI zarfı kullanır; istemci (Refit) tek tip deserialize eder.
+///
+/// Loglama YALNIZCA 500 dalında yapılır: istemciye giden mesaj bilinçli olarak
+/// içi boştur ("Beklenmeyen bir hata oluştu."), dolayısıyla iz burada düşmezse
+/// hata hiçbir yere düşmez. 400'ler ise normal akıştır (kullanıcı yanlış veri
+/// girdi) — loglanırsa gürültü olur ve gerçek hatalar arasında kaybolur.
 /// </summary>
 public sealed class GlobalExceptionHandler : IExceptionHandler
 {
+    private readonly ILogger<GlobalExceptionHandler> _logger;
+
+    public GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger)
+    {
+        _logger = logger;
+    }
+
     public async ValueTask<bool> TryHandleAsync(
         HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
@@ -29,6 +41,17 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
 
             _ => (StatusCodes.Status500InternalServerError, "Beklenmeyen bir hata oluştu.")
         };
+
+        if (status == StatusCodes.Status500InternalServerError)
+        {
+            // Exception nesnesi İLK parametre olarak verilir: yığın izi (stack
+            // trace) ve iç exception'lar ancak böyle loglanır.
+            _logger.LogError(
+                exception,
+                "İşlenmemiş hata: {Method} {Path}",
+                httpContext.Request.Method,
+                httpContext.Request.Path);
+        }
 
         httpContext.Response.StatusCode = status;
         await httpContext.Response.WriteAsJsonAsync(

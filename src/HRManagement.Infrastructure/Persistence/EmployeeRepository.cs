@@ -170,6 +170,17 @@ public class EmployeeRepository : IEmployeeRepository
         return await connection.QueryFirstOrDefaultAsync<Employee>(sql, new { Email = email });
     }
 
+    public async Task<Employee?> GetByNationalIdAsync(string nationalId)
+    {
+        // FirstOrDefault (Single değil): kısıt eklenmeden ÖNCE girilmiş mükerrer
+        // kayıtlar varsa bu sorgu 500 üretmemeli — GetByUserIdAsync ile aynı gerekçe.
+        const string sql = "SELECT * FROM Employees WHERE NationalId = @NationalId";
+
+        using var connection = _connectionFactory.CreateConnection();
+
+        return await connection.QueryFirstOrDefaultAsync<Employee>(sql, new { NationalId = nationalId });
+    }
+
     public async Task<IEnumerable<Employee>> GetTeamAsync(int managerEmployeeId)
     {
         // Zinciri AŞAĞI yürüten özyinelemeli CTE: önce doğrudan astlar, sonra

@@ -99,6 +99,7 @@ public class UpdateMyInternTaskStatusCommandHandlerTests
         public Task<bool> ExistsByDepartmentIdAsync(int departmentId) => throw new NotImplementedException();
         public Task<bool> ExistsByMentorIdAsync(int mentorId) => throw new NotImplementedException();
         public Task<bool> ExistsByUserIdAsync(int userId) => throw new NotImplementedException();
+        public Task<Intern?> GetByEmailAsync(string email) => throw new NotImplementedException();
         public Task<IEnumerable<Intern>> GetByMentorIdAsync(int mentorEmployeeId) => throw new NotImplementedException();
     }
 }

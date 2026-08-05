@@ -40,6 +40,11 @@ public sealed class UpdateEmployeeCommandHandler : IRequestHandler<UpdateEmploye
 
         var email = request.Email.Trim();
 
+        // Boşsa null saklanır: filtered UNIQUE index yalnızca DOLU olanları denetler.
+        var nationalId = string.IsNullOrWhiteSpace(request.NationalId)
+            ? null
+            : request.NationalId.Trim();
+
         if (await _departmentRepository.GetByIdAsync(request.DepartmentId) is null)
             throw new ValidationException("Departman bulunamadı.");
 
@@ -54,6 +59,14 @@ public sealed class UpdateEmployeeCommandHandler : IRequestHandler<UpdateEmploye
         var byEmail = await _employeeRepository.GetByEmailAsync(email);
         if (byEmail is not null && byEmail.Id != employee.Id)
             throw new ValidationException("Bu e-posta ile kayıtlı başka bir çalışan var.");
+
+        // T.C. Kimlik başka bir çalışanda mı? (kendi kaydı hariç — e-postayla aynı desen)
+        if (nationalId is not null)
+        {
+            var byNationalId = await _employeeRepository.GetByNationalIdAsync(nationalId);
+            if (byNationalId is not null && byNationalId.Id != employee.Id)
+                throw new ValidationException("Bu T.C. Kimlik No ile kayıtlı başka bir çalışan var.");
+        }
 
         if (request.ManagerId is int managerId)
             await EnsureManagerAssignableAsync(employee.Id, managerId, request.Seniority, request.DepartmentId);
@@ -81,7 +94,13 @@ public sealed class UpdateEmployeeCommandHandler : IRequestHandler<UpdateEmploye
 
         employee.FirstName = request.FirstName.Trim();
         employee.LastName = request.LastName.Trim();
-        employee.NationalId = request.NationalId;
+        // BOŞ gelen T.C. "temizle" değil "DEĞİŞTİRME" demektir.
+        // Gerekçe: alan artık yalnızca İK'ya gönderiliyor (EmployeeFieldVisibility),
+        // dolayısıyla Admin düzenleme formunu açtığında kutu BOŞ gelir. Boşu
+        // "temizle" saysaydık Admin'in her kaydedişi kayıtlı T.C.'yi sessizce
+        // silerdi. Bedeli: bir kez girilmiş T.C. bu uçtan temizlenemez —
+        // kimlik numarasının silinmesinin iş anlamı da yok.
+        employee.NationalId = nationalId ?? employee.NationalId;
         employee.Email = email;
         employee.Phone = request.Phone;
         employee.Gender = request.Gender;

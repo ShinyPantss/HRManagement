@@ -139,6 +139,7 @@ public class MentorshipGuardTests
         public Task<bool> ExistsByMentorIdAsync(int mentorId) => throw new NotImplementedException();
         public Task<bool> ExistsByUserIdAsync(int userId) => throw new NotImplementedException();
         public Task<Intern?> GetByUserIdAsync(int userId) => throw new NotImplementedException();
+        public Task<Intern?> GetByEmailAsync(string email) => throw new NotImplementedException();
         public Task<IEnumerable<Intern>> GetByMentorIdAsync(int mentorEmployeeId) => throw new NotImplementedException();
     }
 
@@ -156,6 +157,7 @@ public class MentorshipGuardTests
         public Task<bool> ExistsByDepartmentIdAsync(int departmentId) => throw new NotImplementedException();
         public Task<bool> ExistsByUserIdAsync(int userId) => throw new NotImplementedException();
         public Task<bool> ExistsByManagerIdAsync(int managerId) => throw new NotImplementedException();
+        public Task<Employee?> GetByNationalIdAsync(string nationalId) => throw new NotImplementedException();
         public Task<Employee?> GetByEmailAsync(string email) => throw new NotImplementedException();
         public Task<bool> IsInManagerChainAsync(int managerEmployeeId, int subordinateEmployeeId) => throw new NotImplementedException();
         public Task<IEnumerable<Employee>> GetTeamAsync(int managerEmployeeId) => throw new NotImplementedException();

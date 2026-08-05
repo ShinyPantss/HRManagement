@@ -9,12 +9,17 @@ namespace HRManagement.Application.Mapping;
 /// </summary>
 public static class EmployeeMapping
 {
-    public static EmployeeDto ToDto(Employee employee) => new()
+    /// <summary>
+    /// <paramref name="canSeeNationalId"/> bilinçli olarak ZORUNLU: varsayılanı
+    /// olsaydı yeni bir çağıran kararı atlayıp T.C. Kimlik'i sızdırabilirdi.
+    /// Değeri EmployeeFieldVisibility.CanSeeNationalId ile hesaplanır.
+    /// </summary>
+    public static EmployeeDto ToDto(Employee employee, bool canSeeNationalId) => new()
     {
         Id = employee.Id,
         FirstName = employee.FirstName,
         LastName = employee.LastName,
-        NationalId = employee.NationalId,
+        NationalId = canSeeNationalId ? employee.NationalId : null,
         Email = employee.Email,
         Phone = employee.Phone,
         BirthDate = employee.DateOfBirth,

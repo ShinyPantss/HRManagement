@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using HRManagement.Application.Features.Units.Shared;
 using HRManagement.Application.Interfaces;
 using HRManagement.Domain.Entities;
@@ -25,14 +26,22 @@ public sealed class CreateInternCommandHandler : IRequestHandler<CreateInternCom
     // Input validation CreateInternCommandValidator'da; buraya gelen mesaj geçerlidir.
     public async Task<int> Handle(CreateInternCommand request, CancellationToken cancellationToken)
     {
+        var email = request.Email.Trim();
+
         // Seçilen birim (varsa) bu departmana ait olmalı.
         await UnitAssignment.EnsureUnitInDepartmentAsync(_unitRepository, request.UnitId, request.DepartmentId);
+
+        // E-posta benzersizliği: çalışan tarafındaki kuralın aynısı. DB'de UNIQUE
+        // kısıt var, ama ona takılmak 500 üretir; kuralı burada önden uygulayıp
+        // anlaşılır bir 400 mesajı veriyoruz.
+        if (await _internRepository.GetByEmailAsync(email) is not null)
+            throw new ValidationException("Bu e-posta ile kayıtlı bir stajyer zaten var.");
 
         var intern = new Intern
         {
             FirstName = request.FirstName.Trim(),
             LastName = request.LastName.Trim(),
-            Email = request.Email.Trim(),
+            Email = email,
             University = request.University.Trim(),
             Major = request.Major?.Trim() ?? string.Empty,
             Grade = request.Grade,

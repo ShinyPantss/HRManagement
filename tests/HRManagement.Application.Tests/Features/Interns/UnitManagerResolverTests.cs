@@ -70,6 +70,7 @@ public class UnitManagerResolverTests
         public Task<bool> ExistsByUserIdAsync(int userId) => throw new NotImplementedException();
         public Task<bool> ExistsByManagerIdAsync(int managerId) => throw new NotImplementedException();
         public Task<Employee?> GetByUserIdAsync(int userId) => throw new NotImplementedException();
+        public Task<Employee?> GetByNationalIdAsync(string nationalId) => throw new NotImplementedException();
         public Task<Employee?> GetByEmailAsync(string email) => throw new NotImplementedException();
         public Task<bool> IsInManagerChainAsync(int managerEmployeeId, int subordinateEmployeeId) => throw new NotImplementedException();
         public Task<IEnumerable<Employee>> GetTeamAsync(int managerEmployeeId) => throw new NotImplementedException();

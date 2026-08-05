@@ -27,12 +27,19 @@ public sealed class UpdateInternCommandHandler : IRequestHandler<UpdateInternCom
         if (intern is null)
             throw new ValidationException("Stajyer bulunamadı.");
 
+        var email = request.Email.Trim();
+
         // Seçilen birim (varsa) bu departmana ait olmalı.
         await UnitAssignment.EnsureUnitInDepartmentAsync(_unitRepository, request.UnitId, request.DepartmentId);
 
+        // E-posta başka bir stajyerde mi? (kendi kaydı hariç — çalışan tarafıyla aynı desen)
+        var byEmail = await _internRepository.GetByEmailAsync(email);
+        if (byEmail is not null && byEmail.Id != intern.Id)
+            throw new ValidationException("Bu e-posta ile kayıtlı başka bir stajyer var.");
+
         intern.FirstName = request.FirstName.Trim();
         intern.LastName = request.LastName.Trim();
-        intern.Email = request.Email.Trim();
+        intern.Email = email;
         intern.University = request.University.Trim();
         intern.Major = request.Major?.Trim() ?? string.Empty;
         intern.Grade = request.Grade;

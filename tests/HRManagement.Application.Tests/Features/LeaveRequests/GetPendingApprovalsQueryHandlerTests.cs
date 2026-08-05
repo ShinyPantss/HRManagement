@@ -207,6 +207,7 @@ public class GetPendingApprovalsQueryHandlerTests
         public Task<bool> ExistsByDepartmentIdAsync(int departmentId) => throw new NotImplementedException();
         public Task<bool> ExistsByUserIdAsync(int userId) => throw new NotImplementedException();
         public Task<bool> ExistsByManagerIdAsync(int managerId) => throw new NotImplementedException();
+        public Task<Employee?> GetByNationalIdAsync(string nationalId) => throw new NotImplementedException();
         public Task<Employee?> GetByEmailAsync(string email) => throw new NotImplementedException();
         public Task<bool> IsInManagerChainAsync(int managerEmployeeId, int subordinateEmployeeId) => throw new NotImplementedException();
     }

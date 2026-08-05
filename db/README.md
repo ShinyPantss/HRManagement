@@ -49,6 +49,8 @@ Sıfırdan kurulum için **sırayla iki dosya zorunludur**:
 | `08_drop_position.sql` | tarihsel: Position kolonunun kaldırılması — *05'e dahil* |
 | `10_leave_rules.sql` | tarihsel: iş günü + hastalık raporu — *05'e dahil* |
 | `14_employee_gender.sql` | tarihsel: cinsiyet kolonu — *05'e dahil* |
+| `20_employee_nationalid_unique.sql` | **kısıt: `Employees.NationalId` benzersiz + 11 hane** (05'e dahil değil) |
+| `21_intern_email_unique.sql` | **kısıt: `Interns.Email` benzersiz** (05'e dahil değil) |
 
 `09_*` numarası kullanılmamıştır.
 

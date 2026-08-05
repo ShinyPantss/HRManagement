@@ -19,7 +19,11 @@ public class ApproveLeaveRequestCommandHandlerTests
     private const int OwnerEmployeeId = 5;
 
     private static (ApproveLeaveRequestCommandHandler Handler, FakeLeaveRequestRepository Repo)
-        CreateHandler(Role ownerRole)
+        CreateHandler(
+            Role ownerRole,
+            LeaveType type = LeaveType.Unpaid,
+            LeaveStatus status = LeaveStatus.Pending,
+            int usedAnnualDays = 0)
     {
         var users = new Dictionary<int, User>
         {
@@ -27,21 +31,28 @@ public class ApproveLeaveRequestCommandHandlerTests
             [OwnerUserId] = new() { Id = OwnerUserId, Role = ownerRole, IsActive = true }
         };
 
-        var ownerEmployee = new Employee { Id = OwnerEmployeeId, UserId = OwnerUserId };
+        // 3 yıllık kıdem, yıllık 14 gün → hak edilen 42, avans sınırı 14 (üst sınır 56).
+        var ownerEmployee = new Employee
+        {
+            Id = OwnerEmployeeId,
+            UserId = OwnerUserId,
+            HireDate = DateTime.UtcNow.Date.AddYears(-3),
+            AnnualLeaveDays = 14
+        };
 
-        // Ücretsiz izin: bakiye yeniden denetimi tetiklenmez, test yalnızca
-        // durum geçişine odaklanır.
+        // Varsayılan ücretsiz izin: bakiye yeniden denetimi tetiklenmez,
+        // test yalnızca durum geçişine odaklanır.
         var leaveRequest = new LeaveRequest
         {
             Id = 42,
             EmployeeId = OwnerEmployeeId,
-            Type = LeaveType.Unpaid,
-            Status = LeaveStatus.Pending
+            Type = type,
+            Status = status
         };
 
         var userRepository = new FakeUserRepository(users);
         var employeeRepository = new FakeEmployeeRepository(ownerEmployee);
-        var leaveRepository = new FakeLeaveRequestRepository(leaveRequest);
+        var leaveRepository = new FakeLeaveRequestRepository(leaveRequest, usedAnnualDays);
 
         var handler = new ApproveLeaveRequestCommandHandler(
             leaveRepository,
@@ -75,14 +86,50 @@ public class ApproveLeaveRequestCommandHandlerTests
         Assert.Equal(LeaveStatus.PendingHr, repo.Updated!.Status);
     }
 
+    // ── Bakiye yeniden denetimi: onay anında hâlâ yetiyor mu? ────────────────
+
+    [Theory]
+    [InlineData(LeaveStatus.Pending)]
+    // Asıl açık burasıydı: yönetici aşamasını atlayan talep (tepe yönetici →
+    // doğrudan PendingHr) Pending dalına hiç uğramadığı için denetimsiz onaylanıyordu.
+    [InlineData(LeaveStatus.PendingHr)]
+    public async Task Bakiye_asilmissa_onay_her_asamada_reddedilir(LeaveStatus status)
+    {
+        // Üst sınır 42 + 14 = 56 gün; kullanılan+bekleyen 60 → aşılmış.
+        var (handler, repo) = CreateHandler(
+            ownerRole: Role.Employee, type: LeaveType.Annual, status: status, usedAnnualDays: 60);
+
+        await Assert.ThrowsAsync<System.ComponentModel.DataAnnotations.ValidationException>(
+            () => handler.Handle(new ApproveLeaveRequestCommand(42, AdminUserId), CancellationToken.None));
+
+        Assert.Null(repo.Updated);   // talep kaydedilmedi
+    }
+
+    [Theory]
+    [InlineData(LeaveStatus.Pending)]
+    [InlineData(LeaveStatus.PendingHr)]
+    public async Task Bakiye_yetiyorsa_onay_ilerler(LeaveStatus status)
+    {
+        var (handler, repo) = CreateHandler(
+            ownerRole: Role.Employee, type: LeaveType.Annual, status: status, usedAnnualDays: 10);
+
+        await handler.Handle(new ApproveLeaveRequestCommand(42, AdminUserId), CancellationToken.None);
+
+        var expected = status == LeaveStatus.Pending ? LeaveStatus.PendingHr : LeaveStatus.Approved;
+        Assert.Equal(expected, repo.Updated!.Status);
+    }
+
     // ── Fake'ler ─────────────────────────────────────────────────────────────
 
-    private sealed class FakeLeaveRequestRepository(LeaveRequest request) : ILeaveRequestRepository
+    private sealed class FakeLeaveRequestRepository(LeaveRequest request, int usedAnnualDays = 0)
+        : ILeaveRequestRepository
     {
         public LeaveRequest? Updated { get; private set; }
 
         public Task<LeaveRequest?> GetByIdAsync(int id) =>
             Task.FromResult<LeaveRequest?>(id == request.Id ? request : null);
+
+        public Task<int> GetTotalUsedAnnualDaysAsync(int employeeId) => Task.FromResult(usedAnnualDays);
 
         public Task UpdateAsync(LeaveRequest leaveRequest)
         {
@@ -98,7 +145,6 @@ public class ApproveLeaveRequestCommandHandlerTests
         public Task<bool> ExistsByEmployeeIdAsync(int employeeId) => throw new NotImplementedException();
         public Task<bool> ExistsByInternIdAsync(int internId) => throw new NotImplementedException();
         public Task<bool> HasOverlapAsync(int? employeeId, int? internId, DateTime startDate, DateTime endDate) => throw new NotImplementedException();
-        public Task<int> GetTotalUsedAnnualDaysAsync(int employeeId) => throw new NotImplementedException();
         public Task<IReadOnlyDictionary<int, int>> GetUsedAnnualDaysByEmployeeAsync() => throw new NotImplementedException();
         public Task<IEnumerable<HRManagement.Application.DTOs.PendingApprovalDto>> GetActionableWithNamesAsync() => throw new NotImplementedException();
         public Task<IEnumerable<HRManagement.Application.DTOs.LeaveHistoryDto>> GetAllWithNamesAsync() => throw new NotImplementedException();
@@ -137,6 +183,7 @@ public class ApproveLeaveRequestCommandHandlerTests
         public Task<bool> ExistsByDepartmentIdAsync(int departmentId) => throw new NotImplementedException();
         public Task<bool> ExistsByUserIdAsync(int userId) => throw new NotImplementedException();
         public Task<bool> ExistsByManagerIdAsync(int managerId) => throw new NotImplementedException();
+        public Task<Employee?> GetByNationalIdAsync(string nationalId) => throw new NotImplementedException();
         public Task<Employee?> GetByEmailAsync(string email) => throw new NotImplementedException();
         public Task<bool> IsInManagerChainAsync(int managerEmployeeId, int subordinateEmployeeId) => throw new NotImplementedException();
         public Task<IEnumerable<Employee>> GetTeamAsync(int managerEmployeeId) => throw new NotImplementedException();
@@ -154,6 +201,7 @@ public class ApproveLeaveRequestCommandHandlerTests
         public Task<bool> ExistsByMentorIdAsync(int mentorId) => throw new NotImplementedException();
         public Task<bool> ExistsByUserIdAsync(int userId) => throw new NotImplementedException();
         public Task<Intern?> GetByUserIdAsync(int userId) => throw new NotImplementedException();
+        public Task<Intern?> GetByEmailAsync(string email) => throw new NotImplementedException();
         public Task<IEnumerable<Intern>> GetByMentorIdAsync(int mentorEmployeeId) => throw new NotImplementedException();
     }
 }
