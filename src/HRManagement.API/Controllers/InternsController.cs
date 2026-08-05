@@ -44,6 +44,11 @@ public class InternsController : ControllerBase
         return Ok(BaseResponse<List<InternResponse>>.Success(data));
     }
 
+    // Detay kapısı liste kapısıyla AYNI (satır 38): listede gizlenen kayda
+    // detay adresinden ulaşılamamalı (IDOR). Stajyer kuralı saf rol kuralı
+    // olduğu için attribute yeterli; çalışan tarafındaki gibi ilişki kontrolü
+    // (EmployeeVisibility) gerekmiyor.
+    [Authorize(Roles = "HR,Admin,Intern")]
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {
