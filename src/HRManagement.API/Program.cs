@@ -35,6 +35,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// İstemci kapısı: "X-Api-Key" başlığı tutmayan istek buradan ileri geçemez.
+// Kullanıcı kimliğinden ÖNCE gelir — tanınmayan istemci, token çözülmeden ve
+// DB'ye hiç uğranmadan elenir. (Kullanıcı doğrulaması yerine geçmez; login yine
+// DB'ye gider.)
+app.UseApiKeyValidation(builder.Configuration);
+
 // Authentication "sen kimsin?" (token'ı çözüp User'ı doldurur),
 // Authorization "buna yetkin var mı?" (dolu User üzerinden karar verir).
 // Ters yazılırsa yetki kontrolü daima boş kimlikle çalışır.

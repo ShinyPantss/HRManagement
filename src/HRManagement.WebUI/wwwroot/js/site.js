@@ -1,4 +1,4 @@
-/* HepiyiHR — kabuk davranışları.
+/* HappyHR — kabuk davranışları.
    Çerçeve yok: sayfalar sunucuda render ediliyor, buradaki her şey ilerleyici
    iyileştirme. JS kapalıysa formlar yine çalışır (onay diyaloğu native'e düşer). */
 

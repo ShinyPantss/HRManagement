@@ -11,14 +11,14 @@
 @if (User.IsInRole("HR") || User.IsInRole("Admin"))
 {
     <div class="asst" id="asst">
-        <button type="button" class="asst-fab" id="asstFab"
-                aria-label="Veri asistanını aç" aria-expanded="false">
-            <svg class="asst-fab-open" width="22" height="22" viewBox="0 0 24 24" fill="none"
-                 stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+        <button type="button" class="asst-fab" id="asstFab" aria-label="Veri asistanını aç" aria-expanded="false">
+            <svg class="asst-fab-open" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                <path
+                d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
             </svg>
-            <svg class="asst-fab-close" width="22" height="22" viewBox="0 0 24 24" fill="none"
-                 stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="asst-fab-close" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M18 6 6 18M6 6l12 12" />
             </svg>
         </button>
@@ -32,14 +32,16 @@
                 <div class="asst-head-btns">
                     <button type="button" class="asst-x" id="asstReset" aria-label="Yeni sohbet"
                             title="Yeni sohbet — geçmişi temizler">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                             stroke-linecap="round" stroke-linejoin="round">
                             <path d="M3 2v6h6M3.5 14a9 9 0 1 0 2.1-9.4L3 8" />
                         </svg>
                     </button>
                     <button type="button" class="asst-x" id="asstClose" aria-label="Kapat">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                             stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                             stroke-linecap="round">
+                            <path d="M18 6 6 18M6 6l12 12" />
+                        </svg>
                     </button>
                 </div>
             </header>
@@ -47,297 +49,298 @@
             <div class="asst-log" id="asstLog">
                 <div class="asst-intro">
                     <p>Merhaba. Veritabanındaki her şeyi sorabilirsiniz — sorunuzu
-                       SQL'e çevirip çalıştırır, sonucu özetlerim.</p>
-                    <div class="asst-chips">
-                        <button type="button" class="asst-chip">Bilgi Teknolojileri'nde 20 günden fazla birikmiş izni olan kimler var?</button>
-                        <button type="button" class="asst-chip">Bu ay izne çıkacak kaç kişi var?</button>
-                        <button type="button" class="asst-chip">Hangi departmanda kaç aktif çalışan var?</button>
+                        SQL'e çevirip çalıştırır, sonucu özetlerim.</p>
+                        <div class="asst-chips">
+                            <button type="button" class="asst-chip">Bilgi Teknolojileri'nde 20 günden fazla birikmiş izni olan
+                                kimler var?</button>
+                                <button type="button" class="asst-chip">Bu ay izne çıkacak kaç kişi var?</button>
+                                <button type="button" class="asst-chip">Hangi departmanda kaç aktif çalışan var?</button>
+                            </div>
+                        </div>
                     </div>
-                </div>
+
+                    <form class="asst-composer" id="asstForm">
+                        @Html.AntiForgeryToken()
+                        <textarea id="asstInput" rows="1" maxlength="500" autocomplete="off"
+                                  placeholder="Sorunuzu yazın…"></textarea>
+                        <button type="submit" class="asst-send" id="asstSend" aria-label="Gönder">
+                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                 stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z" />
+                            </svg>
+                        </button>
+                    </form>
+                </section>
             </div>
 
-            <form class="asst-composer" id="asstForm">
-                @Html.AntiForgeryToken()
-                <textarea id="asstInput" rows="1" maxlength="500" autocomplete="off"
-                          placeholder="Sorunuzu yazın…"></textarea>
-                <button type="submit" class="asst-send" id="asstSend" aria-label="Gönder">
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z" />
-                    </svg>
-                </button>
-            </form>
-        </section>
-    </div>
+            <script>
+                (function () {
+                    const fab = document.getElementById('asstFab');
+                    const panel = document.getElementById('asstPanel');
+                    const closeBtn = document.getElementById('asstClose');
+                    const log = document.getElementById('asstLog');
+                    const form = document.getElementById('asstForm');
+                    const input = document.getElementById('asstInput');
+                    const send = document.getElementById('asstSend');
+                    const resetBtn = document.getElementById('asstReset');
+                    const root = document.getElementById('asst');
+                    let busy = false;
 
-    <script>
-        (function () {
-            const fab = document.getElementById('asstFab');
-            const panel = document.getElementById('asstPanel');
-            const closeBtn = document.getElementById('asstClose');
-            const log = document.getElementById('asstLog');
-            const form = document.getElementById('asstForm');
-            const input = document.getElementById('asstInput');
-            const send = document.getElementById('asstSend');
-            const resetBtn = document.getElementById('asstReset');
-            const root = document.getElementById('asst');
-            let busy = false;
+                    /* ---- Sohbet kimliği.
+                           sessionStorage: sayfalar arası gezinirken korunur (her
+                           gezinme yeni bir sayfa yüklemesi — değişken bellekte kalmaz),
+                           sekme kapanınca gider. Sunucudaki geçmiş bu kimlikle
+                           bulunuyor; kimlik tek başına yetki taşımaz, depo anahtarı
+                           token'daki kullanıcı kimliğiyle birleştiriliyor. ---- */
+                    const CONV_KEY = 'asstConversationId';
 
-            /* ---- Sohbet kimliği.
-                   sessionStorage: sayfalar arası gezinirken korunur (her
-                   gezinme yeni bir sayfa yüklemesi — değişken bellekte kalmaz),
-                   sekme kapanınca gider. Sunucudaki geçmiş bu kimlikle
-                   bulunuyor; kimlik tek başına yetki taşımaz, depo anahtarı
-                   token'daki kullanıcı kimliğiyle birleştiriliyor. ---- */
-            const CONV_KEY = 'asstConversationId';
+                    function newConversationId() {
+                        // randomUUID yalnızca güvenli bağlamda (https/localhost) var.
+                        const id = crypto.randomUUID
+                            ? crypto.randomUUID()
+                            : 'c-' + Math.random().toString(36).slice(2) + '-' + performance.now().toString(36).replace('.', '');
+                        sessionStorage.setItem(CONV_KEY, id);
+                        return id;
+                    }
 
-            function newConversationId() {
-                // randomUUID yalnızca güvenli bağlamda (https/localhost) var.
-                const id = crypto.randomUUID
-                    ? crypto.randomUUID()
-                    : 'c-' + Math.random().toString(36).slice(2) + '-' + performance.now().toString(36).replace('.', '');
-                sessionStorage.setItem(CONV_KEY, id);
-                return id;
-            }
+                    const conversationId = () =>
+                        sessionStorage.getItem(CONV_KEY) || newConversationId();
 
-            const conversationId = () =>
-                sessionStorage.getItem(CONV_KEY) || newConversationId();
+                    /* ---- Ekrandaki döküm.
+                           Sunucudaki geçmiş MODEL için tutuluyor: cevaplar 2000 karakterde
+                           kırpılıyor ve çalıştırılan sorgular saklanmıyor. Ekranda ise tam
+                           metin ve sorgu ayrıntısı görünmeli — bu yüzden gösterim kopyası
+                           ayrı ve istemcide. İkisi farklı amaca hizmet ediyor, kopya değil.
 
-            /* ---- Ekrandaki döküm.
-                   Sunucudaki geçmiş MODEL için tutuluyor: cevaplar 2000 karakterde
-                   kırpılıyor ve çalıştırılan sorgular saklanmıyor. Ekranda ise tam
-                   metin ve sorgu ayrıntısı görünmeli — bu yüzden gösterim kopyası
-                   ayrı ve istemcide. İkisi farklı amaca hizmet ediyor, kopya değil.
+                           HTML değil VERİ saklanıyor; yeniden çizim aynı md()/esc()
+                           hattından geçiyor, böylece kaçış tek yerde kalıyor. ---- */
+                    const LOG_KEY = 'asstTranscript';
+                    const LOG_MAX = 40;
 
-                   HTML değil VERİ saklanıyor; yeniden çizim aynı md()/esc()
-                   hattından geçiyor, böylece kaçış tek yerde kalıyor. ---- */
-            const LOG_KEY = 'asstTranscript';
-            const LOG_MAX = 40;
+                    const readLog = () => {
+                        try { return JSON.parse(sessionStorage.getItem(LOG_KEY)) || []; }
+                        catch { return []; }
+                    };
 
-            const readLog = () => {
-                try { return JSON.parse(sessionStorage.getItem(LOG_KEY)) || []; }
-                catch { return []; }
-            };
+                    function pushLog(entry) {
+                        const items = readLog();
+                        items.push(entry);
+                        try { sessionStorage.setItem(LOG_KEY, JSON.stringify(items.slice(-LOG_MAX))); }
+                        catch { /* kota dolduysa döküm kalıcılığından vazgeç, sohbet çalışsın */ }
+                    }
 
-            function pushLog(entry) {
-                const items = readLog();
-                items.push(entry);
-                try { sessionStorage.setItem(LOG_KEY, JSON.stringify(items.slice(-LOG_MAX))); }
-                catch { /* kota dolduysa döküm kalıcılığından vazgeç, sohbet çalışsın */ }
-            }
+                    const clearLog = () => sessionStorage.removeItem(LOG_KEY);
 
-            const clearLog = () => sessionStorage.removeItem(LOG_KEY);
+                    /* ---- Model çıktısı GÜVENİLMEZ kabul edilir: önce kaçış, sonra biçim.
+                           Sıra ters olsaydı cevaba gömülü <script> çalışırdı. ---- */
+                    const esc = s => String(s).replace(/[&<>"']/g, c =>
+                        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-            /* ---- Model çıktısı GÜVENİLMEZ kabul edilir: önce kaçış, sonra biçim.
-                   Sıra ters olsaydı cevaba gömülü <script> çalışırdı. ---- */
-            const esc = s => String(s).replace(/[&<>"']/g, c =>
-                ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+                    const inline = t => t
+                        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/`([^`]+?)`/g, '<code>$1</code>');
 
-            const inline = t => t
-                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                .replace(/`([^`]+?)`/g, '<code>$1</code>');
+                    // Markdown'ın yalnızca modelin ürettiği alt kümesi: tablo, liste,
+                    // başlık, paragraf. Tam ayrıştırıcı taşımaya değmez.
+                    function md(src) {
+                        const L = esc(src).split('\n');
+                        const cells = r => r.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim());
+                        let out = '', i = 0;
 
-            // Markdown'ın yalnızca modelin ürettiği alt kümesi: tablo, liste,
-            // başlık, paragraf. Tam ayrıştırıcı taşımaya değmez.
-            function md(src) {
-                const L = esc(src).split('\n');
-                const cells = r => r.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim());
-                let out = '', i = 0;
+                        while (i < L.length) {
+                            const line = L[i];
 
-                while (i < L.length) {
-                    const line = L[i];
+                            if (/^\s*\|/.test(line) && i + 1 < L.length && /^\s*\|[\s:|-]+\|?\s*$/.test(L[i + 1])) {
+                                let h = '<div class="asst-tw"><table><thead><tr>' +
+                                    cells(line).map(c => '<th>' + inline(c) + '</th>').join('') +
+                                    '</tr></thead><tbody>';
+                                i += 2;
+                                while (i < L.length && /^\s*\|/.test(L[i])) {
+                                    h += '<tr>' + cells(L[i]).map(c => '<td>' + inline(c) + '</td>').join('') + '</tr>';
+                                    i++;
+                                }
+                                out += h + '</tbody></table></div>';
+                                continue;
+                            }
 
-                    if (/^\s*\|/.test(line) && i + 1 < L.length && /^\s*\|[\s:|-]+\|?\s*$/.test(L[i + 1])) {
-                        let h = '<div class="asst-tw"><table><thead><tr>' +
-                            cells(line).map(c => '<th>' + inline(c) + '</th>').join('') +
-                            '</tr></thead><tbody>';
-                        i += 2;
-                        while (i < L.length && /^\s*\|/.test(L[i])) {
-                            h += '<tr>' + cells(L[i]).map(c => '<td>' + inline(c) + '</td>').join('') + '</tr>';
-                            i++;
+                            if (/^\s*[-*]\s+/.test(line)) {
+                                let h = '<ul>';
+                                while (i < L.length && /^\s*[-*]\s+/.test(L[i])) {
+                                    h += '<li>' + inline(L[i].replace(/^\s*[-*]\s+/, '')) + '</li>';
+                                    i++;
+                                }
+                                out += h + '</ul>';
+                                continue;
+                            }
+
+                            const head = line.match(/^#{1,4}\s+(.*)$/);
+                            if (head) { out += '<h4>' + inline(head[1]) + '</h4>'; i++; continue; }
+
+                            if (!line.trim()) { i++; continue; }
+
+                            const buf = [];
+                            while (i < L.length && L[i].trim() &&
+                                !/^\s*\|/.test(L[i]) && !/^\s*[-*]\s+/.test(L[i]) && !/^#{1,4}\s/.test(L[i])) {
+                                buf.push(L[i]); i++;
+                            }
+                            out += '<p>' + inline(buf.join('<br>')) + '</p>';
                         }
-                        out += h + '</tbody></table></div>';
-                        continue;
+                        return out;
                     }
 
-                    if (/^\s*[-*]\s+/.test(line)) {
-                        let h = '<ul>';
-                        while (i < L.length && /^\s*[-*]\s+/.test(L[i])) {
-                            h += '<li>' + inline(L[i].replace(/^\s*[-*]\s+/, '')) + '</li>';
-                            i++;
+                    const scroll = () => { log.scrollTop = log.scrollHeight; };
+
+                    function bubble(kind, html) {
+                        const el = document.createElement('div');
+                        el.className = 'asst-msg asst-' + kind;
+                        el.innerHTML = html;
+                        log.appendChild(el);
+                        scroll();
+                        return el;
+                    }
+
+                    // Balon gövdeleri tek yerden üretiliyor: canlı cevap da, sayfa
+                    // yenilenince geri çizilen döküm de aynı hattan geçsin.
+                    const userHtml = text => '<p>' + esc(text).replace(/\n/g, '<br>') + '</p>';
+
+                    function answerHtml(answer, queries) {
+                        let html = md(answer);
+                        if (queries && queries.length) {
+                            html += '<details class="asst-sql"><summary>' +
+                                queries.length + ' sorgu çalıştırıldı</summary>' +
+                                queries.map(s => '<pre>' + esc(s) + '</pre>').join('') +
+                                '</details>';
                         }
-                        out += h + '</ul>';
-                        continue;
+                        return html;
                     }
 
-                    const head = line.match(/^#{1,4}\s+(.*)$/);
-                    if (head) { out += '<h4>' + inline(head[1]) + '</h4>'; i++; continue; }
+                    // Panelin açık/kapalı olması da gezinmede korunuyor — kullanıcı
+                    // paneli açık bırakıp menüye tıkladığında kapanmış bulmasın.
+                    const OPEN_KEY = 'asstPanelOpen';
 
-                    if (!line.trim()) { i++; continue; }
-
-                    const buf = [];
-                    while (i < L.length && L[i].trim() &&
-                           !/^\s*\|/.test(L[i]) && !/^\s*[-*]\s+/.test(L[i]) && !/^#{1,4}\s/.test(L[i])) {
-                        buf.push(L[i]); i++;
+                    function open(state) {
+                        const show = state ?? panel.hidden;
+                        panel.hidden = !show;
+                        root.classList.toggle('is-open', show);
+                        fab.setAttribute('aria-expanded', String(show));
+                        sessionStorage.setItem(OPEN_KEY, show ? '1' : '0');
+                        if (show) setTimeout(() => {
+                            // Panel gizliyken scrollHeight 0'dır; geri çizilen döküm
+                            // ancak görünür olduktan SONRA dibe kaydırılabilir.
+                            scroll();
+                            input.focus();
+                        }, 60);
                     }
-                    out += '<p>' + inline(buf.join('<br>')) + '</p>';
-                }
-                return out;
-            }
 
-            const scroll = () => { log.scrollTop = log.scrollHeight; };
-
-            function bubble(kind, html) {
-                const el = document.createElement('div');
-                el.className = 'asst-msg asst-' + kind;
-                el.innerHTML = html;
-                log.appendChild(el);
-                scroll();
-                return el;
-            }
-
-            // Balon gövdeleri tek yerden üretiliyor: canlı cevap da, sayfa
-            // yenilenince geri çizilen döküm de aynı hattan geçsin.
-            const userHtml = text => '<p>' + esc(text).replace(/\n/g, '<br>') + '</p>';
-
-            function answerHtml(answer, queries) {
-                let html = md(answer);
-                if (queries && queries.length) {
-                    html += '<details class="asst-sql"><summary>' +
-                        queries.length + ' sorgu çalıştırıldı</summary>' +
-                        queries.map(s => '<pre>' + esc(s) + '</pre>').join('') +
-                        '</details>';
-                }
-                return html;
-            }
-
-            // Panelin açık/kapalı olması da gezinmede korunuyor — kullanıcı
-            // paneli açık bırakıp menüye tıkladığında kapanmış bulmasın.
-            const OPEN_KEY = 'asstPanelOpen';
-
-            function open(state) {
-                const show = state ?? panel.hidden;
-                panel.hidden = !show;
-                root.classList.toggle('is-open', show);
-                fab.setAttribute('aria-expanded', String(show));
-                sessionStorage.setItem(OPEN_KEY, show ? '1' : '0');
-                if (show) setTimeout(() => {
-                    // Panel gizliyken scrollHeight 0'dır; geri çizilen döküm
-                    // ancak görünür olduktan SONRA dibe kaydırılabilir.
-                    scroll();
-                    input.focus();
-                }, 60);
-            }
-
-            fab.addEventListener('click', () => open());
-            closeBtn.addEventListener('click', () => open(false));
-            document.addEventListener('keydown', e => {
-                if (e.key === 'Escape' && !panel.hidden) open(false);
-            });
-
-            // Karşılama ekranı saklanıyor: "Yeni sohbet"te geri konabilsin.
-            const introHtml = log.innerHTML;
-
-            resetBtn.addEventListener('click', () => {
-                if (busy) return;
-                // Yeni kimlik = sunucudaki geçmişten tamamen kopmak. Eski kayıt
-                // silinmiyor, kendi süre aşımıyla düşüyor — ona artık kimse
-                // ulaşamaz çünkü kimliği hiçbir yerde tutulmuyor.
-                newConversationId();
-                clearLog();
-                log.innerHTML = introHtml;
-                input.value = '';
-                input.style.height = 'auto';
-                input.focus();
-            });
-
-            // Sayfa yüklendiğinde önceki dökümü geri çiz. Bu OLMADAN sunucudaki
-            // hafıza çalışsa bile kullanıcı boş bir ekran görüyor: model
-            // hatırlıyor ama sen göremiyorsun.
-            (function restore() {
-                const items = readLog();
-                if (items.length) {
-                    log.innerHTML = '';
-                    for (const it of items) {
-                        bubble(it.role, it.role === 'me'
-                            ? userHtml(it.text)
-                            : answerHtml(it.text, it.queries));
-                    }
-                }
-                if (sessionStorage.getItem(OPEN_KEY) === '1') open(true);
-            })();
-
-            log.addEventListener('click', e => {
-                const chip = e.target.closest('.asst-chip');
-                if (!chip) return;
-                input.value = chip.textContent.trim();
-                form.requestSubmit();
-            });
-
-            // Yazdıkça büyüyen alan — 5 satırdan sonra kendi içinde kayar.
-            input.addEventListener('input', () => {
-                input.style.height = 'auto';
-                input.style.height = Math.min(input.scrollHeight, 120) + 'px';
-            });
-
-            // Enter gönderir, Shift+Enter satır atlar.
-            input.addEventListener('keydown', e => {
-                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
-            });
-
-            form.addEventListener('submit', async e => {
-                e.preventDefault();
-                const q = input.value.trim();
-                if (!q || busy) return;
-
-                const intro = log.querySelector('.asst-intro');
-                if (intro) intro.remove();
-
-                bubble('me', userHtml(q));
-                pushLog({ role: 'me', text: q });
-                input.value = '';
-                input.style.height = 'auto';
-
-                busy = true;
-                send.disabled = true;
-                const wait = bubble('bot', '<div class="asst-dots"><i></i><i></i><i></i></div>');
-
-                try {
-                    const body = new FormData();
-                    body.append('question', q);
-                    body.append('conversationId', conversationId());
-                    body.append('__RequestVerificationToken',
-                        form.querySelector('input[name="__RequestVerificationToken"]').value);
-
-                    const res = await fetch('/Assistant/Ask', {
-                        method: 'POST', body, credentials: 'same-origin'
+                    fab.addEventListener('click', () => open());
+                    closeBtn.addEventListener('click', () => open(false));
+                    document.addEventListener('keydown', e => {
+                        if (e.key === 'Escape' && !panel.hidden) open(false);
                     });
 
-                    // Oturum düşmüşse MVC login sayfasına yönlendirir; JSON değil HTML gelir.
-                    if (res.redirected || !res.headers.get('content-type')?.includes('json')) {
-                        wait.innerHTML = '<p class="asst-err">Oturumunuz sonlanmış. Sayfayı yenileyip tekrar deneyin.</p>';
-                        return;
-                    }
+                    // Karşılama ekranı saklanıyor: "Yeni sohbet"te geri konabilsin.
+                    const introHtml = log.innerHTML;
 
-                    const data = await res.json();
+                    resetBtn.addEventListener('click', () => {
+                        if (busy) return;
+                        // Yeni kimlik = sunucudaki geçmişten tamamen kopmak. Eski kayıt
+                        // silinmiyor, kendi süre aşımıyla düşüyor — ona artık kimse
+                        // ulaşamaz çünkü kimliği hiçbir yerde tutulmuyor.
+                        newConversationId();
+                        clearLog();
+                        log.innerHTML = introHtml;
+                        input.value = '';
+                        input.style.height = 'auto';
+                        input.focus();
+                    });
 
-                    if (!data.ok) {
-                        wait.innerHTML = '<p class="asst-err">' + esc(data.error || 'Bir hata oluştu.') + '</p>';
-                        return;
-                    }
+                    // Sayfa yüklendiğinde önceki dökümü geri çiz. Bu OLMADAN sunucudaki
+                    // hafıza çalışsa bile kullanıcı boş bir ekran görüyor: model
+                    // hatırlıyor ama sen göremiyorsun.
+                    (function restore() {
+                        const items = readLog();
+                        if (items.length) {
+                            log.innerHTML = '';
+                            for (const it of items) {
+                                bubble(it.role, it.role === 'me'
+                                    ? userHtml(it.text)
+                                    : answerHtml(it.text, it.queries));
+                            }
+                        }
+                        if (sessionStorage.getItem(OPEN_KEY) === '1') open(true);
+                    })();
 
-                    // Şeffaflık: çalıştırılan sorgular cevabın altında açılır kutuda.
-                    wait.innerHTML = answerHtml(data.answer, data.queries);
-                    pushLog({ role: 'bot', text: data.answer, queries: data.queries });
-                } catch {
-                    wait.innerHTML = '<p class="asst-err">Asistana ulaşılamadı.</p>';
-                } finally {
-                    busy = false;
-                    send.disabled = false;
-                    scroll();
-                    input.focus();
-                }
-            });
-        })();
-    </script>
+                    log.addEventListener('click', e => {
+                        const chip = e.target.closest('.asst-chip');
+                        if (!chip) return;
+                        input.value = chip.textContent.trim();
+                        form.requestSubmit();
+                    });
+
+                    // Yazdıkça büyüyen alan — 5 satırdan sonra kendi içinde kayar.
+                    input.addEventListener('input', () => {
+                        input.style.height = 'auto';
+                        input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+                    });
+
+                    // Enter gönderir, Shift+Enter satır atlar.
+                    input.addEventListener('keydown', e => {
+                        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+                    });
+
+                    form.addEventListener('submit', async e => {
+                        e.preventDefault();
+                        const q = input.value.trim();
+                        if (!q || busy) return;
+
+                        const intro = log.querySelector('.asst-intro');
+                        if (intro) intro.remove();
+
+                        bubble('me', userHtml(q));
+                        pushLog({ role: 'me', text: q });
+                        input.value = '';
+                        input.style.height = 'auto';
+
+                        busy = true;
+                        send.disabled = true;
+                        const wait = bubble('bot', '<div class="asst-dots"><i></i><i></i><i></i></div>');
+
+                        try {
+                            const body = new FormData();
+                            body.append('question', q);
+                            body.append('conversationId', conversationId());
+                            body.append('__RequestVerificationToken',
+                                form.querySelector('input[name="__RequestVerificationToken"]').value);
+
+                            const res = await fetch('/Assistant/Ask', {
+                                method: 'POST', body, credentials: 'same-origin'
+                            });
+
+                            // Oturum düşmüşse MVC login sayfasına yönlendirir; JSON değil HTML gelir.
+                            if (res.redirected || !res.headers.get('content-type')?.includes('json')) {
+                                wait.innerHTML = '<p class="asst-err">Oturumunuz sonlanmış. Sayfayı yenileyip tekrar deneyin.</p>';
+                                return;
+                            }
+
+                            const data = await res.json();
+
+                            if (!data.ok) {
+                                wait.innerHTML = '<p class="asst-err">' + esc(data.error || 'Bir hata oluştu.') + '</p>';
+                                return;
+                            }
+
+                            // Şeffaflık: çalıştırılan sorgular cevabın altında açılır kutuda.
+                            wait.innerHTML = answerHtml(data.answer, data.queries);
+                            pushLog({ role: 'bot', text: data.answer, queries: data.queries });
+                        } catch {
+                            wait.innerHTML = '<p class="asst-err">Asistana ulaşılamadı.</p>';
+                        } finally {
+                            busy = false;
+                            send.disabled = false;
+                            scroll();
+                            input.focus();
+                        }
+                    });
+                })();
+            </script>
 }

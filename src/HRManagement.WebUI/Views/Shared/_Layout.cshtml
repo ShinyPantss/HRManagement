@@ -1,5 +1,5 @@
 @*
-    HepiyiHR kabuğu — koyu mor kenar çubuğu + yapışkan üst bar + içerik.
+    HappyHR kabuğu — koyu mor kenar çubuğu + yapışkan üst bar + içerik.
     Tasarım: claude.ai/design → HepiyiHR.dc.html
 
     View'lardan beklenenler:
@@ -14,7 +14,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>@ViewData["Title"] — HepiyiHR</title>
+    <title>@ViewData["Title"] — HappyHR</title>
     @* Değişken eksen (400..800): tasarım 550/650 gibi ara ağırlıklar kullanıyor,
        sabit kesitler bunları yuvarlardı. Yüklenemezse sistem yazı tipine düşer. *@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -44,7 +44,7 @@
         <aside class="sidebar" id="sidebar">
             <a class="sidebar-brand" asp-controller="Home" asp-action="Index">
                 <span class="brand-mark">HR</span>
-                <span class="brand-text">HepiyiHR</span>
+                <span class="brand-text">HappyHR</span>
             </a>
 
             <nav class="sidebar-nav">
@@ -292,7 +292,7 @@
                 <div class="page-head">
                     <div>
                         <div class="crumb">
-                            <span>HepiyiHR</span>
+                            <span>HappyHR</span>
                             <span>/</span>
                             @if (ViewData["Crumb"] is string crumbText && !string.IsNullOrWhiteSpace(crumbText))
                             {

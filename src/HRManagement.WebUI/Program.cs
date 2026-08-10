@@ -36,6 +36,10 @@ builder.Services.AddAuthorization();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddTransient<BearerTokenHandler>();
 
+// ApiKeyHandler kullanıcıdan bağımsızdır (uygulamayı tanıtır), yine de handler
+// zincirinin parçası olduğu için aynı yaşam süresiyle kaydedilir.
+builder.Services.AddTransient<ApiKeyHandler>();
+
 // Kenar çubuğu rozetleri gibi her sayfada çizilen küçük verilerin önbelleği
 // (EmployeeCountViewComponent) — her sayfa yüklemesi API'ye gitmesin.
 builder.Services.AddMemoryCache();
@@ -53,49 +57,62 @@ var refitSettings = new RefitSettings
 };
 
 // Login istemcisi: token handler'ı YOK — giriş anında ortada token olmaz.
+// Ama API KEY handler'ı VAR: korumak istediğimiz asıl uç zaten burası, çünkü
+// /api/auth/login dışarıya açık ([AllowAnonymous]) tek kapımız.
 builder.Services.AddRefitClient<IAuthApi>(refitSettings)
-    .ConfigureHttpClient(client => client.BaseAddress = new Uri(apiBaseUrl));
+    .ConfigureHttpClient(client => client.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<ApiKeyHandler>();
 
 // Veri istemcileri: her isteğe JWT'yi ekleyen handler zincire takılır.
 builder.Services.AddRefitClient<IDepartmentApi>(refitSettings)
     .ConfigureHttpClient(client => client.BaseAddress = new Uri(apiBaseUrl))
-    .AddHttpMessageHandler<BearerTokenHandler>();
+    .AddHttpMessageHandler<BearerTokenHandler>()
+    .AddHttpMessageHandler<ApiKeyHandler>();
 
 builder.Services.AddRefitClient<IEmployeeApi>(refitSettings)
     .ConfigureHttpClient(client => client.BaseAddress = new Uri(apiBaseUrl))
-    .AddHttpMessageHandler<BearerTokenHandler>();
+    .AddHttpMessageHandler<BearerTokenHandler>()
+    .AddHttpMessageHandler<ApiKeyHandler>();
 
 builder.Services.AddRefitClient<IInternApi>(refitSettings)
     .ConfigureHttpClient(client => client.BaseAddress = new Uri(apiBaseUrl))
-    .AddHttpMessageHandler<BearerTokenHandler>();
+    .AddHttpMessageHandler<BearerTokenHandler>()
+    .AddHttpMessageHandler<ApiKeyHandler>();
 
 builder.Services.AddRefitClient<IMentorshipApi>(refitSettings)
     .ConfigureHttpClient(client => client.BaseAddress = new Uri(apiBaseUrl))
-    .AddHttpMessageHandler<BearerTokenHandler>();
+    .AddHttpMessageHandler<BearerTokenHandler>()
+    .AddHttpMessageHandler<ApiKeyHandler>();
 
 builder.Services.AddRefitClient<IUnitApi>(refitSettings)
     .ConfigureHttpClient(client => client.BaseAddress = new Uri(apiBaseUrl))
-    .AddHttpMessageHandler<BearerTokenHandler>();
+    .AddHttpMessageHandler<BearerTokenHandler>()
+    .AddHttpMessageHandler<ApiKeyHandler>();
 
 builder.Services.AddRefitClient<ILeaveRequestApi>(refitSettings)
     .ConfigureHttpClient(client => client.BaseAddress = new Uri(apiBaseUrl))
-    .AddHttpMessageHandler<BearerTokenHandler>();
+    .AddHttpMessageHandler<BearerTokenHandler>()
+    .AddHttpMessageHandler<ApiKeyHandler>();
 
 builder.Services.AddRefitClient<IAccountRequestApi>(refitSettings)
     .ConfigureHttpClient(client => client.BaseAddress = new Uri(apiBaseUrl))
-    .AddHttpMessageHandler<BearerTokenHandler>();
+    .AddHttpMessageHandler<BearerTokenHandler>()
+    .AddHttpMessageHandler<ApiKeyHandler>();
 
 builder.Services.AddRefitClient<IDashboardApi>(refitSettings)
     .ConfigureHttpClient(client => client.BaseAddress = new Uri(apiBaseUrl))
-    .AddHttpMessageHandler<BearerTokenHandler>();
+    .AddHttpMessageHandler<BearerTokenHandler>()
+    .AddHttpMessageHandler<ApiKeyHandler>();
 
 builder.Services.AddRefitClient<IUserApi>(refitSettings)
     .ConfigureHttpClient(client => client.BaseAddress = new Uri(apiBaseUrl))
-    .AddHttpMessageHandler<BearerTokenHandler>();
+    .AddHttpMessageHandler<BearerTokenHandler>()
+    .AddHttpMessageHandler<ApiKeyHandler>();
 
 builder.Services.AddRefitClient<IOrganizationApi>(refitSettings)
     .ConfigureHttpClient(client => client.BaseAddress = new Uri(apiBaseUrl))
-    .AddHttpMessageHandler<BearerTokenHandler>();
+    .AddHttpMessageHandler<BearerTokenHandler>()
+    .AddHttpMessageHandler<ApiKeyHandler>();
 
 // Veri asistanı: modelin sorguyu yazması + çalıştırması zaman aldığı için
 // varsayılan 100 sn'lik HttpClient zaman aşımı yetmeyebilir.
@@ -105,7 +122,8 @@ builder.Services.AddRefitClient<IAssistantApi>(refitSettings)
         client.BaseAddress = new Uri(apiBaseUrl);
         client.Timeout = TimeSpan.FromMinutes(3);
     })
-    .AddHttpMessageHandler<BearerTokenHandler>();
+    .AddHttpMessageHandler<BearerTokenHandler>()
+    .AddHttpMessageHandler<ApiKeyHandler>();
 
 var app = builder.Build();
 

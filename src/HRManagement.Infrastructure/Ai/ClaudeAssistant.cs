@@ -13,6 +13,10 @@ namespace HRManagement.Infrastructure.Ai;
 /// dediğini alıp Application'ın verdiği geri çağırıma iletir. Sağlayıcı
 /// değişirse (başka model, yerel bir model) yalnızca bu dosya değişir;
 /// Application'da tek satır dokunulmaz. JwtTokenGenerator ile aynı ilke.
+///
+/// <see cref="AskAsync"/> protokolün İSKELETİNİ tutar (gönder → araç istendi mi →
+/// çalıştır → geri gönder → tekrarla); her adımın ayrıntısı adı olan bir private
+/// metoda iner. Böylece akışı okumak için ayrıntıları okumak gerekmez.
 /// </summary>
 public class ClaudeAssistant : IAiAssistant
 {
@@ -25,6 +29,11 @@ public class ClaudeAssistant : IAiAssistant
     /// asıl sorguyu yazar) ama sonsuz döngüye girmemeli.
     /// </summary>
     private const int MaxToolIterations = 6;
+
+    private const string RefusalMessage = "Bu soru güvenlik nedeniyle yanıtlanamadı.";
+
+    private const string TooManyStepsMessage =
+        "Soru çok fazla adım gerektirdi ve tamamlanamadı. Daha dar bir soru sormayı deneyin.";
 
     // AnthropicClient içinde HttpClient taşır; her istekte yenisini üretmek
     // soket tükenmesine yol açar. Lazy + Singleton kayıt: yapılandırma yalnızca
@@ -54,26 +63,65 @@ public class ClaudeAssistant : IAiAssistant
         CancellationToken cancellationToken)
     {
         ToolUnion[] anthropicTools = [.. tools.Select(ToAnthropicTool)];
+        var systemBlocks = BuildSystemBlocks(systemPrompt);
+        var messages = BuildInitialMessages(history, question);
 
-        // Sistem prompt'u (şema + tuzaklar + SQL şablonu) ve araç tanımları HER
-        // istekte harfi harfine aynı ve büyük — kabaca 2500 token. Önbellek
-        // işareti bunları bir kez işletip sonraki isteklerde temel fiyatın
-        // ~0.1'ine okutur; yazma 1.25×, yani İKİ istekte başa baş.
-        //
-        // İşaret yalnızca system'e konuyor: araçlar istemde system'den ÖNCE
-        // yer aldığı için tek işaret ikisini birden kapsıyor.
-        //
-        // DİKKAT: prompt'un tek bayti değişirse önbellek komple düşer. Bu yüzden
-        // SystemPrompt bir const — içine tarih/kullanıcı adı gibi değişen bir şey
-        // ENJEKTE EDİLMEMELİ, yoksa her istek yeniden yazma ücreti öder.
-        List<TextBlockParam> systemBlocks =
-        [
-            new() { Text = systemPrompt, CacheControl = new CacheControlEphemeral() }
-        ];
+        for (var iteration = 0; iteration < MaxToolIterations; iteration++)
+        {
+            var response = await SendAsync(systemBlocks, anthropicTools, messages);
 
-        // Geçmiş, modelin beklediği sıralı user/assistant dizisine açılır.
-        // Araç turları saklanmadığı için model eski sorguların sonuçlarını
-        // GÖRMEZ — bağlamı görür, veriyi gerekiyorsa yeniden sorgular.
+            // Güvenlik sınıflandırıcısı isteği reddettiyse içerik boş/kısmi olur;
+            // content'i okumadan önce bakmak gerekir.
+            if (response.StopReason == "refusal")
+                return RefusalMessage;
+
+            // Model araç istemiyorsa iş bitti: metin cevabı döner.
+            if (response.StopReason != "tool_use")
+                return ExtractText(response);
+
+            var (assistantContent, toolUses) = SplitContent(response);
+            var toolResults = await RunToolsAsync(toolUses, executeTool, cancellationToken);
+
+            // Asistanın turu + araç sonuçları geçmişe eklenir; döngü modele geri döner.
+            // Araç sonuçlarının HEPSİ tek bir user mesajında gitmeli — bölünürse
+            // API eşleşmeyen tool_use bloğu yüzünden isteği reddeder.
+            messages.Add(new MessageParam { Role = Role.Assistant, Content = assistantContent });
+            messages.Add(new MessageParam { Role = Role.User, Content = toolResults });
+        }
+
+        return TooManyStepsMessage;
+    }
+
+    /// <summary>
+    /// Sistem prompt'unu önbellek işaretiyle sarar.
+    ///
+    /// Sistem prompt'u (şema + tuzaklar + SQL şablonu) ve araç tanımları HER
+    /// istekte harfi harfine aynı ve büyük — kabaca 2500 token. Önbellek
+    /// işareti bunları bir kez işletip sonraki isteklerde temel fiyatın
+    /// ~0.1'ine okutur; yazma 1.25×, yani İKİ istekte başa baş.
+    ///
+    /// İşaret yalnızca system'e konuyor: araçlar istemde system'den ÖNCE
+    /// yer aldığı için tek işaret ikisini birden kapsıyor.
+    ///
+    /// DİKKAT: prompt'un tek bayti değişirse önbellek komple düşer. Bu yüzden
+    /// SystemPrompt bir const — içine tarih/kullanıcı adı gibi değişen bir şey
+    /// ENJEKTE EDİLMEMELİ, yoksa her istek yeniden yazma ücreti öder.
+    /// </summary>
+    private static List<TextBlockParam> BuildSystemBlocks(string systemPrompt) =>
+    [
+        new() { Text = systemPrompt, CacheControl = new CacheControlEphemeral() }
+    ];
+
+    /// <summary>
+    /// Geçmişi, modelin beklediği sıralı user/assistant dizisine açar ve sona
+    /// güncel soruyu ekler.
+    ///
+    /// Araç turları saklanmadığı için model eski sorguların sonuçlarını GÖRMEZ —
+    /// bağlamı görür, veriyi gerekiyorsa yeniden sorgular.
+    /// </summary>
+    private static List<MessageParam> BuildInitialMessages(
+        IReadOnlyList<ConversationTurn> history, string question)
+    {
         var messages = new List<MessageParam>();
 
         foreach (var turn in history)
@@ -84,78 +132,101 @@ public class ClaudeAssistant : IAiAssistant
 
         messages.Add(new() { Role = Role.User, Content = question });
 
-        for (var iteration = 0; iteration < MaxToolIterations; iteration++)
+        return messages;
+    }
+
+    private Task<Message> SendAsync(
+        List<TextBlockParam> systemBlocks,
+        ToolUnion[] tools,
+        List<MessageParam> messages) =>
+        _client.Value.Messages.Create(new MessageCreateParams
         {
-            var response = await _client.Value.Messages.Create(new MessageCreateParams
+            Model = ModelId,
+            MaxTokens = MaxTokens,
+            System = systemBlocks,
+            Tools = tools,
+            Messages = messages
+        });
+
+    /// <summary>
+    /// Modelin cevabını ikiye ayırır: geçmişe AYNEN geri gönderilecek blok
+    /// listesi, ve çalıştırılacak araç çağrıları.
+    ///
+    /// Blok SIRASI korunur — API, asistan turunu geldiği düzende geri bekler.
+    /// </summary>
+    private static (List<ContentBlockParam> AssistantContent, List<ToolUseBlock> ToolUses)
+        SplitContent(Message response)
+    {
+        var assistantContent = new List<ContentBlockParam>();
+        var toolUses = new List<ToolUseBlock>();
+
+        foreach (var block in response.Content)
+        {
+            if (block.TryPickText(out TextBlock? text))
             {
-                Model = ModelId,
-                MaxTokens = MaxTokens,
-                System = systemBlocks,
-                Tools = anthropicTools,
-                Messages = messages
-            });
-
-            // Güvenlik sınıflandırıcısı isteği reddettiyse içerik boş/kısmi olur;
-            // content'i okumadan önce bakmak gerekir.
-            if (response.StopReason == "refusal")
-                return "Bu soru güvenlik nedeniyle yanıtlanamadı.";
-
-            // Model araç istemiyorsa iş bitti: metin cevabı döner.
-            if (response.StopReason != "tool_use")
-                return ExtractText(response);
-
-            var assistantContent = new List<ContentBlockParam>();
-            var toolResults = new List<ContentBlockParam>();
-
-            foreach (var block in response.Content)
-            {
-                if (block.TryPickText(out TextBlock? text))
-                {
-                    assistantContent.Add(new TextBlockParam { Text = text.Text });
-                }
-                else if (block.TryPickThinking(out ThinkingBlock? thinking))
-                {
-                    // İmza AYNEN korunmalı — API kurcalanmış düşünce bloğunu reddeder.
-                    assistantContent.Add(new ThinkingBlockParam
-                    {
-                        Thinking = thinking.Thinking,
-                        Signature = thinking.Signature
-                    });
-                }
-                else if (block.TryPickRedactedThinking(out RedactedThinkingBlock? redacted))
-                {
-                    assistantContent.Add(new RedactedThinkingBlockParam { Data = redacted.Data });
-                }
-                else if (block.TryPickToolUse(out ToolUseBlock? toolUse))
-                {
-                    assistantContent.Add(new ToolUseBlockParam
-                    {
-                        ID = toolUse.ID,
-                        Name = toolUse.Name,
-                        Input = toolUse.Input
-                    });
-
-                    // Asıl iş burada: Application'ın verdiği yürütücü çalışır.
-                    // Hataları o metin olarak döndürür, exception fırlatmaz —
-                    // model mesajı okuyup kendini düzeltebilsin diye.
-                    var result = await executeTool(toolUse.Name, toolUse.Input, cancellationToken);
-
-                    toolResults.Add(new ToolResultBlockParam
-                    {
-                        ToolUseID = toolUse.ID,
-                        Content = result
-                    });
-                }
+                assistantContent.Add(new TextBlockParam { Text = text.Text });
             }
+            else if (block.TryPickThinking(out ThinkingBlock? thinking))
+            {
+                // İmza AYNEN korunmalı — API kurcalanmış düşünce bloğunu reddeder.
+                assistantContent.Add(new ThinkingBlockParam
+                {
+                    Thinking = thinking.Thinking,
+                    Signature = thinking.Signature
+                });
+            }
+            else if (block.TryPickRedactedThinking(out RedactedThinkingBlock? redacted))
+            {
+                assistantContent.Add(new RedactedThinkingBlockParam { Data = redacted.Data });
+            }
+            else if (block.TryPickToolUse(out ToolUseBlock? toolUse))
+            {
+                assistantContent.Add(new ToolUseBlockParam
+                {
+                    ID = toolUse.ID,
+                    Name = toolUse.Name,
+                    Input = toolUse.Input
+                });
 
-            // Asistanın turu + araç sonuçları geçmişe eklenir; döngü modele geri döner.
-            // Araç sonuçlarının HEPSİ tek bir user mesajında gitmeli — bölünürse
-            // API eşleşmeyen tool_use bloğu yüzünden isteği reddeder.
-            messages.Add(new MessageParam { Role = Role.Assistant, Content = assistantContent });
-            messages.Add(new MessageParam { Role = Role.User, Content = toolResults });
+                toolUses.Add(toolUse);
+            }
         }
 
-        return "Soru çok fazla adım gerektirdi ve tamamlanamadı. Daha dar bir soru sormayı deneyin.";
+        return (assistantContent, toolUses);
+    }
+
+    /// <summary>
+    /// Araç çağrılarını çalıştırıp sonuç bloklarını üretir.
+    ///
+    /// Yürütücü Application'dan gelir; hataları EXCEPTION olarak değil METİN
+    /// olarak döndürür ki model durumu görüp kendini düzeltebilsin (ör. yasak
+    /// kelime kullandıysa sorguyu yeniden yazar).
+    ///
+    /// Çağrılar SIRAYLA çalışır. Model tek turda birden fazla araç isteyebilir
+    /// ve bunlar birbirinden bağımsızdır — paralel çalıştırmak süreyi kısaltır.
+    /// Yapılmadı çünkü yürütücü paylaşılan bir listeye yazıyor (çalıştırılan
+    /// sorgu kaydı) ve o liste eşzamanlı yazmaya hazır değil; ikisi birlikte
+    /// değiştirilmeli.
+    /// </summary>
+    private static async Task<List<ContentBlockParam>> RunToolsAsync(
+        List<ToolUseBlock> toolUses,
+        AiToolExecutor executeTool,
+        CancellationToken cancellationToken)
+    {
+        var toolResults = new List<ContentBlockParam>(toolUses.Count);
+
+        foreach (var toolUse in toolUses)
+        {
+            var result = await executeTool(toolUse.Name, toolUse.Input, cancellationToken);
+
+            toolResults.Add(new ToolResultBlockParam
+            {
+                ToolUseID = toolUse.ID,
+                Content = result
+            });
+        }
+
+        return toolResults;
     }
 
     /// <summary>
