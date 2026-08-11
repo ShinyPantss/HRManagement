@@ -1,36 +1,32 @@
-using Dapper;
 using HRManagement.Application.Interfaces;
 using HRManagement.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace HRManagement.Infrastructure.Persistence;
 
 public class EmployeeNoteRepository : IEmployeeNoteRepository
 {
-    private readonly DbConnectionFactory _connectionFactory;
+    private readonly HRManagementDbContext _context;
 
-    public EmployeeNoteRepository(DbConnectionFactory connectionFactory)
+    public EmployeeNoteRepository(HRManagementDbContext context)
     {
-        _connectionFactory = connectionFactory;
+        _context = context;
     }
 
     public async Task<IEnumerable<EmployeeNote>> GetByEmployeeIdAsync(int employeeId)
     {
-        const string sql = @"
-            SELECT * FROM EmployeeNotes
-            WHERE EmployeeId = @EmployeeId
-            ORDER BY CreatedAt DESC";
-        using var connection = _connectionFactory.CreateConnection();
-        return await connection.QueryAsync<EmployeeNote>(sql, new { EmployeeId = employeeId });
+        return await _context.EmployeeNotes
+            .AsNoTracking()
+            .Where(n => n.EmployeeId == employeeId)
+            .OrderByDescending(n => n.CreatedAt)
+            .ToListAsync();
     }
 
     public async Task<int> AddAsync(EmployeeNote note)
     {
-        // CreatedAt DB default'undan gelir (SYSUTCDATETIME) — diğer repo'larla aynı desen.
-        const string sql = @"
-            INSERT INTO EmployeeNotes (EmployeeId, AuthorUserId, Content)
-            VALUES (@EmployeeId, @AuthorUserId, @Content);
-            SELECT CAST(SCOPE_IDENTITY() AS INT);";
-        using var connection = _connectionFactory.CreateConnection();
-        return await connection.QuerySingleAsync<int>(sql, note);
+        _context.EmployeeNotes.Add(note);
+        await _context.SaveChangesAsync();
+
+        return note.Id;
     }
 }

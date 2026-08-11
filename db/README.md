@@ -1,8 +1,21 @@
 # Veritabanı script'leri
 
-Proje **Dapper** kullanıyor, EF Core yok — dolayısıyla migration mekanizması da yok.
-Şemanın tek doğruluk kaynağı bu klasördür. Her şema değişikliği buraya yeni bir
-numaralı dosya olarak eklenir ve git'te takip edilir.
+> **2026-08-11 — ŞEMANIN SAHİBİ DEĞİŞTİ.**
+> Proje EF Core'a geçti ve şemanın tek doğruluk kaynağı artık **EF Migrations**:
+> `src/HRManagement.Infrastructure/Persistence/Migrations`.
+>
+> **Bundan sonraki şema değişiklikleri buraya `.sql` olarak YAZILMAZ**; entity
+> konfigürasyonu (`Persistence/Configurations`) güncellenir ve
+> `dotnet dotnet-ef migrations add <Ad>` çalıştırılır. İki mekanizmayı paralel
+> kullanmak, ikisinin de şemayı bildiğini sanıp birbirini ezmesi demektir.
+>
+> Bu klasör iki iş için duruyor: **tarihsel kayıt** (şema bugüne nasıl geldi) ve
+> **stored procedure'ler** (`18_sp_hr_dashboard.sql` — EF'in yönetmediği nesneler).
+> Mevcut veritabanı `20260811064409_Baseline` migration'ı uygulanmış sayılır
+> (`__EFMigrationsHistory`); yani baseline tabloları yeniden kurmaya çalışmaz.
+
+Tüm eski script'ler **idempotent**'tir: hem sıfır veritabanında hem mevcut
+veritabanında aynı sonucu verir.
 
 Tüm script'ler **idempotent**'tir: hem sıfır veritabanında hem mevcut veritabanında
 aynı sonucu verir, tekrar çalıştırılabilir. Engelleyici veri bulurlarsa sessizce
@@ -49,8 +62,9 @@ Sıfırdan kurulum için **sırayla iki dosya zorunludur**:
 | `08_drop_position.sql` | tarihsel: Position kolonunun kaldırılması — *05'e dahil* |
 | `10_leave_rules.sql` | tarihsel: iş günü + hastalık raporu — *05'e dahil* |
 | `14_employee_gender.sql` | tarihsel: cinsiyet kolonu — *05'e dahil* |
-| `20_employee_nationalid_unique.sql` | **kısıt: `Employees.NationalId` benzersiz + 11 hane** (05'e dahil değil) |
-| `21_intern_email_unique.sql` | **kısıt: `Interns.Email` benzersiz** (05'e dahil değil) |
+| `20_employee_nationalid_unique.sql` | kısıt: `Employees.NationalId` benzersiz + 11 hane — *2026-08-11'de uygulandı* |
+| `21_intern_email_unique.sql` | kısıt: `Interns.Email` benzersiz — *2026-08-11'de uygulandı* |
+| `22_align_constraint_names.sql` | PK/FK adlarını EF modeliyle hizalar — *2026-08-11'de uygulandı* |
 
 `09_*` numarası kullanılmamıştır.
 
