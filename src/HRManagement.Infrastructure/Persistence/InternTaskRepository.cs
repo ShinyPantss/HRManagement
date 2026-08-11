@@ -1,59 +1,60 @@
-using Dapper;
 using HRManagement.Application.Interfaces;
 using HRManagement.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace HRManagement.Infrastructure.Persistence;
 
 public class InternTaskRepository : IInternTaskRepository
 {
-    private readonly DbConnectionFactory _connectionFactory;
+    private readonly HRManagementDbContext _context;
 
-    public InternTaskRepository(DbConnectionFactory connectionFactory)
+    public InternTaskRepository(HRManagementDbContext context)
     {
-        _connectionFactory = connectionFactory;
+        _context = context;
     }
 
     public async Task<InternTask?> GetByIdAsync(int id)
     {
-        const string sql = "SELECT * FROM InternTasks WHERE Id = @Id";
-        using var connection = _connectionFactory.CreateConnection();
-        return await connection.QuerySingleOrDefaultAsync<InternTask>(sql, new { Id = id });
+        return await _context.InternTasks
+            .AsNoTracking()
+            .FirstOrDefaultAsync(t => t.Id == id);
     }
 
     public async Task<IEnumerable<InternTask>> GetByInternIdAsync(int internId)
     {
-        const string sql = @"
-            SELECT * FROM InternTasks
-            WHERE InternId = @InternId
-            ORDER BY CreatedAt DESC";
-        using var connection = _connectionFactory.CreateConnection();
-        return await connection.QueryAsync<InternTask>(sql, new { InternId = internId });
+        return await _context.InternTasks
+            .AsNoTracking()
+            .Where(t => t.InternId == internId)
+            .OrderByDescending(t => t.CreatedAt)
+            .ToListAsync();
     }
 
     public async Task<int> AddAsync(InternTask task)
     {
-        // CreatedAt ve Status varsayılanları DB'den gelir (SYSUTCDATETIME / 1);
-        // Status'u yine de yazıyoruz — entity varsayılanıyla DB varsayılanı
-        // birbirinden habersiz kaymasın.
-        const string sql = @"
-            INSERT INTO InternTasks (InternId, Title, Description, Status, DueDate, CreatedByUserId)
-            VALUES (@InternId, @Title, @Description, @Status, @DueDate, @CreatedByUserId);
-            SELECT CAST(SCOPE_IDENTITY() AS INT);";
-        using var connection = _connectionFactory.CreateConnection();
-        return await connection.QuerySingleAsync<int>(sql, task);
+        // Status'un DB default'u (1) modele KONMADI; entity varsayılanı
+        // (InternTaskStatus.Pending) her INSERT'te açıkça yazılır. Böylece iki
+        // varsayılan birbirinden habersiz kayamaz — eski koddaki not da bunu diyordu.
+        _context.InternTasks.Add(task);
+        await _context.SaveChangesAsync();
+
+        return task.Id;
     }
 
     public async Task UpdateAsync(InternTask task)
     {
-        const string sql = @"
-            UPDATE InternTasks SET
-                Title = @Title,
-                Description = @Description,
-                Status = @Status,
-                DueDate = @DueDate,
-                UpdatedAt = SYSUTCDATETIME()
-            WHERE Id = @Id";
-        using var connection = _connectionFactory.CreateConnection();
-        await connection.ExecuteAsync(sql, task);
+        var mevcut = await _context.InternTasks.FirstOrDefaultAsync(t => t.Id == task.Id);
+
+        if (mevcut is null)
+            return;
+
+        // InternId ve CreatedByUserId bilinçli olarak DIŞARIDA: bir görev
+        // açıldıktan sonra sahibi de atayanı da değişmez. Eski elle yazılan
+        // UPDATE cümlesi de tam olarak bu dört sütunu yazıyordu.
+        mevcut.Title = task.Title;
+        mevcut.Description = task.Description;
+        mevcut.Status = task.Status;
+        mevcut.DueDate = task.DueDate;
+
+        await _context.SaveChangesAsync();
     }
 }

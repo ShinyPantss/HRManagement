@@ -1,6 +1,8 @@
 using HRManagement.Application.Interfaces;
 using HRManagement.Infrastructure.Persistence;
 using HRManagement.Infrastructure.Security;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace HRManagement.Infrastructure;
@@ -9,7 +11,28 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services)
     {
+        // DbConnectionFactory (Dapper) KALMAYA DEVAM EDİYOR. İki yer onu kullanır:
+        // asistanın salt okuma sorgu çalıştırıcısı ve çok sonuçlu dashboard SP'si.
+        // Geçiş boyunca da her iki dünya yan yana yaşar — repository'ler tek tek çevrilir.
         services.AddSingleton<DbConnectionFactory>();
+
+        // EF Core bağlamı SCOPED: change tracker istek başına yaşamalıdır.
+        // Singleton olsaydı bütün isteklerin izlediği entity'ler tek havuzda
+        // birikir, hem bellek şişer hem bir isteğin değişikliği diğerine sızardı.
+        services.AddDbContext<HRManagementDbContext>((serviceProvider, options) =>
+        {
+            var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+
+            options.UseSqlServer(
+                configuration.GetConnectionString("DefaultConnection")
+                ?? throw new InvalidOperationException(
+                    "'ConnectionStrings:DefaultConnection' yapılandırması bulunamadı."));
+
+            // UpdatedAt damgası: eskiden 12 repository'deki her UPDATE cümlesinde
+            // elle yazılıyordu, artık tek yerde. Interceptor durum tutmaz, o yüzden
+            // tek örnek bütün bağlamlara hizmet edebilir.
+            options.AddInterceptors(new UpdatedAtInterceptor());
+        });
 
         services.AddScoped<IEmployeeRepository, EmployeeRepository>();
         services.AddScoped<IDepartmentRepository, DepartmentRepository>();

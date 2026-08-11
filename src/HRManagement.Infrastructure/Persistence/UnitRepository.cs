@@ -1,29 +1,35 @@
-using Dapper;
 using HRManagement.Application.Interfaces;
 using HRManagement.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace HRManagement.Infrastructure.Persistence;
 
 public class UnitRepository : IUnitRepository
 {
-    private readonly DbConnectionFactory _connectionFactory;
+    private readonly HRManagementDbContext _context;
 
-    public UnitRepository(DbConnectionFactory connectionFactory)
+    public UnitRepository(HRManagementDbContext context)
     {
-        _connectionFactory = connectionFactory;
+        _context = context;
     }
 
+    // AsNoTracking: bu sorgular yalnızca OKUMA içindir. Varsayılan davranışta EF
+    // dönen her entity'nin bir kopyasını saklar ki sonradan neyin değiştiğini
+    // anlayabilsin; hiç güncellenmeyecek listelerde bu boşa bellek ve CPU'dur.
+    // Ayrıca eski Dapper davranışıyla aynı: dönen nesneler bağlamdan kopuk.
     public async Task<IEnumerable<Unit>> GetAllAsync()
     {
-        const string sql = "SELECT * FROM Units ORDER BY DepartmentId, Name";
-        using var connection = _connectionFactory.CreateConnection();
-        return await connection.QueryAsync<Unit>(sql);
+        return await _context.Units
+            .AsNoTracking()
+            .OrderBy(u => u.DepartmentId)
+            .ThenBy(u => u.Name)
+            .ToListAsync();
     }
 
     public async Task<Unit?> GetByIdAsync(int id)
     {
-        const string sql = "SELECT * FROM Units WHERE Id = @Id";
-        using var connection = _connectionFactory.CreateConnection();
-        return await connection.QuerySingleOrDefaultAsync<Unit>(sql, new { Id = id });
+        return await _context.Units
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == id);
     }
 }

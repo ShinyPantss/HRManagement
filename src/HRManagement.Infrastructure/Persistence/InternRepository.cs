@@ -1,156 +1,132 @@
-using Dapper;
 using HRManagement.Application.Interfaces;
 using HRManagement.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace HRManagement.Infrastructure.Persistence;
 
 public class InternRepository : IInternRepository
 {
-    private readonly DbConnectionFactory _connectionFactory;
+    private readonly HRManagementDbContext _context;
 
-    public InternRepository(DbConnectionFactory connectionFactory)
+    public InternRepository(HRManagementDbContext context)
     {
-        _connectionFactory = connectionFactory;
+        _context = context;
     }
 
     public async Task<Intern?> GetByIdAsync(int id)
     {
-        const string sql = "SELECT * FROM Interns WHERE Id = @Id";
-        using var connection = _connectionFactory.CreateConnection();
-        return await connection.QuerySingleOrDefaultAsync<Intern>(sql, new { Id = id });
+        return await _context.Interns.AsNoTracking().FirstOrDefaultAsync(i => i.Id == id);
     }
 
     public async Task<IEnumerable<Intern>> GetAllAsync()
     {
-        const string sql = "SELECT * FROM Interns";
-        using var connection = _connectionFactory.CreateConnection();
-        return await connection.QueryAsync<Intern>(sql);
+        return await _context.Interns.AsNoTracking().ToListAsync();
     }
 
     public async Task<int> AddAsync(Intern intern)
     {
-        const string sql = @"
-            INSERT INTO Interns (FirstName, LastName, Email, University, Major, Grade, StartDate, EndDate, MentorId, DepartmentId, UnitId, UserId)
-            VALUES (@FirstName, @LastName, @Email, @University, @Major, @Grade, @StartDate, @EndDate, @MentorId, @DepartmentId, @UnitId, @UserId);
-            SELECT CAST(SCOPE_IDENTITY() AS INT);";
-        using var connection = _connectionFactory.CreateConnection();
-        return await connection.QuerySingleAsync<int>(sql, intern);
+        _context.Interns.Add(intern);
+        await _context.SaveChangesAsync();
+
+        return intern.Id;
     }
 
     public async Task UpdateAsync(Intern intern)
     {
-        const string sql = @"
-            UPDATE Interns SET
-                FirstName = @FirstName,
-                LastName = @LastName,
-                Email = @Email,
-                University = @University,
-                Major = @Major,
-                Grade = @Grade,
-                StartDate = @StartDate,
-                EndDate = @EndDate,
-                MentorId = @MentorId,
-                DepartmentId = @DepartmentId,
-                UnitId = @UnitId,
-                UserId = @UserId,
-                UpdatedAt = SYSUTCDATETIME()
-            WHERE Id = @Id";
-        using var connection = _connectionFactory.CreateConnection();
-        await connection.ExecuteAsync(sql, intern);
+        var mevcut = await _context.Interns.FirstOrDefaultAsync(i => i.Id == intern.Id);
+
+        if (mevcut is null)
+            return;
+
+        mevcut.FirstName = intern.FirstName;
+        mevcut.LastName = intern.LastName;
+        mevcut.Email = intern.Email;
+        mevcut.University = intern.University;
+        mevcut.Major = intern.Major;
+        mevcut.Grade = intern.Grade;
+        mevcut.StartDate = intern.StartDate;
+        mevcut.EndDate = intern.EndDate;
+        mevcut.MentorId = intern.MentorId;
+        mevcut.DepartmentId = intern.DepartmentId;
+        mevcut.UnitId = intern.UnitId;
+        mevcut.UserId = intern.UserId;
+
+        await _context.SaveChangesAsync();
     }
 
     public async Task DeleteAsync(int id)
     {
-        const string sql = "DELETE FROM Interns WHERE Id = @Id";
-        using var connection = _connectionFactory.CreateConnection();
-        await connection.ExecuteAsync(sql, new { Id = id });
+        await _context.Interns.Where(i => i.Id == id).ExecuteDeleteAsync();
     }
 
     public async Task DeleteWithAccountAsync(int internId, int? userId)
     {
-        using var connection = _connectionFactory.CreateConnection();
-        connection.Open();
+        // ExecuteDelete/ExecuteUpdate change tracker'dan GEÇMEZ: doğrudan tek bir
+        // DELETE/UPDATE cümlesi gönderirler, entity'leri belleğe çekmezler. Hızlı
+        // olmalarının bedeli, SaveChanges'in verdiği örtük transaction'a da
+        // dahil olmamalarıdır — dördünü atomik yapmak için transaction elle açılır.
+        //
+        // Aynı sebeple UpdatedAtInterceptor da bu çağrılarda ÇALIŞMAZ; damgayı
+        // aşağıda elle yazıyoruz.
+        await using var transaction = await _context.Database.BeginTransactionAsync();
 
-        using var transaction = connection.BeginTransaction();
-        try
+        // Stajyerin izin talepleri ve hesap talepleri. Çalışandan farklı olarak
+        // stajyerin "pasife alma" seçeneği yok (Intern'de IsActive yok), o yüzden
+        // izin geçmişi de cascade edilir.
+        await _context.LeaveRequests.Where(l => l.InternId == internId).ExecuteDeleteAsync();
+        await _context.AccountRequests.Where(a => a.InternId == internId).ExecuteDeleteAsync();
+
+        // Login hesabı: SİLİNMEZ, pasife alınır — başka talepleri (RequestedBy/
+        // ReviewedBy) referanslıyor olabilir; hard-delete FK'ye takılır ve
+        // denetim izini bozar. Pasif hesap giriş yapamaz.
+        if (userId is int uid)
         {
-            // Stajyerin izin talepleri ve hesap talepleri. Çalışandan farklı olarak
-            // stajyerin "pasife alma" seçeneği yok (Intern'de IsActive yok), o yüzden
-            // izin talepleri de cascade edilir.
-            await connection.ExecuteAsync(
-                "DELETE FROM LeaveRequests WHERE InternId = @Id", new { Id = internId }, transaction);
-
-            await connection.ExecuteAsync(
-                "DELETE FROM AccountRequests WHERE InternId = @Id", new { Id = internId }, transaction);
-
-            // Login hesabı: SİLİNMEZ, pasife alınır (başka talepleri referanslıyor olabilir).
-            if (userId is int uid)
-                await connection.ExecuteAsync(
-                    "UPDATE Users SET IsActive = 0, UpdatedAt = SYSUTCDATETIME() WHERE Id = @Id",
-                    new { Id = uid }, transaction);
-
-            await connection.ExecuteAsync(
-                "DELETE FROM Interns WHERE Id = @Id", new { Id = internId }, transaction);
-
-            transaction.Commit();
+            await _context.Users
+                .Where(u => u.Id == uid)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(u => u.IsActive, false)
+                    .SetProperty(u => u.UpdatedAt, DateTime.UtcNow));
         }
-        catch
-        {
-            transaction.Rollback();
-            throw;
-        }
+
+        await _context.Interns.Where(i => i.Id == internId).ExecuteDeleteAsync();
+
+        await transaction.CommitAsync();
     }
 
+    // AnyAsync veritabanında EXISTS üretir — eski "SELECT CASE WHEN EXISTS(...)"
+    // cümlelerinin birebir karşılığı, ilk eşleşmede durur.
     public async Task<bool> ExistsByDepartmentIdAsync(int departmentId)
     {
-        const string sql = @"
-            SELECT CASE WHEN EXISTS
-                (SELECT 1 FROM Interns WHERE DepartmentId = @DepartmentId)
-            THEN 1 ELSE 0 END";
-        using var connection = _connectionFactory.CreateConnection();
-        return await connection.ExecuteScalarAsync<bool>(sql, new { DepartmentId = departmentId });
+        return await _context.Interns.AnyAsync(i => i.DepartmentId == departmentId);
     }
 
     public async Task<bool> ExistsByMentorIdAsync(int mentorId)
     {
-        const string sql = @"
-            SELECT CASE WHEN EXISTS
-                (SELECT 1 FROM Interns WHERE MentorId = @MentorId)
-            THEN 1 ELSE 0 END";
-        using var connection = _connectionFactory.CreateConnection();
-        return await connection.ExecuteScalarAsync<bool>(sql, new { MentorId = mentorId });
+        return await _context.Interns.AnyAsync(i => i.MentorId == mentorId);
     }
 
     public async Task<bool> ExistsByUserIdAsync(int userId)
     {
-        const string sql = @"
-            SELECT CASE WHEN EXISTS
-                (SELECT 1 FROM Interns WHERE UserId = @UserId)
-            THEN 1 ELSE 0 END";
-        using var connection = _connectionFactory.CreateConnection();
-        return await connection.ExecuteScalarAsync<bool>(sql, new { UserId = userId });
+        return await _context.Interns.AnyAsync(i => i.UserId == userId);
     }
 
     public async Task<Intern?> GetByUserIdAsync(int userId)
     {
-        const string sql = "SELECT * FROM Interns WHERE UserId = @UserId";
-        using var connection = _connectionFactory.CreateConnection();
-        return await connection.QueryFirstOrDefaultAsync<Intern>(sql, new { UserId = userId });
+        return await _context.Interns.AsNoTracking().FirstOrDefaultAsync(i => i.UserId == userId);
     }
 
     public async Task<Intern?> GetByEmailAsync(string email)
     {
-        // FirstOrDefault (Single değil): kısıt eklenmeden önce girilmiş mükerrer
-        // kayıtlar bu sorguyu 500'e çevirmemeli.
-        const string sql = "SELECT * FROM Interns WHERE Email = @Email";
-        using var connection = _connectionFactory.CreateConnection();
-        return await connection.QueryFirstOrDefaultAsync<Intern>(sql, new { Email = email });
+        // FirstOrDefault (Single değil): UQ_Interns_Email kısıtı eklenmeden önce
+        // girilmiş mükerrer kayıtlar bu sorguyu patlatmasın.
+        return await _context.Interns.AsNoTracking().FirstOrDefaultAsync(i => i.Email == email);
     }
 
     public async Task<IEnumerable<Intern>> GetByMentorIdAsync(int mentorEmployeeId)
     {
-        const string sql = "SELECT * FROM Interns WHERE MentorId = @MentorId";
-        using var connection = _connectionFactory.CreateConnection();
-        return await connection.QueryAsync<Intern>(sql, new { MentorId = mentorEmployeeId });
+        return await _context.Interns
+            .AsNoTracking()
+            .Where(i => i.MentorId == mentorEmployeeId)
+            .ToListAsync();
     }
 }

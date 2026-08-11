@@ -10,7 +10,15 @@ izin talepleri (LeaveRequest), stajyer modülü, role-based dashboard'lar.
 - ASP.NET Core Web API (backend) + ASP.NET Core MVC (WebUI — server-rendered Razor)
 - MediatR 12.x — SÜRÜM SABİT; 13+ ticari lisansa geçti, upgrade ETME
 - FluentValidation — command/query input validation (pipeline behavior ile otomatik)
-- Dapper — EF Core YOK ve EKLENMEYECEK
+- **EF Core 10** — repository'lerdeki CRUD ve sorgular. (Önceki kural "EF Core YOK"tu;
+  2026-08-11'de mentor onayıyla kaldırıldı ve tüm repository'ler çevrildi.)
+- **Dapper** — SİLİNMEDİ, iki yerde bilinçli olarak kalıyor:
+  (1) `DashboardRepository` → `usp_HrDashboard_Get` tek çağrıda 6 result set döner,
+  EF'in `QueryMultiple` karşılığı yok; bölmek SP'nin varlık sebebini siler.
+  (2) `ReadOnlySqlQueryRunner` → AI asistanı SQL'i çalışma anında ÜRETİR, doğası gereği ham.
+- Şema yönetimi: **EF Migrations** (`src/HRManagement.Infrastructure/Persistence/Migrations`).
+  `db/*.sql` tarihsel kayıt + stored procedure'ler olarak durur; yeni şema değişikliği
+  migration ile yapılır. Ayrıntı: `db/README.md`.
 - Auth: tarayıcı↔WebUI = cookie authentication; WebUI↔API = Bearer JWT
 - Testler: tests/HRManagement.Application.Tests (handler birim testleri)
 
@@ -19,7 +27,9 @@ izin talepleri (LeaveRequest), stajyer modülü, role-based dashboard'lar.
 src/
 ├── HRManagement.Domain          — entity'ler, enum'lar, domain exception'ları
 ├── HRManagement.Application     — use-case'ler (MediatR), iş kuralları, repository kontratları
-├── HRManagement.Infrastructure  — Dapper repo'ları, ConnectionFactory, JwtService (token ÜRETİMİ)
+├── HRManagement.Infrastructure  — EF Core repo'ları + DbContext/Configurations/Migrations,
+│                                  Dapper (dashboard SP + asistan), ConnectionFactory,
+│                                  JwtService (token ÜRETİMİ)
 ├── HRManagement.API             — API controller'lar, Models/ (request-response + BaseResponse), JWT doğrulama
 └── HRManagement.WebUI           — MVC: Controllers, Views, ViewModels, Models/Api, Services (ApiService'ler)
 tests/
