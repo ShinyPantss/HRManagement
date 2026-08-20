@@ -28,6 +28,7 @@ public class HRManagementDbContext : DbContext
     public DbSet<Intern> Interns => Set<Intern>();
     public DbSet<LeaveRequest> LeaveRequests => Set<LeaveRequest>();
     public DbSet<EmployeeNote> EmployeeNotes => Set<EmployeeNote>();
+    public DbSet<InternNote> InternNotes => Set<InternNote>();
     public DbSet<InternTask> InternTasks => Set<InternTask>();
     public DbSet<AccountRequest> AccountRequests => Set<AccountRequest>();
 
