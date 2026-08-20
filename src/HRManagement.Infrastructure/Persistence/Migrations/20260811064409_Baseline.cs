@@ -277,7 +277,8 @@ namespace HRManagement.Infrastructure.Persistence.Migrations
                     DueDate = table.Column<DateTime>(type: "date", nullable: true),
                     CreatedByUserId = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2(0)", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2(0)", nullable: true)
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2(0)", nullable: true),
+                    Furkan = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {

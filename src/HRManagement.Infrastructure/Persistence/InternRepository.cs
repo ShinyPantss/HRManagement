@@ -57,6 +57,7 @@ public class InternRepository : IInternRepository
     public async Task DeleteAsync(int id)
     {
         await _context.Interns.Where(i => i.Id == id).ExecuteDeleteAsync();
+
     }
 
     public async Task DeleteWithAccountAsync(int internId, int? userId)
